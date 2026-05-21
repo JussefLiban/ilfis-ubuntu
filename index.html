@@ -16,7 +16,6 @@
       flex-direction: column;
     }
 
-    /* HEADER */
     header {
       background: #16213e;
       border-bottom: 3px solid #c0392b;
@@ -24,10 +23,6 @@
       display: flex;
       align-items: center;
       gap: 14px;
-    }
-    header img {
-      width: 44px;
-      height: 44px;
     }
     .header-text h1 {
       font-size: 1.4rem;
@@ -42,7 +37,6 @@
       margin-top: 2px;
     }
 
-    /* MAIN */
     main {
       flex: 1;
       max-width: 860px;
@@ -59,7 +53,6 @@
       line-height: 1.6;
     }
 
-    /* CAJA DE CONSULTA */
     .consulta-box {
       background: #16213e;
       border-radius: 12px;
@@ -109,7 +102,6 @@
     .btn-consultar:hover { background: #a93226; }
     .btn-consultar:disabled { background: #555; cursor: not-allowed; }
 
-    /* ESTADO */
     .estado {
       text-align: center;
       margin-top: 16px;
@@ -132,7 +124,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* RESPUESTA */
     .respuesta-box {
       margin-top: 28px;
       background: #16213e;
@@ -174,10 +165,7 @@
       margin-top: 4px;
     }
 
-    /* EJEMPLOS */
-    .ejemplos {
-      margin-top: 28px;
-    }
+    .ejemplos { margin-top: 28px; }
     .ejemplos p {
       font-size: 0.8rem;
       color: #7a8a9a;
@@ -199,7 +187,6 @@
     }
     .ejemplo-btn:hover { background: #1a4a80; color: #fff; }
 
-    /* FOOTER */
     footer {
       text-align: center;
       padding: 20px;
@@ -263,17 +250,17 @@
       const pregunta = document.getElementById("pregunta").value.trim();
       if (!pregunta) return;
 
-      const btn   = document.getElementById("btn");
+      const btn    = document.getElementById("btn");
       const estado = document.getElementById("estado");
-      const box   = document.getElementById("respuesta-box");
+      const box    = document.getElementById("respuesta-box");
 
       btn.disabled = true;
       box.style.display = "none";
-      estado.innerHTML = '<span class="spinner"></span>Consultando corpus ILFIS... (primera consulta ~30s)';
+      estado.innerHTML = '<span class="spinner"></span>Consultando corpus ILFIS... (primera consulta puede tardar hasta 60s)';
 
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 120000); // 120s timeout
+        const timer = setTimeout(() => controller.abort(), 120000);
 
         const res = await fetch(API + "/consulta", {
           method: "POST",
@@ -299,7 +286,11 @@
         box.style.display = "block";
         estado.innerHTML = "";
       } catch (e) {
-        estado.textContent = "Error: " + e.message;
+        if (e.name === "AbortError") {
+          estado.textContent = "Tiempo de espera agotado. El servidor tardó más de 2 minutos.";
+        } else {
+          estado.textContent = "Error: " + e.message;
+        }
       } finally {
         btn.disabled = false;
       }
