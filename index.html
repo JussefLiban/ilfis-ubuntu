@@ -3,22 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ILFIS Ubuntu — Consulta Técnica PCI</title>
+<title>ILFIS Ubuntu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 18px 30px; display: flex; align-items: center; gap: 14px; }
-.header-text h1 { font-size: 1.4rem; color: #ffffff; letter-spacing: 1px; }
-.header-text p { font-size: 0.78rem; color: #c0392b; text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
-main { flex: 1; max-width: 860px; width: 100%; margin: 40px auto; padding: 0 20px; }
+
+/* ── HEADER ─────────────────────────────────────────────── */
+header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 16px 30px; display: flex; align-items: center; gap: 14px; }
+.header-text h1 { font-size: 1.4rem; color: #fff; letter-spacing: 1px; }
+.header-text p { font-size: 0.68rem; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* ── TABS NAV ────────────────────────────────────────────── */
+nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; padding: 0 30px; }
+nav.tabs .tab-btn { padding: 13px 22px; font-size: 0.88rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 7px; transition: color 0.2s; letter-spacing: 0.3px; }
+nav.tabs .tab-btn:hover { color: #cdd; }
+nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
+.badge-pro { font-size: 0.6rem; background: #c0392b; color: #fff; padding: 1px 6px; border-radius: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* ── PANELS ──────────────────────────────────────────────── */
+.panel { display: none; flex: 1; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* ─── PANEL CONSULTAS ────────────────────────────────────── */
+#panel-consultar { align-items: center; }
+.consultar-inner { max-width: 860px; width: 100%; margin: 40px auto; padding: 0 20px; }
 .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.95rem; line-height: 1.6; }
 .consulta-box { background: #16213e; border-radius: 12px; padding: 24px; border: 1px solid #2a2a5a; }
 .consulta-box label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
 textarea { width: 100%; height: 110px; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 1rem; padding: 14px; resize: vertical; outline: none; transition: border 0.2s; }
 textarea:focus { border-color: #c0392b; }
 textarea::placeholder { color: #5a7a9a; }
-.btn-consultar { margin-top: 14px; width: 100%; padding: 14px; background: #c0392b; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
+.btn-consultar { margin-top: 14px; width: 100%; padding: 14px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
 .btn-consultar:hover { background: #a93226; }
 .btn-consultar:disabled { background: #555; cursor: not-allowed; }
 .estado { text-align: center; margin-top: 16px; color: #aaa; font-style: italic; font-size: 0.9rem; min-height: 22px; }
@@ -27,15 +44,14 @@ textarea::placeholder { color: #5a7a9a; }
 .respuesta-box { margin-top: 28px; background: #16213e; border-radius: 12px; padding: 24px; border: 1px solid #2a2a5a; border-left: 4px solid #c0392b; display: none; }
 .respuesta-label { font-size: 0.78rem; color: #c0392b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
 .respuesta-texto { font-size: 1rem; line-height: 1.8; color: #dde; }
-.respuesta-texto h1, .respuesta-texto h2, .respuesta-texto h3 { color: #ffffff; margin: 16px 0 8px 0; }
+.respuesta-texto h1, .respuesta-texto h2, .respuesta-texto h3 { color: #fff; margin: 16px 0 8px 0; }
 .respuesta-texto p { margin-bottom: 12px; }
 .respuesta-texto ul, .respuesta-texto ol { margin: 8px 0 12px 20px; }
 .respuesta-texto li { margin-bottom: 4px; }
-.respuesta-texto strong { color: #ffffff; }
+.respuesta-texto strong { color: #fff; }
 .respuesta-texto a { color: #e87272; text-decoration: underline; word-break: break-all; }
 .respuesta-texto a:hover { color: #ff9999; }
 .respuesta-texto blockquote { border-left: 3px solid #c0392b; padding-left: 12px; color: #aaa; margin: 12px 0; font-style: italic; }
-.respuesta-texto hr { border: none; border-top: 1px solid #2a2a5a; margin: 16px 0; }
 .respuesta-texto code { background: #0f3460; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
 .fuentes { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a5a; font-size: 0.8rem; color: #7a8a9a; }
 .fuentes span { background: #0f3460; padding: 3px 8px; border-radius: 4px; margin-right: 6px; display: inline-block; margin-top: 4px; }
@@ -43,45 +59,160 @@ textarea::placeholder { color: #5a7a9a; }
 .ejemplos p { font-size: 0.8rem; color: #7a8a9a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .ejemplo-btn { display: inline-block; background: #0f3460; border: 1px solid #2a5a9a; color: #aac; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; margin: 4px 6px 4px 0; transition: background 0.2s; }
 .ejemplo-btn:hover { background: #1a4a80; color: #fff; }
-footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; border-top: 1px solid #1e1e3a; }
+
+/* ─── PANEL VIDEOS ───────────────────────────────────────── */
+#panel-videos { align-items: center; }
+.video-result { background: #16213e; border: 1px solid #2a2a5a; border-left: 4px solid #c0392b; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+.video-result-title { font-size: 0.88rem; color: #fff; font-weight: 600; margin-bottom: 5px; }
+.video-result-meta { font-size: 0.75rem; color: #7a8a9a; margin-bottom: 8px; }
+.video-result-excerpt { font-size: 0.82rem; color: #aaa; line-height: 1.6; margin-bottom: 10px; font-style: italic; border-left: 2px solid #2a2a5a; padding-left: 10px; }
+.video-result-link { display: inline-flex; align-items: center; gap: 5px; background: #c0392b; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; text-decoration: none; cursor: pointer; border: none; transition: background 0.15s; }
+.video-result-link:hover { background: #a93226; }
+.videos-coming { margin-top: 28px; text-align: center; padding: 28px; background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; }
+.videos-coming i { font-size: 2.5rem; color: #c0392b; display: block; margin-bottom: 14px; }
+.videos-coming p { color: #7a8a9a; font-size: 0.88rem; line-height: 1.7; margin-bottom: 4px; }
+.videos-coming p strong { color: #aac; }
+
+/* ─── PANEL CLASES ───────────────────────────────────────── */
+#panel-clases { align-items: center; justify-content: center; }
+.clases-inner { max-width: 620px; width: 100%; margin: 60px auto; padding: 0 20px; text-align: center; }
+.lock-icon { font-size: 4rem; color: #c0392b; margin-bottom: 20px; }
+.clases-inner h2 { font-size: 1.4rem; color: #fff; margin-bottom: 12px; }
+.clases-inner > p { color: #aaa; line-height: 1.7; font-size: 0.95rem; margin-bottom: 24px; }
+.preview-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; text-align: left; }
+.preview-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; padding: 14px; opacity: 0.6; position: relative; }
+.preview-card::after { content: '🔒'; position: absolute; top: 8px; right: 10px; font-size: 0.9rem; }
+.pc-tag { font-size: 0.6rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.pc-title { font-size: 0.78rem; color: #ccc; line-height: 1.4; }
+.btn-premium { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s; }
+.btn-premium:hover { background: #a93226; }
+.coming-label { margin-top: 16px; font-size: 0.8rem; color: #555; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; border-top: 1px solid #1e1e3a; margin-top: auto; }
 </style>
 </head>
 <body>
+
 <header>
-<div style="font-size:2rem">🔥</div>
-<div class="header-text">
-<h1>ILFIS UBUNTU</h1>
-<p>Motor de Consulta Técnica PCI</p>
-</div>
+  <div style="background:#fff; padding: 5px 10px; border-radius: 8px; display:flex; align-items:center;">
+    <img src="logo-nuevo.png" alt="ILFIS Latinoamérica" style="height:40px; display:block;">
+  </div>
+  <div class="header-text">
+    <h1>UBUNTU</h1>
+    <p>Plataforma Interactiva Asistida por Inteligencia Artificial</p>
+  </div>
 </header>
-<main>
-<p class="subtitle">
-Consulta el corpus de expertos en sistemas contra incendios.<br>
-Las respuestas provienen de discusiones reales con cita de fecha y fuente.
-</p>
-<div class="consulta-box">
-<label>Tu pregunta técnica</label>
-<textarea id="pregunta" placeholder="Ej: ¿Cuál es la clasificación de riesgo para un hangar de aeronaves según NFPA 13?"></textarea>
-<button class="btn-consultar" id="btn" onclick="consultar()">Consultar corpus ILFIS</button>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="showTab('consultar', this)">
+    <i class="ti ti-message-question"></i> Consultas
+  </button>
+  <button class="tab-btn" onclick="showTab('videos', this)">
+    <i class="ti ti-brand-youtube"></i> Videos
+  </button>
+  <button class="tab-btn" onclick="showTab('clases', this)">
+    <i class="ti ti-school"></i> Clases
+    <span class="badge-pro">Premium</span>
+  </button>
+</nav>
+
+<div class="panel active" id="panel-consultar">
+  <div class="consultar-inner">
+    <p class="subtitle">
+      Consulta el corpus de expertos en sistemas contra incendios.<br>
+      Las respuestas provienen de discusiones reales con cita de fecha y fuente.
+    </p>
+    <div class="consulta-box">
+      <label>Tu pregunta técnica</label>
+      <textarea id="pregunta" placeholder="Ej: ¿Cuál es la clasificación de riesgo para un hangar de aeronaves según NFPA 13?"></textarea>
+      <button class="btn-consultar" id="btn" onclick="consultar()">Consultar corpus ILFIS</button>
+    </div>
+    <div class="estado" id="estado"></div>
+    <div class="respuesta-box" id="respuesta-box">
+      <div class="respuesta-label">📋 Respuesta del corpus ILFIS</div>
+      <div class="respuesta-texto" id="respuesta-texto"></div>
+      <div class="fuentes" id="fuentes"></div>
+    </div>
+    <div class="ejemplos">
+      <p>Preguntas de ejemplo</p>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Presión mínima en rociadores NFPA 13</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Clasificación de riesgo para talleres de soldadura</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Distancia máxima entre rociadores en riesgo leve</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">¿Cuándo se usa sistema diluvio vs preacción?</span>
+    </div>
+  </div>
 </div>
-<div class="estado" id="estado"></div>
-<div class="respuesta-box" id="respuesta-box">
-<div class="respuesta-label">📋 Respuesta del corpus ILFIS</div>
-<div class="respuesta-texto" id="respuesta-texto"></div>
-<div class="fuentes" id="fuentes"></div>
+
+<div class="panel" id="panel-videos">
+  <div class="consultar-inner">
+    <p class="subtitle">
+      Busca el momento exacto en que los expertos ILFIS explican el tema que necesitas.<br>
+      Cada resultado te lleva directo al minuto exacto del video en YouTube.
+    </p>
+    <div class="consulta-box">
+      <label>¿Qué tema quieres encontrar en los videos?</label>
+      <textarea id="pregunta-video" placeholder="Ej: ¿Cómo se instala una válvula de alarma en sistema húmedo?"></textarea>
+      <button class="btn-consultar" id="btn-video" onclick="buscarVideo()">Buscar en videos ILFIS</button>
+    </div>
+    <div class="estado" id="estado-video"></div>
+    <div class="respuesta-box" id="respuesta-video-box">
+      <div class="respuesta-label">📹 Momentos encontrados en videos</div>
+      <div id="resultados-video"></div>
+    </div>
+    <div class="videos-coming" id="videos-coming">
+      <i class="ti ti-video"></i>
+      <p><strong>310 videos del canal ILFIS</strong> en proceso de indexación.</p>
+      <p>Pronto podrás buscar por tema y llegar al minuto exacto de cada clase.</p>
+    </div>
+  </div>
 </div>
-<div class="ejemplos">
-<p>Preguntas de ejemplo</p>
-<span class="ejemplo-btn" onclick="setEjemplo(this)">Presión mínima en rociadores NFPA 13</span>
-<span class="ejemplo-btn" onclick="setEjemplo(this)">Clasificación de riesgo para talleres de soldadura</span>
-<span class="ejemplo-btn" onclick="setEjemplo(this)">Distancia máxima entre rociadores en riesgo leve</span>
-<span class="ejemplo-btn" onclick="setEjemplo(this)">¿Cuándo se usa sistema diluvio vs preacción?</span>
+
+<div class="panel" id="panel-clases">
+  <div class="clases-inner">
+    <div class="lock-icon"><i class="ti ti-lock"></i></div>
+    <h2>Clases ILFIS — Plan Premium</h2>
+    <p>
+      Accede a las clases completas de los cursos y diplomados ILFIS.<br>
+      Busca por tema y ve exactamente el fragmento donde se explica lo que necesitas.
+    </p>
+    <div class="preview-cards">
+      <div class="preview-card">
+        <div class="pc-tag">Diplomado</div>
+        <div class="pc-title">Sistemas de Rociadores — Módulo completo</div>
+      </div>
+      <div class="preview-card">
+        <div class="pc-tag">Curso</div>
+        <div class="pc-title">Cálculo Hidráulico paso a paso</div>
+      </div>
+      <div class="preview-card">
+        <div class="pc-tag">Diplomado</div>
+        <div class="pc-title">Detección y Alarma contra Incendios</div>
+      </div>
+      <div class="preview-card">
+        <div class="pc-tag">Curso</div>
+        <div class="pc-title">Bombas contra Incendios — Selección y diseño</div>
+      </div>
+    </div>
+    <button class="btn-premium">
+      <i class="ti ti-star"></i> Quiero acceso Premium
+    </button>
+    <p class="coming-label">Próximamente disponible</p>
+  </div>
 </div>
-</main>
+
 <footer>
-ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad &nbsp;|&nbsp; ILFIS Ubuntu v1.0
+  ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad &nbsp;|&nbsp; ILFIS Ubuntu v2.0
 </footer>
+
 <script>
+function showTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 marked.setOptions({ breaks: true, gfm: true });
 const renderer = new marked.Renderer();
@@ -89,7 +220,9 @@ renderer.link = function(href, title, text) {
   return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 };
 marked.setOptions({ renderer: renderer });
+
 function setEjemplo(el) { document.getElementById("pregunta").value = el.textContent; }
+
 async function consultar() {
   const pregunta = document.getElementById("pregunta").value.trim();
   if (!pregunta) return;
@@ -121,17 +254,72 @@ async function consultar() {
     box.style.display = "block";
     estado.innerHTML = "";
   } catch (e) {
-    if (e.name === "AbortError") {
-      estado.textContent = "Tiempo de espera agotado. El servidor tardó más de 2 minutos.";
-    } else {
-      estado.textContent = "Error: " + e.message;
-    }
+    estado.textContent = e.name === "AbortError"
+      ? "Tiempo de espera agotado. El servidor tardó más de 2 minutos."
+      : "Error: " + e.message;
   } finally {
     btn.disabled = false;
   }
 }
+
 document.getElementById("pregunta").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); consultar(); }
+});
+
+async function buscarVideo() {
+  const pregunta = document.getElementById("pregunta-video").value.trim();
+  if (!pregunta) return;
+  const btn = document.getElementById("btn-video");
+  const estado = document.getElementById("estado-video");
+  const box = document.getElementById("respuesta-video-box");
+  const coming = document.getElementById("videos-coming");
+  btn.disabled = true;
+  box.style.display = "none";
+  if (coming) coming.style.display = "none";
+  estado.innerHTML = '<span class="spinner"></span>Buscando en los videos ILFIS...';
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120000);
+    const res = await fetch(API + "/consulta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: pregunta, fuente: "youtube" }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error("Error del servidor: " + res.status);
+    const data = await res.json();
+    const container = document.getElementById("resultados-video");
+    if (data.fragmentos && data.fragmentos.length > 0) {
+      container.innerHTML = data.fragmentos.map(f => {
+        const ts = f.timestamp_segundos || 0;
+        const min = Math.floor(ts / 60);
+        const sec = String(ts % 60).padStart(2, '0');
+        const url = f.video_id ? `https://www.youtube.com/watch?v=${f.video_id}&t=${ts}s` : '#';
+        return `<div class="video-result">
+          <div class="video-result-title">${f.titulo || 'Video ILFIS'}</div>
+          <div class="video-result-meta"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px;"></i> Minuto ${min}:${sec}</div>
+          ${f.texto ? `<div class="video-result-excerpt">"${f.texto.substring(0,180)}…"</div>` : ''}
+          <a class="video-result-link" href="${url}" target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-brand-youtube" style="font-size:14px;"></i> Ver en YouTube — ${min}:${sec}
+          </a>
+        </div>`;
+      }).join('');
+    } else {
+      container.innerHTML = marked.parse(data.respuesta || 'Sin resultados en videos.');
+    }
+    box.style.display = "block";
+    estado.innerHTML = "";
+  } catch (e) {
+    if (coming) coming.style.display = "block";
+    estado.textContent = e.name === "AbortError" ? "Tiempo de espera agotado." : "Error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("pregunta-video").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); buscarVideo(); }
 });
 </script>
 </body>
