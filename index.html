@@ -16,8 +16,11 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 16px 30
 .header-text p { font-size: 0.68rem; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
 
 /* ── TABS NAV ────────────────────────────────────────────── */
-nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; padding: 0 30px; }
-nav.tabs .tab-btn { padding: 13px 22px; font-size: 0.88rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 7px; transition: color 0.2s; letter-spacing: 0.3px; }
+nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; padding: 0 30px; overflow-x: auto; }
+nav.tabs .tab-btn { padding: 10px 20px; font-size: 0.88rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 9px; transition: color 0.2s; letter-spacing: 0.3px; white-space: nowrap; }
+.tab-label { display: flex; flex-direction: column; text-align: left; }
+.tab-line1 { font-size: 0.85rem; line-height: 1.35; font-weight: 600; }
+.tab-line2 { font-size: 0.71rem; line-height: 1.3; opacity: 0.7; letter-spacing: 0.2px; }
 nav.tabs .tab-btn:hover { color: #cdd; }
 nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .badge-pro { font-size: 0.6rem; background: #c0392b; color: #fff; padding: 1px 6px; border-radius: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
@@ -73,6 +76,30 @@ textarea::placeholder { color: #5a7a9a; }
 .videos-coming p { color: #7a8a9a; font-size: 0.88rem; line-height: 1.7; margin-bottom: 4px; }
 .videos-coming p strong { color: #aac; }
 
+/* ─── PANEL EXPLORADOR ───────────────────────────────────── */
+#panel-explorador { align-items: stretch; }
+.explorador-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 24px 20px 40px; }
+.explorador-inner .subtitle { text-align: left; margin-bottom: 18px; }
+.search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-input { flex: 1; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; padding: 11px 16px; outline: none; transition: border 0.2s; }
+.search-input:focus { border-color: #c0392b; }
+.search-input::placeholder { color: #5a7a9a; }
+.cats { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.cat-btn { padding: 5px 13px; border: 1px solid #2a2a5a; border-radius: 20px; background: #16213e; color: #8899aa; font-size: 0.77rem; cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px; }
+.cat-btn:hover { color: #cdd; border-color: #555; }
+.cat-btn.active { background: #c0392b; color: #fff; border-color: #c0392b; }
+.exp-count { font-size: 0.78rem; color: #5a6a7a; margin-bottom: 16px; }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.vcard { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; overflow: hidden; transition: border-color 0.15s, transform 0.15s; }
+.vcard:hover { border-color: #c0392b; transform: translateY(-2px); }
+.vcard-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #0a1a30; display: block; }
+.vcard-body { padding: 10px 12px 12px; }
+.vcard-cat { font-size: 0.6rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.vcard-title { font-size: 0.79rem; color: #dde; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.2rem; margin-bottom: 10px; }
+.vcard-link { display: inline-flex; align-items: center; gap: 5px; background: #c0392b; color: #fff; padding: 5px 11px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+.vcard-link:hover { background: #a93226; }
+.no-results { text-align: center; padding: 60px 20px; color: #5a6a7a; font-size: 0.9rem; }
+
 /* ─── PANEL CLASES ───────────────────────────────────────── */
 #panel-clases { align-items: center; justify-content: center; }
 .clases-inner { max-width: 620px; width: 100%; margin: 60px auto; padding: 0 20px; text-align: center; }
@@ -106,17 +133,24 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
 <nav class="tabs">
   <button class="tab-btn active" onclick="showTab('consultar', this)">
-    <i class="ti ti-message-question"></i> Consultas
+    <i class="ti ti-message-question" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Consultas a</span><span class="tab-line2">Expertos ILFIS</span></span>
   </button>
   <button class="tab-btn" onclick="showTab('videos', this)">
-    <i class="ti ti-brand-youtube"></i> Videos
+    <i class="ti ti-brand-youtube" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Búsqueda Interactiva</span><span class="tab-line2">de Videos Youtube</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('explorador', this)">
+    <i class="ti ti-layout-grid" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Explorador Interactivo</span><span class="tab-line2">de Videos Youtube</span></span>
   </button>
   <button class="tab-btn" onclick="showTab('clases', this)">
-    <i class="ti ti-school"></i> Clases
-    <span class="badge-pro">Premium</span>
+    <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Clases Premium</span><span class="tab-line2">Acceso Total</span></span>
   </button>
 </nav>
 
+<!-- ── PANEL CONSULTAS ─────────────────────────────────────── -->
 <div class="panel active" id="panel-consultar">
   <div class="consultar-inner">
     <p class="subtitle">
@@ -144,6 +178,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
   </div>
 </div>
 
+<!-- ── PANEL VIDEOS ────────────────────────────────────────── -->
 <div class="panel" id="panel-videos">
   <div class="consultar-inner">
     <p class="subtitle">
@@ -162,12 +197,28 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
     <div class="videos-coming" id="videos-coming">
       <i class="ti ti-video"></i>
-      <p><strong>310 videos del canal ILFIS</strong> en proceso de indexación.</p>
-      <p>Pronto podrás buscar por tema y llegar al minuto exacto de cada clase.</p>
+      <p><strong>310 videos del canal ILFIS</strong> indexados con timestamps exactos.</p>
+      <p>Escribe un tema y llega al minuto exacto de cada clase.</p>
     </div>
   </div>
 </div>
 
+<!-- ── PANEL EXPLORADOR ────────────────────────────────────── -->
+<div class="panel" id="panel-explorador">
+  <div class="explorador-inner">
+    <p class="subtitle">
+      <strong style="color:#fff;">310 videos del canal ILFIS</strong> — navega por categoría o busca por título.
+    </p>
+    <div class="search-row">
+      <input class="search-input" id="exp-search" type="text" placeholder="Buscar por título..." oninput="renderExplorador()">
+    </div>
+    <div class="cats" id="cat-chips"></div>
+    <div class="exp-count" id="exp-count"></div>
+    <div class="video-grid" id="video-grid"></div>
+  </div>
+</div>
+
+<!-- ── PANEL CLASES ────────────────────────────────────────── -->
 <div class="panel" id="panel-clases">
   <div class="clases-inner">
     <div class="lock-icon"><i class="ti ti-lock"></i></div>
@@ -206,13 +257,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 </footer>
 
 <script>
+// ── TAB NAVIGATION ─────────────────────────────────────────
 function showTab(name, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'explorador' && !_expInit) initExplorador();
 }
 
+// ── API & MARKED ──────────────────────────────────────────
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 marked.setOptions({ breaks: true, gfm: true });
 const renderer = new marked.Renderer();
@@ -223,6 +277,7 @@ marked.setOptions({ renderer: renderer });
 
 function setEjemplo(el) { document.getElementById("pregunta").value = el.textContent; }
 
+// ── CONSULTAS ─────────────────────────────────────────────
 async function consultar() {
   const pregunta = document.getElementById("pregunta").value.trim();
   if (!pregunta) return;
@@ -246,26 +301,22 @@ async function consultar() {
     const data = await res.json();
     document.getElementById("respuesta-texto").innerHTML = marked.parse(data.respuesta);
     const fuentesDiv = document.getElementById("fuentes");
-    if (data.fuentes && data.fuentes.length > 0) {
-      fuentesDiv.innerHTML = "Fuentes: " + data.fuentes.map(f => `<span>${f}</span>`).join("");
-    } else {
-      fuentesDiv.innerHTML = "";
-    }
+    fuentesDiv.innerHTML = (data.fuentes && data.fuentes.length > 0)
+      ? "Fuentes: " + data.fuentes.map(f => `<span>${f}</span>`).join("")
+      : "";
     box.style.display = "block";
     estado.innerHTML = "";
   } catch (e) {
     estado.textContent = e.name === "AbortError"
       ? "Tiempo de espera agotado. El servidor tardó más de 2 minutos."
       : "Error: " + e.message;
-  } finally {
-    btn.disabled = false;
-  }
+  } finally { btn.disabled = false; }
 }
-
 document.getElementById("pregunta").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); consultar(); }
 });
 
+// ── BÚSQUEDA EN VIDEOS ────────────────────────────────────
 async function buscarVideo() {
   const pregunta = document.getElementById("pregunta-video").value.trim();
   if (!pregunta) return;
@@ -313,14 +364,413 @@ async function buscarVideo() {
   } catch (e) {
     if (coming) coming.style.display = "block";
     estado.textContent = e.name === "AbortError" ? "Tiempo de espera agotado." : "Error: " + e.message;
-  } finally {
-    btn.disabled = false;
-  }
+  } finally { btn.disabled = false; }
 }
-
 document.getElementById("pregunta-video").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); buscarVideo(); }
 });
+
+// ── EXPLORADOR DE VIDEOS ──────────────────────────────────
+// Formato: [id, titulo]
+const VIDEOS = [
+  ["0sA3bKHzt8A","PROPUESTAS DE DETECCIÓN DE INCENDIO PARA BATERÍAS DE IONES DE LITIO"],
+  ["du3NEc8clCY","HOSE CONNECTION LOCATIONS"],
+  ["QLmXqWijfoc","DIFFERENCE BETWEEN ACCEPTANCE TESTING AND ANNUAL TESTING OF FIRE PUMPS"],
+  ["wONe-je4KGE","CAUDALES Y PRESIONES EN SISTEMAS DE MONTANTES Y MANGUERAS"],
+  ["gntFClhYp48","DISEÑO DE SISTEMAS DE BOMBEO CONTRA INCENDIOS CON REVIT"],
+  ["TtalmWwf6Q0","ASPECTOS BASICOS DE SISTEMAS DE ROCIADORES PARTE 2"],
+  ["jwAlNWJtQdc","ASPECTOS BASICOS DE SISTEMAS DE ROCIADORES"],
+  ["yIqzTs-tgkc","LONGITUD EQUIVALENTE DE ACCESORIOS Y VÁLVULAS"],
+  ["r0Wp9LZLPG0","GENERALIDADES DE LA PROTECCIÓN CONTRA INCENDIOS EN ALMACENES"],
+  ["DSSWiR8sYKU","BUENAS PRÁCTICAS EN LA INSTALACIÓN DE BOMBAS CONTRA INCENDIO"],
+  ["eZdlx9HkyYY","FORMULARIOS Y DOCUMENTOS PARA LA IMPLANTACIÓN DE PROGRAMAS DE IPM"],
+  ["bXDeCiy_MBA","CÁLCULO DE PÉRDIDAS DE PRESIÓN POR FRICCIÓN LAZOS DE TUBERÍAS"],
+  ["Avu90c3feMA","DISEÑO INTEGRAL DE SISTEMAS DE ROCIADORES CON REVIT"],
+  ["2OhZFPfQEYs","ECUACIONES PARA CALCULAR PÉRDIDAS DE PRESIÓN POR FRICCIÓN"],
+  ["mcl0MtT3SKo","ASPECTOS FUNDAMENTALES PARA CÁLCULOS HIDRÁULICOS DE SISTEMAS DE EXTINCIÓN CON AGUA"],
+  ["Ejmdr9AJjYY","CAPACITACIÓN ESPECIALIZADA: MX ONE"],
+  ["vHDd2NA27GY","PROCEDIMIENTOS DE PRUEBAS DE DESEMPEÑO DE BOMBAS CONTRA INCENDIO"],
+  ["rrf7j_wRJX0","Simulaciones de Evacuación para el Análisis de la Seguridad en Edificaciones Complejas"],
+  ["BFtRIfkuL4o","INCENDIOS HISTÓRICOS DEL SIGLO XX"],
+  ["dJ8KUwmnH_4","ERRORES Y OMISIONES COMUNES EN PRUEBAS DE DESEMPEÑO HIDRÁULICO DE BOMBAS CONTRA INCENDIO"],
+  ["R5uP-61yEvo","CÁLCULO DE CAUDAL DE AGUA PARA COMBATE DE INCENDIOS"],
+  ["tn6GWVuGByg","Nuevas Fronteras en PCI: Integración de la Inteligencia Artificial"],
+  ["ssDq6C4E5Bc","HERRAMIENTAS DE APRENDIZAJE EN CÁLCULOS HIDRÁULICOS DE ILFIS"],
+  ["IcY32j_Dg68","Fronteras de la Innovación: Explorando Tecnologías Alternativas en la Protección Contra Incendios"],
+  ["GzzI9_qmdmg","NPSH Y CAVITACION EN BOMBAS CONTRA INCENDIO"],
+  ["7cUC22yW97w","Soluciones de Extinción y Detección para Bodegas de Alta Elevación Techos Curvos y Gran Pendiente"],
+  ["05AUxtAKtAM","IT-16 PLANES DE EVACUACIÓN"],
+  ["uLlxHnuyd-Q","PRINCIPALES CAMBIOS EN EL IT-43 EDIFICACIONES EXISTENTES"],
+  ["cL_BMnhlgLU","Notificación de Alarma de Incendios y Emergencias en Espacios Exteriores"],
+  ["tetR_90YgPs","REVIT EN LA CONSTRUCCIÓN DE SISTEMAS CONTRA INCENDIOS: MÁXIMO CONTROL CON MÍNIMA INVERSIÓN"],
+  ["FKZ_5ArNRj4","Más allá del Frío: Protección contra Incendios en Frigoríficos mediante Rociadores"],
+  ["A9yhfveaKho","CÁLCULO HIDRÁULICO DE SISTEMAS DE ROCIADORES CON REVIT Y VCALC"],
+  ["wsjV69AOpg8","OMISIONES Y FALLAS EN PROGRAMAS DE IPM"],
+  ["wgD2onCRb74","BATERÍAS DE ION-LITIO: DESAFÍOS PARA LA INGENIERÍA DE PROTECCIÓN CONTRA INCENDIOS"],
+  ["bSU8_RR4nLs","Criterios de Selección Costo-Efectiva de Bombas Contra Incendio"],
+  ["H4l8oBCiEUo","Integración de Lean Construction y BIM para la Optimización de la Protección Contra Incendios"],
+  ["BvwvX4zxcPk","Estrategias Detección Asociada a la Supresión de Incendios"],
+  ["Qmnx6GUypN8","Estrategias para gestión de proyectos de PCI"],
+  ["sVb_8IXHpG0","INTRODUCCIÓN AL DISEÑO DE SISTEMAS DE ROCIADORES"],
+  ["ucsDFOmiZGU","Análisis Comparativo NFPA 13 y FM DS 2 0 Protección Sísmica SCI"],
+  ["67I_j98ax6Q","Desafíos de la PCI en la Industria de los Hidrocarburos"],
+  ["BO371oi9DXI","INTRODUCCIÓN A LA PROTECCIÓN DE ALMACENES CON ROCIADORES"],
+  ["MNWdS3B7ZkM","VENTAJAS DEL ANÁLISIS HIDRÁULICO EN SISTEMAS CONTRA INCENDIOS"],
+  ["uNaghVGwh7c","Mangueras y su Importancia en la Seguridad de los Ocupantes"],
+  ["G4ZroBw4v38","El impacto de los riesgos de incendio en la transición energética"],
+  ["E_QkvAoviM4","CÓMO DETERMINAR PÉRDIDAS DE PRESIÓN EN SISTEMAS CONTRA INCENDIOS"],
+  ["jOOJtqBgLLA","Seguridad contra incendios en los edificios existentes"],
+  ["lVjz5Xfz0JE","Bomba contra incendio Eléctrica Vs Diesel"],
+  ["KvkzP_uEnp8","CÁLCULO DE SISTEMA DE ROCIADORES CON SOFTWARE SHC"],
+  ["bCLA_3ZeLAc","ERRORES COMUNES EN EL DISEÑO DE SISTEMAS DE DETECCIÓN Y ALARMA DE INCENDIOS"],
+  ["8p0FNbjsjxw","Limitaciones del uso de Rociadores ESFR"],
+  ["wCjjDi4STi0","Tanques empernados contra incendios norma NFPA 22"],
+  ["p1eWSiRPbqQ","APLICACIÓN DE BIM PARA EVITAR LA OBSTRUCCIÓN DE ROCIADORES"],
+  ["yxdVOq6OLaU","Computer simulation of fires in oil tanks"],
+  ["H78GoefdAWQ","Requerimientos Normativos Válvulas de Alivio BCI"],
+  ["50L5530cr60","Impacto cálculos hidráulicos desarrollo de un SPCI"],
+  ["8uti_7XYjCk","FUNDAMENTOS PARA EL MONTAJE DE SISTEMAS DE BOMBEO DE AGUA CONTRA INCENDIO"],
+  ["-9TGfpUCbg0","BOMBAS CENTRÍFUGAS - FUNCIONAMIENTO, CLASIFICACIÓN Y DESEMPEÑO"],
+  ["U4I4W2c7D-o","MONITOREO REMOTO DE SISTEMAS CONTRA INCENDIOS"],
+  ["2-oTMe9dZWU","DINÁMICA DE INCENDIOS: MODELADO Y SIMULACIÓN CON CFAST"],
+  ["lWG0a-5tE-k","FACHADAS COMBUSTIBLES: EL PELIGRO OCULTO DE LOS POLÍMEROS EN LA ARQUITECTURA MODERNA"],
+  ["3h-jr5dr-Ug","PROPUESTAS TECNOLÓGICAS DE FIKE PARA PROTECCIÓN DE RIESGOS ESPECIALES"],
+  ["SiwHdohWHL0","APLICACIONES Y LIMITACIONES DE LOS SISTEMAS DE ROCIADORES DE PRE-ACCIÓN"],
+  ["7cziClqhUTo","INTRODUCCIÓN A LA SEGURIDAD HUMANA SEGÚN NFPA 101"],
+  ["8i8kJgNnJ4w","INTRODUCCIÓN AL USO DE REVIT APLICADO A SISTEMAS CONTRA INCENDIOS"],
+  ["2n8CRnr6d8k","PASOS PARA EL CALCULO DE UN SISTEMA DE MANGUERAS"],
+  ["_CvsEY5QrlM","ASPECTOS ADMINISTRATIVOS DE NORMATIVA URUGUAYA"],
+  ["JC4KacLWNjs","PROTECCIÓN DE MERCANCÍAS POR FM GLOBAL (PARTE 2)"],
+  ["DGYX2vopr8s","PROTECCIÓN DE MERCANCÍAS POR FM GLOBAL (PARTE 1)"],
+  ["8elxxGFvkI8","¿Son Costosos los Sistemas de Rociadores? La Trazabilidad de los Rociadores en Latam"],
+  ["TrrzZ7-q0hw","La Importancia de los Cálculos Hidráulicos en los Proyectos de Protección Contra Incendios"],
+  ["qnUqwUyndj8","Vestíbulos Previos Como Herramienta de Protección Pasiva en las Edificaciones"],
+  ["UXtKYk1QPlg","PRINCIPALES CAMBIOS EN LA NORMATIVA DE PROTECCIÓN CONTRA INCENDIOS EN URUGUAY"],
+  ["QRPMHVM2BkM","APLICACIÓN DE ROCIADORES CMSA EN LA PROTECCIÓN DE ALMACENES"],
+  ["Qn3oGURX4uo","INGENIERÍA EN SCI: HERRAMIENTAS DE CÁLCULO DISPONIBLES PARA EL ESPECIALISTA"],
+  ["-Y-cj-0NmjY","Investigación sobre el incendio en la boda de Qaraqosh: Lecciones para Latinoamérica"],
+  ["xwIyrr8NcT0","No eches agua al aceite caliente: deflagración violenta y mortal"],
+  ["PfqyHaJD6RE","LISTADO Y APROBADO: SIGNIFICADO EN EL CONTEXTO DE LAS NORMAS NFPA"],
+  ["A-AoLfp-6zQ","SISTEMAS DE MONTANTES Y MANGUERAS CONTRA INCENDIOS"],
+  ["rpP7rgT-kE8","LA CLASIFICACION DE RIESGOS COMO FUNDAMENTO DEL DISEÑO CORRECTO DE UN SISTEMA DE ROCIADORES"],
+  ["lvZSYnyzum4","Avances Tecnológicos Alternativos en Protección Contra Incendios"],
+  ["P9q4CxgEMlQ","INTEGRACIÓN DEL COMPORTAMIENTO HUMANO A LA INGENIERÍA DE SEGURIDAD CONTRA INCENDIOS"],
+  ["pSgDC_TrWGg","CURVAS DE DESEMPEÑO DE BOMBAS CONTRA INCENDIO"],
+  ["uelawP7qO5U","Uso de Tuberías no Metálicas en Sistemas Contra Incendios"],
+  ["0Jty3WsEp0c","OBSTRUCCIONES Y SU EFECTO EN EL DESEMPEÑO DE LOS ROCIADORES (CLASE 2)"],
+  ["Z5fIxS3_ROM","Previsiones de Diseño de Audio Evacuación Basada en la Inteligibilidad"],
+  ["-tGu9XTaoJ0","OBSTRUCCIONES Y SU EFECTO EN EL DESEMPEÑO DE LOS ROCIADORES (CLASE 1)"],
+  ["MWLAVXJJmuM","Sistemas de Bombeo Contra Incendio en Edificios de Gran Altura: Una Perspectiva Latinoamericana"],
+  ["THp6RW-5SQM","La Protección Sísmica de los Sistemas Contra Incendios Desde un Enfoque Latinoamericano"],
+  ["R8pcjIel4Vc","CONVERSATORIO: UBICACIÓN PRESCRIPTIVA DE DISPOSITIVOS DE DETECCIÓN Y ALARMA DE INCENDIOS"],
+  ["0JrezYw8cc8","PRUEBAS DE FLUJO EN SISTEMAS CONTRA INCENDIOS"],
+  ["y4XKm1F918o","ADVANCED COURSE ON FIRE DETECTION AND ALARM"],
+  ["3bM2l9TIm04","La Importancia del RTI en la Selección de los Rociadores"],
+  ["qzIpYLI9J-g","Advanced Alarm Notification: Audible and Visual Notification (Part 1)"],
+  ["8p0fJUjMwWw","MITO 29: A LA DEMANDA DE ROCIADORES SIEMPRE SE DEBE AGREGAR EL CAUDAL PARA CHORROS DE MANGUERA"],
+  ["e8w9nbjVK38","NFPA 770: SISTEMAS HÍBRIDOS DE EXTINCIÓN DE INCENDIOS (AGUA Y GAS INERTE)"],
+  ["owOfRbgziFs","Las Implicaciones de las Instalaciones de PCI en La Arquitectura de los Edificios"],
+  ["NXFupBWzoOY","MITO 28: ¿EL MANIFOLD DE PRUEBA SIEMPRE ES OBLIGATORIO?"],
+  ["rsi8qN23B-0","Diseño Alternativo de Protección de Almacenes con Espumas de Alta Expansión"],
+  ["rJr278u3UfI","CONVERSATORIO: SIMULACIÓN COMPUTACIONAL ¿CÓMO MODELAR LA DINÁMICA DE LOS INCENDIOS?"],
+  ["ss7xZgGPkbE","Mitos y Realidades de los Rociadores ESFR y su Impacto En Latinoamérica"],
+  ["Azz8RR4AkyM","MITO 27: ¿LA PREALARMA SIGNIFICA LO MISMO QUE LA SECUENCIA POSITIVA DE ALARMA (PAS)?"],
+  ["8UvE0Z8EXcA","MYTH 26: THE NOMINAL FLOW RATE OF AN IBC MUST BE GREATER THAN THE FLOW RATE REQUIRED BY THE SYSTEM"],
+  ["v1s6YGhBMqg","CONVERSATORIO: NOTIFICACIÓN DE ALARMA Y AUDIBILIDAD EN ESPACIOS EXTERIORES"],
+  ["8OhTLw00kWg","MYTH 25: DO SPRINKLERS NEED TO BE TESTED TO PROVE THEIR EFFECTIVENESS?"],
+  ["3tjaVBMb098","MITO 24: ¿LA DETECCIÓN DE INCENDIOS SIEMPRE IMPLICA DETECTORES AUTOMÁTICOS?"],
+  ["LrFoGf5i1mU","MITO 23: LOS ROCIADORES ESFR SON UNA PANACEA PARA LA PROTECCIÓN DE ALMACENAMIENTO"],
+  ["sy5YGoLb2kA","CONVERSATORIO: PÉRDIDAS DE PRESIÓN EN SISTEMAS CONTRA INCENDIOS"],
+  ["n6-A0hHZXNU","CONVERSATORIO: VÁLVULAS Y ACCESORIOS DE BOMBAS CONTRA INCENDIO"],
+  ["WkApMpNjVpg","DIPLOMADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO (Contenido)"],
+  ["kiFI6CGWBlM","DIPLOMADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO (Propósito)"],
+  ["ihsT8fklE9E","DIPLOMADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO (Objetivos)"],
+  ["M8JGnmar_0s","DIPLOMADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO (Introducción)"],
+  ["_x9gBN6KW1E","DIPLOMADO ESPECIALIZADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO DE SISTEMAS CONTRA INCENDIOS"],
+  ["Q69qdg53COc","CONVERSATORIO: JUSTIFICACIÓN DE USO Y DISEÑO DE SISTEMA DE DETECCIÓN Y ALARMA (2)"],
+  ["JpLQmqcAcqs","CONVERSATORIO: JUSTIFICACIÓN DE USO Y DISEÑO DE SISTEMA DE DETECCIÓN Y ALARMA (1)"],
+  ["oQaP2sGprB0","CONVERSATORIO: TUBERÍAS ENTERRADAS PARA REDES CONTRA INCENDIO"],
+  ["SazViczIu1o","ILFIS RESPONDE: Tipos de Rociadores y su Aplicación"],
+  ["f45qY5_838A","CONVERSATORIO: IMPORTANCIA DE LA PROTECCIÓN PASIVA EN LAS EDIFICACIONES"],
+  ["pzUY9MHvlEk","CONVERSATORIO: CAUDAL PARA MANGUERAS SEGÚN NFPA 13"],
+  ["y0Sj1n2UuB0","Palabras Finales Congreso ILFIS 2022 — Victor Romero (Costa Rica)"],
+  ["BQXn5yEfk98","Palabras Finales Congreso ILFIS 2022 — Luis Ybirma (Venezuela)"],
+  ["b2lkpVvIUfw","ILFIS RESPONDE: Almacenamiento Misceláneo y de Baja Altura, ¿es lo mismo?"],
+  ["K42gwxXqzn0","Palabras Finales Congreso ILFIS 2022 — Fernando Bálbaro (Perú)"],
+  ["Janl4IKnbFc","Palabras Finales Congreso ILFIS 2022 — José Prada (Colombia)"],
+  ["AE5P9a5vz0w","Palabras Finales Congreso ILFIS 2022 — Federico Latosinski (Argentina)"],
+  ["IZYX_1Lq7AE","Palabras Finales Congreso ILFIS 2022 — Antonio Molina (España)"],
+  ["R7WfNoyuKtw","Palabras Finales Congreso ILFIS 2022 — Andrés Pedreira (España)"],
+  ["L75jT_Ha7CU","CONVERSATORIO: INCENDIOS DE LÍQUIDOS, MODELADO Y CÁLCULO DE DURACIÓN DEL INCENDIO"],
+  ["XT-TX1Jrh_g","CONVERSATORIO: MANTENIMIENTO DE BOMBAS CONTRA INCENDIOS Y EQUIPOS RELACIONADOS"],
+  ["JgOX3Mq5paI","ILFIS RESPONDE: Protección de Tanques"],
+  ["4XKpAEj1JPU","Invitación Congreso ILFIS 2022: Desafíos en el Diseño de La Seguridad Humana en Edificios"],
+  ["hcTLhB5KHrA","Invitación Congreso ILFIS 2022: Diseño Basado en Desempeño en una Edificación"],
+  ["YPfsRu2jfC4","Video institucional ILFIS"],
+  ["H4PEGgwbT7o","Invitación Congreso ILFIS 2022: Protección Sísmica de los Sistemas Contra Incendios"],
+  ["83eQWy7Rflw","Invitación Congreso ILFIS 2022: Investigación de Incendios"],
+  ["4KM_SwZgBuE","Invitación Congreso ILFIS 2022: Tuberías Plásticas"],
+  ["4xjI6pa_Zyw","Invitación Congreso ILFIS 2022: Audio Evacuación en Edificaciones Complejas"],
+  ["crx-_orzhzQ","Invitación Congreso ILFIS 2022: Notificación Audible y Visual Alarmas"],
+  ["rPjcyCxPu68","Invitación Congreso ILFIS 2022: Rociadores ESFR"],
+  ["naITQMMz1Iw","Invitación Congreso ILFIS 2022: Cálculos Hidráulicos"],
+  ["9UdZa-cOcuU","Invitación Congreso ILFIS 2022: Espumas de Alta Expansión"],
+  ["7jTTvHxifyQ","Invitación Congreso ILFIS 2022: Vestíbulos Previos"],
+  ["luciXIaUOpU","Invitación Congreso ILFIS 2022: Implicancias de la PCI en la Arquitectura"],
+  ["wsrxTXbHUpU","Invitación Congreso ILFIS 2022"],
+  ["8ungEfBKYyY","CONVERSATORIO: UBICACIÓN PRESCRIPTIVA DE DISPOSITIVOS DE DETECCIÓN Y ALARMA DE INCENDIOS"],
+  ["CZQA_yJwtrI","DIPLOMADO INTERNACIONAL DE DISEÑO DE SISTEMAS CONTRA INCENDIO PARA LA PROTECCIÓN DE MERCANCÍAS"],
+  ["gIVU4frx_8g","DIPLOMADO ESPECIALIZADO EN CÁLCULOS HIDRÁULICOS DE SISTEMAS DE AGUA CONTRA INCENDIOS"],
+  ["YvXZJY3rzag","DIPLOMADO INTERNACIONAL DISEÑO DE SISTEMAS PARA PROTECCIÓN DE MERCANCÍAS (2)"],
+  ["f_J7Luz0cAk","DIPLOMADO ESPECIALIZADO EN DISEÑO E INSTALACIÓN DE SISTEMAS DE ROCIADORES AUTOMÁTICOS"],
+  ["TyzrKMKKJHM","ILFIS RESPONDE: La Hidráulica y los Cálculos de Sistemas de Extinción con Agua"],
+  ["PrY8RJ_eMlM","PROTECTION OF WAREHOUSE YARDS USING MONITORS"],
+  ["q6k2-mGoO4Y","ILFIS RESPONDE: Área de Diseño en Cálculos Hidráulicos de Rociadores"],
+  ["pVStF5FBKu8","TUBERÍAS PLÁSTICAS PARA REDES CONTRA INCENDIOS CLASE 2"],
+  ["nZX1Aa1WSFc","TUBERÍAS PLÁSTICAS PARA REDES CONTRA INCENDIOS CLASE 1"],
+  ["jq8P11Lh3gc","CONVERSATORIO SOBRE CONEXIONES DE MANGUERA EN LAS NORMAS NFPA 13 Y 14"],
+  ["u9kwYLzJzzE","ILFIS RESPONDE: Sistemas de mangueras contra incendios"],
+  ["3kcII1TrWKs","ILFIS RESPONDE: Cálculo de sistemas de rociadores"],
+  ["4-FCF7fz8WQ","CONVERSATORIO SOBRE LA CARGA COMBUSTIBLE Y LA TASA DE LIBERACIÓN DE ENERGÍA"],
+  ["eNZXWC4yj28","OPORTUNIDADES DE MEJORA EN INSTALACIONES DE SISTEMAS CONTRA INCENDIOS (CAPITULO 1)"],
+  ["Cx5jDAmBzF4","ILFIS RESPONDS: Warehouse Protection with Automatic Sprinklers"],
+  ["2Zu6WG2fuc0","CONVERSATORIO SOBRE EL DESARROLLO Y APLICACIÓN DE LOS ROCIADORES ESFR"],
+  ["bBcpX7aQeLA","CONVERSATORIO SOBRE CRITERIOS DE SELECCIÓN DE BOMBAS CONTRA INCENDIOS"],
+  ["-LZLnAask3o","BOMBAS CONTRA INCENDIO PARA EDIFICIOS DE GRAN ALTURA CLASE 1"],
+  ["Jgvr5UvYbTU","ANÁLISIS PRESCRIPTIVO Y PRESTACIONAL DE LA IMPORTANCIA DEL TIEMPO DE RESPUESTA DE UN ROCIADOR"],
+  ["XR2Vwpn6-vY","CONVERSATORIO DE SEGURIDAD HUMANA: MÉTODOS PARA CALCULAR LOS TIEMPOS DE EVACUACIÓN"],
+  ["VrBrCmXSz1s","BOMBAS CONTRA INCENDIO PARA EDIFICIOS DE GRAN ALTURA CLASE 2"],
+  ["E7Cc7niWX6c","Contenido del Diplomado Rociadores"],
+  ["d77O1OWaR0w","Diplomado Especializado en Sistemas de Rociadores Automáticos Contra Incendios (1)"],
+  ["7MWWiPrSdI8","Diplomado Especializado en Sistemas de Rociadores Automáticos Contra Incendios (2)"],
+  ["t1VkIDXmRvA","Diplomado Especializado en Sistemas de Rociadores Automáticos Contra Incendios (3)"],
+  ["5xFxpWQZ3Yc","Diplomado Especializado en Cálculos Hidráulicos"],
+  ["JkE3kC2nfq8","Clase Cálculos Hidráulicos Video Demo 29"],
+  ["VspqGjlgS1Y","Clase Cálculos Hidráulicos Video Demo 28"],
+  ["RFaONjy9lkQ","Clase Cálculos Hidráulicos Video Demo 27"],
+  ["G1oZIrdbWd0","Clase Cálculos Hidráulicos Video Demo 26"],
+  ["MAI7nCzCDPo","Clase Cálculos Hidráulicos Video Demo 25"],
+  ["a1t7D6Q7Te0","Clase Cálculos Hidráulicos Video Demo 24"],
+  ["7US8zxVcsJI","Clase Cálculos Hidráulicos Video Demo 23"],
+  ["csUo2Y8HweA","Clase Cálculos Hidráulicos Video Demo 22"],
+  ["5ZyQ_hi-rC4","Clase Cálculos Hidráulicos Video Demo 21"],
+  ["3pF_n6W2AXE","Clase Cálculos Hidráulicos Video Demo 20"],
+  ["sjuB5ZN7yyQ","Clase Cálculos Hidráulicos Video Demo 19"],
+  ["XHy3fwZhxpA","Clase Cálculos Hidráulicos Video Demo 18"],
+  ["xsWm26M1A6s","Clase Cálculos Hidráulicos Video Demo 17"],
+  ["OcP2KBz0cqY","Clase Cálculos Hidráulicos Video Demo 16"],
+  ["stYTQr04DtE","Clase Cálculos Hidráulicos Video Demo 14"],
+  ["uwKr7i0MQ18","Clase Cálculos Hidráulicos Video Demo 15"],
+  ["RlE0cS1hbRM","Clase Cálculos Hidráulicos Video Demo 14b"],
+  ["W1GKaGVYkC0","Clase Cálculos Hidráulicos Video Demo 13"],
+  ["G48-HuNgias","Clase Cálculos Hidráulicos Video Demo 12"],
+  ["BVNSTvCD0Lo","Clase Cálculos Hidráulicos Video Demo 11"],
+  ["hrhmxASOa4I","Clase Cálculos Hidráulicos Video Demo 10"],
+  ["9DV8q-F5EiE","Clase Cálculos Hidráulicos Video Demo 9"],
+  ["Kk526eg-DXI","Clase Cálculos Hidráulicos Video Demo 8"],
+  ["7bn7XpTGmSE","Clase Cálculos Hidráulicos Video Demo 8b"],
+  ["YBrxv_iSdZY","Clase Cálculos Hidráulicos Video Demo 7"],
+  ["ypPXssE06qk","Clase Cálculos Hidráulicos Video Demo 6"],
+  ["ZzgHxePXvhs","Clase Cálculos Hidráulicos Video Demo 5"],
+  ["OItV87_axyY","Clase Cálculos Hidráulicos Video Demo 4"],
+  ["i4eH0P5TiIA","Clase Cálculos Hidráulicos Video Demo 3"],
+  ["hIt-CaGQtv8","Clase Cálculos Hidráulicos Video Demo 2"],
+  ["w-tpbhsXZ98","Clase Cálculos Hidráulicos Video Demo 1"],
+  ["DeMHAJoNp2k","ILFIS: La Ciencia Detrás del Fuego"],
+  ["xRrxAAqArVM","CLASE SINCRÓNICA DIPLOMADO BOMBAS: FUENTES DE ENERGÍA Y GENERADORES AUXILIARES"],
+  ["pvSXx679tj8","CLASE SINCRÓNICA DUDAS SOBRE MOTORES DIESEL SEMANA 04"],
+  ["YNdDmh2jeiY","CLASE SINCRÓNICA DIPLOMADO DE BOMBAS DUDAS SEMANA 03"],
+  ["Xlf7wz9WHkU","Clase Sincrónica 15 de mayo del 2021 — DIPLOMADO BOMBAS CONTRA INCENDIOS"],
+  ["UzVySclehAM","Presentation of the International Diploma in Fire Dynamics - I"],
+  ["hScRBlANzUk","DETECCIÓN Y ALARMA DE INCENDIOS CLASE SINCRÓNICA 05 — GERENCIA DE POTENCIA"],
+  ["pe5V29WJnbQ","DIPLOMADO INTERNACIONAL DE BOMBAS CONTRA INCENDIOS - CLASE 0"],
+  ["nLVKvL6TfPQ","CONVERSATORIO SOBRE EL INCENDIO DEL SUPERMERCADO YCUA BOLAÑOS"],
+  ["jivR0-3YQKg","Video Pathfinder Completo"],
+  ["N7j-VlzUZ3w","Video Pathfinder Visión Global"],
+  ["9Xn_1QMwHHg","Video Pathfinder 1ra Persona"],
+  ["LZ7Sapl3CtY","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (A)"],
+  ["wghRSNsRhBo","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (B)"],
+  ["j1cSRr-Z-14","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (C)"],
+  ["rfRPHMXHP-8","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (D)"],
+  ["fhIwsW4KKeo","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (E)"],
+  ["GVoi4Y8TaN4","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (F)"],
+  ["BR_2-Gpf998","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (G)"],
+  ["hXnRyEa23nU","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (H)"],
+  ["KwRQ90-EEWE","MITO 22: ¿EL PÁNICO INCAPACITA A LAS PERSONAS PARA EVACUAR DURANTE UN INCENDIO?"],
+  ["C9pz_JxXqJ4","CONVERSATORIO MANGUERAS CONTRA INCENDIO Y SU IMPORTANCIA EN LA SEGURIDAD DE LOS OCUPANTES"],
+  ["G_Qn1wxRCvs","MITO 21: ¿DÓNDE SE INSTALA UNA ESTACIÓN MANUAL DEBE IR UNA SIRENA Y UNA ESTROBO?"],
+  ["X4xbqCwgDJs","Clase 20 Métodos Prescriptivos y Prestacionales"],
+  ["w_sKCUuCNjo","Clase 19 Métodos Prescriptivos y Prestacionales"],
+  ["6WscVQAqH_c","Clase 18 Métodos Prescriptivos y Prestacionales"],
+  ["SHDhrJTeOU8","Clase 17 Métodos Prescriptivos y Prestacionales"],
+  ["vZ2wnifon3M","Clase 16 Métodos Prescriptivos y Prestacionales"],
+  ["qFbTBNFvNmA","Clase 15 Métodos Prescriptivos y Prestacionales"],
+  ["1ahSbYlaPeY","Clase 1 Métodos Prescriptivos y Prestacionales"],
+  ["ODRPjAx4lvY","Clase 2 Métodos Prescriptivos y Prestacionales"],
+  ["UcjnYi5HRig","Clase 3 Métodos Prescriptivos y Prestacionales"],
+  ["gxi5BthjBUY","Clase 4 Métodos Prescriptivos y Prestacionales"],
+  ["AIYwrdiUvks","Clase 5 Métodos Prescriptivos y Prestacionales"],
+  ["mE77mdkNnAQ","Clase 6 Métodos Prescriptivos y Prestacionales"],
+  ["ChUf1TtBQ9o","Clase 7 Métodos Prescriptivos y Prestacionales"],
+  ["WbBDy2xgfQ4","Clase 8 Métodos Prescriptivos y Prestacionales"],
+  ["QQu_BqghndY","Clase 9 Métodos Prescriptivos y Prestacionales"],
+  ["b9Ex2kzCPwA","Clase 10 Métodos Prescriptivos y Prestacionales"],
+  ["Nm1_RcEVUWs","Clase 13 Métodos Prescriptivos y Prestacionales"],
+  ["A8BNnWWbdXU","Clase 14 Métodos Prescriptivos y Prestacionales"],
+  ["hBKG8IOTNog","Clase 11 Métodos Prescriptivos y Prestacionales"],
+  ["fxJKJSu8RBg","Clase 12 Métodos Prescriptivos y Prestacionales"],
+  ["mYDARU2by9M","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 1"],
+  ["VxtdX4_PMQg","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 2"],
+  ["Zj8kW4wGc3I","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 3"],
+  ["MFL66fw7qZ4","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 7"],
+  ["NXI4-1dbIqo","Myths and Realities about the Pre-calculation of a Sprinkler System — Class 6"],
+  ["imWR0T1y0ks","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 5"],
+  ["i6DJZEwZ4zM","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 4"],
+  ["4oY7PYVU0CI","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 8"],
+  ["zVAndiJRqns","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 9"],
+  ["-qNjrkJGK0c","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 10"],
+  ["COLekxr2kcs","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 11"],
+  ["qMZtQ2TdVQU","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 12"],
+  ["F4vq0aV8g6g","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 14"],
+  ["Xg2BnBaOlJM","Introduction to the Course: Myths and Realities in Fire Protection"],
+  ["WZ5rQ6ZqJMw","Mitos y Realidades sobre el Precálculo de un Sistema de Rociadores — Clase 13"],
+  ["nGD6L74yLSY","Video Demo de Clases 2"],
+  ["8pAJtXDvq2E","Video Demo de Clases 3"],
+  ["NilQ5yWIzDQ","Video Demo de Clases 4"],
+  ["RvQbGugZza4","Video Demo de Clases 5"],
+  ["QEeabe0c8dg","Video Demo de Clases 6"],
+  ["O0IG5SDqQa8","Video Demo de Clases 7"],
+  ["dkprKbIvlU0","Video Demo de Clases 9"],
+  ["_sJtLeSUtKs","Video Demo de Clases 10"],
+  ["dImBZy3baBw","Video Demo de Clases 11"],
+  ["uONnSwpyt18","Video Demo de Clases 12"],
+  ["5jNy_0I5O7E","Video Demo de Clases 13"],
+  ["iUgF99saPAs","Video Demo de Clases 14"],
+  ["WOfcAtMjGd8","Video Demo de Clases 15"],
+  ["4zlyjRirioc","Video Demo de Clases 16"],
+  ["-rppvmzOOgk","Video Demo de Clases 17"],
+  ["xbF-Wc4NiP4","Video Demo de Clases 18"],
+  ["ScbfpDGArbo","Video Demo de Clases 19"],
+  ["hbSPhw1zj1w","Video Demo de Clases 20"],
+  ["xo3SrpldK_g","Myths and Realities about the Pre-calculation of a Sprinkler System — Class 13-2"],
+  ["mkrXcbUfhSU","Video Demo de Clases 8"],
+  ["TMhVSkiiElk","Video Demo de Clases 1"],
+  ["gr0XUtHFv98","CONVERSATORIO DETECCIÓN DE INCENDIOS"],
+  ["o9nCIzZWZsA","Cómo se Instala Google Drive en tu PC"],
+  ["PMZgF_N-sAw","Cómo se Instala Telegram en tu PC"],
+  ["hFPt05D_ZJY","Cómo se paga con PAYPAL"],
+  ["ojuKPkBMSS0","Video de Bienvenida a ILFIS"],
+  ["LYRsIHnj2zg","DEMO CURSO SELECCIÓN DE AGENTES LIMPIOS"],
+  ["u9t51q2rPOM","ILFIS COURSE DEMO - PRINCIPLES OF FIRE DETECTION"],
+  ["plbP8MCFt2Q","LA TRAGEDIA DE VILLA EL SALVADOR LIMA PERÚ: QUÉ PASÓ, QUÉ DEBIÓ PASAR Y QUÉ PUDO HABER PASADO"],
+  ["C9RgbtPCo2s","MITO 20: LOS ROCIADORES REQUIEREN ALTOS COSTOS DE MANTENIMIENTO EN SU VIDA ÚTIL"],
+  ["JgZ_DpRzNIo","MITO 19: LOS SISTEMAS DE ROCIADORES SON MUY COSTOSOS"],
+  ["Ie1AdtLlXrQ","MITO 18: LOS ROCIADORES NO REDUCEN SIGNIFICATIVAMENTE LOS DAÑOS A LAS PROPIEDADES"],
+  ["jpadhQNwUro","MITO 17: NO SE REQUIEREN ROCIADORES AUTOMÁTICOS EN TECHOS ALTOS"],
+  ["7nkO_5Y65hA","MITO 16: LOS ROCIADORES NO REDUCEN LOS RIESGOS DE MUERTE POR INCENDIO"],
+  ["k9pJlxY984o","MITO 15: LOS ROCIADORES REQUIEREN DE GRANDES BOMBAS CONTRA INCENDIO PARA FUNCIONAR"],
+  ["7q14HL4FkZM","MITO 14: LOS ROCIADORES REQUIEREN MUCHA PRESIÓN DE AGUA PARA OPERAR SATISFACTORIAMENTE"],
+  ["p7HarBR3Q-Y","MITO 13: SE DEBEN INSTALAR DOS BOMBAS, UNA DIESEL Y UNA ELÉCTRICA"],
+  ["rBC-Dgm0kgY","MYTH 12: SPRINKLERS ARE ACTIVATED BY MANUAL STATIONS"],
+  ["FPRcayU5BvI","MYTH 11: SPRINKLERS CAUSE MORE WATER DAMAGE THAN THE FIRE ITSELF"],
+  ["DCxqnPjRP3Q","MITO 10: LOS ROCIADORES REQUIEREN GRANDES VOLÚMENES DE AGUA"],
+  ["_vJgI8N27vs","MITO 09: LOS ROCIADORES QUE OPERAN NO CONTROLAN EL FUEGO"],
+  ["qpfRvra3KQ0","MITO 08: LOS ROCIADORES ESTÁN SUJETOS A FALLAR CON FRECUENCIA"],
+  ["7A3yJH0fDq8","MITO 07: LOS ROCIADORES SON UN PELIGRO"],
+  ["TI2mfQEtLbs","MITO 06: NO SE DEBEN USAR ROCIADORES EN EQUIPOS ELÉCTRICOS"],
+  ["F-UBapXrV7c","MITO 05: LOS ROCIADORES SOLO TIENEN EL PROPÓSITO DE CONTROLAR O EXTINGUIR EL FUEGO"],
+  ["49YzdoVz_N0","MITO 04: LAS TUBERÍAS SCI DEBEN SER ROJAS"],
+  ["GHH1p5p79Ik","MITO 03: LOS ROCIADORES SON EXTREMADAMENTE SENSIBLES"],
+  ["iGyeZUf89zQ","MITO 02: LOS ROCIADORES SE ABREN TODOS A LA VEZ"],
+  ["bSkyoTXgWxU","MITO 01: LOS ROCIADORES CONTRA INCENDIO RESPONDEN AL HUMO"]
+];
+
+// Categorización automática por palabras clave en el título
+function categorizar(t) {
+  const u = t.toUpperCase();
+  if (/MITO\s+\d+|MYTH\s+\d+|MITOS Y REALIDADES|MYTHS AND REALITIES|PRECALCULO|PRECÁLCULO/.test(u)) return 'Mitos y Realidades';
+  if (/CONVERSATORIO|CONVERSARTORIO/.test(u)) return 'Conversatorios';
+  if (/DIPLOMADO|CLASE SINC[RÓO]|VIDEO DEMO DE CLASES|CLASE C[AÁ]LC/.test(u)) return 'Diplomados y Clases';
+  if (/ROCIADOR|SPRINKLER|ESFR|CMSA|PRE.ACCI|RTI/.test(u)) return 'Rociadores';
+  if (/BOMB[AO]S?|BOMBEO|CENTRIF|NPSH|CAVIT|MOTORES DIESEL|CURVAS DE DESEMPE/.test(u)) return 'Bombas';
+  if (/DETECC[IÍ][OÓ]N|ALARMA|ALARM|DETECTION/.test(u)) return 'Detección y Alarma';
+  if (/HID[RÁA]UL|C[AÁ]LCULO|CALCULO|FRICCI[OÓ]N|P[EÉ]RDIDA|PRESI[OÓ]N|CAUDAL|LONGITUD EQUIV/.test(u)) return 'Cálculo Hidráulico';
+  if (/MANGUERA|MONTANTE|HOSE CONN|STANDPIPE/.test(u)) return 'Mangueras y Montantes';
+  if (/ALMAC[EÉ]N|MERCANC|WAREHOUSE|BODEGA|STORAGE/.test(u)) return 'Almacenes';
+  if (/SEGURIDAD HUMANA|EVACUACI[OÓ]N|NFPA 101|VES[TÍI]BULO|COMPORTAMIENTO HUMANO/.test(u)) return 'Seguridad Humana';
+  if (/REVIT|BIM|LEAN CONSTRUCTION/.test(u)) return 'BIM / Revit';
+  if (/TRAGEDIA|INVESTIGACI[OÓ]N.*INCENDIO|INCENDIOS HIST|YCUA|QARAQOSH|VILLA EL SALVADOR/.test(u)) return 'Análisis de Incendios';
+  if (/NORMATIVA|IT-\d|LISTADO Y APROBADO|NFPA 22|NFPA 770/.test(u)) return 'Normativa';
+  return 'Otros';
+}
+
+const CATEGORIAS = ['Todas','Rociadores','Bombas','Detección y Alarma','Cálculo Hidráulico',
+  'Mangueras y Montantes','Almacenes','Seguridad Humana','BIM / Revit',
+  'Diplomados y Clases','Mitos y Realidades','Conversatorios','Análisis de Incendios','Normativa','Otros'];
+
+let _expInit = false;
+let _catActual = 'Todas';
+
+function initExplorador() {
+  _expInit = true;
+  // Construir chips de categorías con conteos
+  const conteos = {};
+  CATEGORIAS.forEach(c => conteos[c] = 0);
+  VIDEOS.forEach(v => { const c = categorizar(v[1]); if (conteos[c] !== undefined) conteos[c]++; });
+  conteos['Todas'] = VIDEOS.length;
+
+  const chipsEl = document.getElementById('cat-chips');
+  chipsEl.innerHTML = CATEGORIAS.map(c =>
+    `<button class="cat-btn${c === 'Todas' ? ' active' : ''}" onclick="filtrarCat('${c}')">${c} <span style="opacity:0.6;font-size:0.7em;">${conteos[c]}</span></button>`
+  ).join('');
+
+  renderExplorador();
+}
+
+function filtrarCat(cat) {
+  _catActual = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.cat-btn');
+  btns.forEach(b => { if (b.textContent.startsWith(cat)) b.classList.add('active'); });
+  renderExplorador();
+}
+
+function renderExplorador() {
+  const q = (document.getElementById('exp-search').value || '').toLowerCase().trim();
+  const grid = document.getElementById('video-grid');
+  const countEl = document.getElementById('exp-count');
+
+  const filtrados = VIDEOS.filter(v => {
+    const cat = categorizar(v[1]);
+    const pasaCat = _catActual === 'Todas' || cat === _catActual;
+    const pasaBusq = !q || v[1].toLowerCase().includes(q);
+    return pasaCat && pasaBusq;
+  });
+
+  countEl.textContent = filtrados.length + ' videos' + (filtrados.length !== VIDEOS.length ? ' (filtrado)' : '');
+
+  if (filtrados.length === 0) {
+    grid.innerHTML = '<div class="no-results">No se encontraron videos con ese criterio.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtrados.map(v => {
+    const cat = categorizar(v[1]);
+    const thumb = `https://img.youtube.com/vi/${v[0]}/mqdefault.jpg`;
+    const url = `https://www.youtube.com/watch?v=${v[0]}`;
+    const titulo = v[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="vcard">
+      <img class="vcard-thumb" src="${thumb}" alt="${titulo}" loading="lazy" onerror="this.style.background='#0a1a30'">
+      <div class="vcard-body">
+        <div class="vcard-cat">${cat}</div>
+        <div class="vcard-title" title="${titulo}">${titulo}</div>
+        <a class="vcard-link" href="${url}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-youtube" style="font-size:13px;"></i> Ver video
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
