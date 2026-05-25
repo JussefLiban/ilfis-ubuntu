@@ -620,9 +620,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
   </div>
   <div class="roc-body">
     <!-- Sidebar: lista de clases -->
-    <div class="roc-sidebar" id="roc-sidebar">
-      <!-- Se genera por JS -->
-    </div>
+    <div class="roc-sidebar" id="roc-sidebar"></div>
     <!-- Área del player -->
     <div class="roc-player-area">
       <div class="roc-video-titulo" id="roc-video-titulo">Selecciona una clase para comenzar</div>
@@ -1188,7 +1186,7 @@ let _rocClaseActual = null;
 function abrirRociadores() {
   // Construir sidebar si no se ha hecho
   const sidebar = document.getElementById('roc-sidebar');
-  if (!sidebar.innerHTML.trim()) {
+  if (sidebar.children.length === 0) {
     let html = '';
     for (let i = 1; i <= TOTAL_CLASES_ROCIADORES; i++) {
       html += `<button class="roc-clase-btn" id="roc-btn-${i}" onclick="cargarClase(${i})">
