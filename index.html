@@ -156,7 +156,7 @@ textarea::placeholder { color: #5a7a9a; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
 .roc-title { color: #fff; font-size: 1rem; font-weight: bold; }
 .roc-body { display: flex; flex: 1; overflow: hidden; }
-.roc-sidebar { width: 280px; flex-shrink: 0; background: #16213e; border-right: 1px solid #2a2a5a; overflow-y: auto; padding: 12px 0; }
+.roc-sidebar { width: 260px; flex-shrink: 0; background: #0d1b2a; border-right: 2px solid #c0392b; overflow-y: auto; padding: 12px 0; }
 .roc-clase-btn { display: block; width: 100%; text-align: left; background: none; border: none; color: #ccc; padding: 9px 18px; font-size: 0.82rem; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; line-height: 1.4; }
 .roc-clase-btn:hover { background: #1e2d50; color: #fff; }
 .roc-clase-btn.active { background: #1e2d50; color: #fff; border-left-color: #c0392b; }
@@ -1245,20 +1245,8 @@ async function cargarClase(n) {
     if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
     const idToken = await user.getIdToken();
 
-    // Llamar al backend
-    const res = await fetch(`${API}/api/cursos/rociadores/clase/${n}`, {
-      headers: { 'Authorization': `Bearer ${idToken}` }
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
-      throw new Error(err.detail || `Error ${res.status}`);
-    }
-
-    // Ignoramos data.url — usamos el proxy de streaming directamente
+    // Ir directo al proxy de streaming (evita CORS y no requiere endpoint extra)
     tituloEl.textContent = `Clase ${n} — Diplomado de Rociadores Automáticos`;
-
-    // El proxy de streaming evita el problema de CORS de Drive
     video.src = `${API}/api/cursos/rociadores/clase/${n}/stream?token=${idToken}`;
     video.load();
     video.play().catch(() => {});
