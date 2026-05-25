@@ -637,6 +637,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
       <div class="roc-error" id="roc-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDF()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1250,13 +1255,13 @@ async function cargarClase(n) {
       throw new Error(err.detail || `Error ${res.status}`);
     }
 
-    const data = await res.json();
+    // Ignoramos data.url — usamos el proxy de streaming directamente
     tituloEl.textContent = `Clase ${n} — Diplomado de Rociadores Automáticos`;
 
-    // Cargar video
-    video.src = data.url;
+    // El proxy de streaming evita el problema de CORS de Drive
+    video.src = `${API}/api/cursos/rociadores/clase/${n}/stream?token=${idToken}`;
     video.load();
-    video.play().catch(() => {}); // autoplay puede bloquearse en algunos navegadores
+    video.play().catch(() => {});
 
   } catch (e) {
     tituloEl.textContent = `Error al cargar Clase ${n}`;
@@ -1265,6 +1270,18 @@ async function cargarClase(n) {
     placeholder.style.display = 'none';
   } finally {
     loading.style.display = 'none';
+  }
+}
+
+async function abrirPDF() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    // Abrir el PDF en una nueva pestaña vía proxy del backend
+    window.open(`${API}/api/cursos/rociadores/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
   }
 }
 
