@@ -142,6 +142,34 @@ textarea::placeholder { color: #5a7a9a; }
 .vcard-link:hover { background: #a93226; }
 .no-results { text-align: center; padding: 60px 20px; color: #5a6a7a; font-size: 0.9rem; }
 
+/* ─── TARJETA CURSO ACTIVO ───────────────────────────────────── */
+.curso-card-activo { border-color: #2a7a4a !important; box-shadow: 0 0 0 1px #2a7a4a; }
+.curso-badge-activo { background: #1a5a3a !important; color: #5dcc85 !important; }
+.btn-ver-clases { background: #c0392b; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-size: 0.82rem; font-weight: bold; cursor: pointer; width: 100%; text-align: center; transition: background 0.2s; letter-spacing: 0.3px; }
+.btn-ver-clases:hover { background: #a93226; }
+
+/* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
+#panel-rociadores { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible { display: flex; }
+.roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
+.roc-back:hover { border-color: #c0392b; color: #e87272; }
+.roc-title { color: #fff; font-size: 1rem; font-weight: bold; }
+.roc-body { display: flex; flex: 1; overflow: hidden; }
+.roc-sidebar { width: 280px; flex-shrink: 0; background: #16213e; border-right: 1px solid #2a2a5a; overflow-y: auto; padding: 12px 0; }
+.roc-clase-btn { display: block; width: 100%; text-align: left; background: none; border: none; color: #ccc; padding: 9px 18px; font-size: 0.82rem; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; line-height: 1.4; }
+.roc-clase-btn:hover { background: #1e2d50; color: #fff; }
+.roc-clase-btn.active { background: #1e2d50; color: #fff; border-left-color: #c0392b; }
+.roc-player-area { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 14px; }
+.roc-video-titulo { color: #fff; font-size: 1rem; font-weight: bold; }
+.roc-video-wrap { position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; }
+#roc-video { width: 100%; height: 100%; display: block; background: #000; }
+.roc-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a6a7a; gap: 10px; font-size: 0.88rem; }
+.roc-video-placeholder i { font-size: 3rem; }
+.roc-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
+.roc-loading .loading-spin { display: block; }
+.roc-error { color: #e87272; font-size: 0.84rem; padding: 10px 14px; background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3); border-radius: 6px; display: none; }
+
 /* ─── PANEL CLASES ───────────────────────────────────────── */
 #panel-clases { align-items: stretch; }
 .clases-wrap { max-width: 1200px; width: 100%; margin: 0 auto; padding: 28px 20px 48px; }
@@ -377,16 +405,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
 
-      <div class="curso-card">
+      <div class="curso-card curso-card-activo">
         <div class="curso-thumb-wrap">
           <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Sistemas-de-Rociadores-Automaticos-Contra-Incendios-300x300.jpg" alt="Rociadores Automáticos">
-          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
         </div>
         <div class="curso-body">
           <div class="curso-tipo">Diplomado</div>
           <div class="curso-nombre">Diplomado de Rociadores Automáticos</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <a class="btn-curso-info" href="https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" target="_blank">Ver descripción →</a>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 49 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirRociadores()">▶ Ver clases</button>
         </div>
       </div>
 
@@ -583,6 +611,36 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 </div>
 
 <footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad &nbsp;|&nbsp; ILFIS Ubuntu v2.0</footer>
+
+<!-- ── PANEL ROCIADORES (overlay) ──────────────────────────── -->
+<div id="panel-rociadores">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarRociadores()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Rociadores Automáticos</div>
+  </div>
+  <div class="roc-body">
+    <!-- Sidebar: lista de clases -->
+    <div class="roc-sidebar" id="roc-sidebar">
+      <!-- Se genera por JS -->
+    </div>
+    <!-- Área del player -->
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="roc-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="roc-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="roc-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="roc-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="roc-error"></div>
+    </div>
+  </div>
+</div>
+
 </div><!-- fin #app -->
 
 <script>
@@ -602,6 +660,9 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+
+// Mantener sesión activa entre reinicios del navegador/PC
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // ── AUTH STATE ─────────────────────────────────────────────
 auth.onAuthStateChanged(async function(user) {
@@ -1111,6 +1172,101 @@ const VIDEOS = [
   ["iGyeZUf89zQ","MITO 02: LOS ROCIADORES SE ABREN TODOS A LA VEZ"],
   ["bSkyoTXgWxU","MITO 01: LOS ROCIADORES CONTRA INCENDIO RESPONDEN AL HUMO"]
 ];
+
+// ══════════════════════════════════════════════════════════
+// ROCIADORES — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const TOTAL_CLASES_ROCIADORES = 49;
+let _rocClaseActual = null;
+
+function abrirRociadores() {
+  // Construir sidebar si no se ha hecho
+  const sidebar = document.getElementById('roc-sidebar');
+  if (!sidebar.innerHTML.trim()) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_ROCIADORES; i++) {
+      html += `<button class="roc-clase-btn" id="roc-btn-${i}" onclick="cargarClase(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>Clase ${i}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-rociadores').classList.add('visible');
+}
+
+function cerrarRociadores() {
+  // Pausar el video al salir
+  const video = document.getElementById('roc-video');
+  video.pause();
+  video.src = '';
+  _rocClaseActual = null;
+  document.querySelectorAll('.roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('roc-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('roc-placeholder').style.display = 'flex';
+  document.getElementById('roc-error').style.display = 'none';
+  document.getElementById('panel-rociadores').classList.remove('visible');
+}
+
+async function cargarClase(n) {
+  if (_rocClaseActual === n) return;
+  _rocClaseActual = n;
+
+  // Actualizar sidebar
+  document.querySelectorAll('.roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`roc-btn-${n}`);
+  if (btnActivo) {
+    btnActivo.classList.add('active');
+    btnActivo.scrollIntoView({ block: 'nearest' });
+  }
+
+  // UI — mostrar loading
+  const video       = document.getElementById('roc-video');
+  const placeholder = document.getElementById('roc-placeholder');
+  const loading     = document.getElementById('roc-loading');
+  const errorEl     = document.getElementById('roc-error');
+  const tituloEl    = document.getElementById('roc-video-titulo');
+
+  video.pause();
+  video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent  = `Cargando Clase ${n}...`;
+
+  try {
+    // Obtener token Firebase del usuario actual
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+
+    // Llamar al backend
+    const res = await fetch(`${API}/api/cursos/rociadores/clase/${n}`, {
+      headers: { 'Authorization': `Bearer ${idToken}` }
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
+      throw new Error(err.detail || `Error ${res.status}`);
+    }
+
+    const data = await res.json();
+    tituloEl.textContent = `Clase ${n} — Diplomado de Rociadores Automáticos`;
+
+    // Cargar video
+    video.src = data.url;
+    video.load();
+    video.play().catch(() => {}); // autoplay puede bloquearse en algunos navegadores
+
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
 
 function categorizar(t) {
   const u = t.toUpperCase();
