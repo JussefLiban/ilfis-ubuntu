@@ -306,6 +306,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Clases Premium</span><span class="tab-line2">Acceso Total</span></span>
   </button>
+  <button class="tab-btn" onclick="showTab('experto', this)">
+    <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
+  </button>
 </nav>
 
 <!-- Panel Consultas -->
@@ -329,6 +333,26 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <span class="ejemplo-btn" onclick="setEjemplo(this)">Clasificación de riesgo para talleres de soldadura</span>
       <span class="ejemplo-btn" onclick="setEjemplo(this)">Distancia máxima entre rociadores en riesgo leve</span>
       <span class="ejemplo-btn" onclick="setEjemplo(this)">¿Cuándo se usa sistema diluvio vs preacción?</span>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Pregúntale al Experto -->
+<div class="panel" id="panel-experto">
+  <div class="consultar-inner">
+    <p class="subtitle">Haz tu pregunta técnica. La IA responde en segundos.<br>Un experto ILFIS revisará la respuesta y la mejorará si es necesario.</p>
+    <div class="consulta-box">
+      <label>Tu pregunta técnica</label>
+      <textarea id="exp-pregunta" placeholder="Ej: ¿Cuál es la presión mínima de diseño para rociadores ESFR en un almacén de alto rack?"></textarea>
+      <button class="btn-consultar" id="btn-experto" onclick="preguntarExperto()">Enviar al experto</button>
+    </div>
+    <div class="estado" id="estado-experto"></div>
+    <div class="respuesta-box" id="respuesta-experto-box" style="display:none;">
+      <div class="respuesta-label" id="experto-label">🤖 Respuesta IA</div>
+      <div class="respuesta-texto" id="experto-respuesta"></div>
+      <div id="experto-badge" style="display:none; margin-top:12px; padding:10px 14px; background:#1a472a; border-radius:8px; color:#2ecc71; font-weight:bold; font-size:0.9rem;">
+        ✅ Revisado y mejorado por experto ILFIS
+      </div>
     </div>
   </div>
 </div>
@@ -886,6 +910,80 @@ function showTab(name, btn) {
 }
 
 function setEjemplo(el) { document.getElementById('pregunta').value = el.textContent; }
+
+// ── MÓDULO PREGÚNTALE AL EXPERTO ──────────────────────────
+let _expertoQid    = null;
+let _expertoPoller = null;
+
+async function preguntarExperto() {
+  const pregunta = document.getElementById('exp-pregunta').value.trim();
+  if (!pregunta) return;
+
+  const btn    = document.getElementById('btn-experto');
+  const estado = document.getElementById('estado-experto');
+  const box    = document.getElementById('respuesta-experto-box');
+
+  btn.disabled = true;
+  estado.innerHTML = '<span class="spinner"></span>Consultando corpus y notificando al experto...';
+  box.style.display = 'none';
+  if (_expertoPoller) clearInterval(_expertoPoller);
+
+  try {
+    const res = await fetch(API + '/preguntar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: pregunta })
+    });
+    if (!res.ok) throw new Error('Error ' + res.status);
+    const data = await res.json();
+
+    _expertoQid = data.question_id;
+
+    document.getElementById('experto-respuesta').textContent = data.respuesta;
+    document.getElementById('experto-label').textContent = '🤖 Respuesta IA (pendiente revisión del experto)';
+    document.getElementById('experto-badge').style.display = 'none';
+    box.style.display = 'block';
+    estado.innerHTML = '✅ Respuesta generada. Un experto revisará y mejorará si es necesario.';
+
+    _iniciarPollingExperto();
+  } catch (e) {
+    estado.innerHTML = '❌ Error al conectar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function _iniciarPollingExperto() {
+  if (_expertoPoller) clearInterval(_expertoPoller);
+  let intentos = 0;
+  const MAX = 360; // 30 minutos (cada 5s)
+
+  _expertoPoller = setInterval(async () => {
+    intentos++;
+    if (intentos > MAX || !_expertoQid) { clearInterval(_expertoPoller); return; }
+
+    try {
+      const res = await fetch(API + '/respuesta/' + _expertoQid);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.fuente === 'profesor') {
+        document.getElementById('experto-respuesta').textContent = data.respuesta;
+        document.getElementById('experto-label').textContent = '💬 Respuesta del Experto ILFIS';
+        document.getElementById('experto-badge').style.display = 'block';
+        document.getElementById('estado-experto').innerHTML = '';
+        clearInterval(_expertoPoller);
+      }
+    } catch (e) { /* ignorar errores de polling */ }
+  }, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('exp-pregunta');
+  if (ta) ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntarExperto(); }
+  });
+});
 
 // ── CONSULTAS ─────────────────────────────────────────────
 async function consultar() {
