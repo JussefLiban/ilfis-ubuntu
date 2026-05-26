@@ -929,10 +929,12 @@ async function preguntarExperto() {
   if (_expertoPoller) clearInterval(_expertoPoller);
 
   try {
+    const _u = auth.currentUser;
+    const _nombre = _u ? (_u.displayName || _u.email || 'Alumno anónimo') : 'Alumno anónimo';
     const res = await fetch(API + '/preguntar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto: pregunta })
+      body: JSON.stringify({ texto: pregunta, nombre: _nombre })
     });
     if (!res.ok) throw new Error('Error ' + res.status);
     const data = await res.json();
@@ -969,8 +971,10 @@ function _iniciarPollingExperto() {
 
       if (data.fuente === 'profesor') {
         document.getElementById('experto-respuesta').textContent = data.respuesta;
-        document.getElementById('experto-label').textContent = '💬 Respuesta del Experto ILFIS';
+        const nombreProf = data.nombre_profesor || 'Experto ILFIS';
+        document.getElementById('experto-label').textContent = `💬 Respuesta de ${nombreProf}`;
         document.getElementById('experto-badge').style.display = 'block';
+        document.getElementById('experto-badge').textContent = `✅ Revisado y mejorado por ${nombreProf}`;
         document.getElementById('estado-experto').innerHTML = '';
         clearInterval(_expertoPoller);
       }
