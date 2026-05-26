@@ -149,8 +149,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-ver-clases:hover { background: #a93226; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores, #panel-hidraulicos { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible, #panel-hidraulicos.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -418,16 +418,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
 
-      <div class="curso-card">
+      <div class="curso-card curso-card-activo">
         <div class="curso-thumb-wrap">
           <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diseno-de-Sistemas-Contra-Incendios-para-Proteccion-de-Mercancias-300x300.jpg" alt="Protección de Mercancías">
-          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
         </div>
         <div class="curso-body">
           <div class="curso-tipo">Diplomado</div>
           <div class="curso-nombre">Diplomado de Protección de Mercancías</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <a class="btn-curso-info" href="https://ilfislatinoamerica.com/producto/diplomado-de-proteccion-de-mercancias/" target="_blank">Ver descripción →</a>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 52 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirMercancias()">▶ Ver clases</button>
         </div>
       </div>
 
@@ -670,6 +670,31 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           📄 Material de Estudio (PDF completo)
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL MERCANCÍAS (overlay) ──────────────────────────── -->
+<div id="panel-mercancias">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarMercancias()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Protección de Mercancías</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="mer-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="mer-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="mer-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="mer-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="mer-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="mer-error"></div>
     </div>
   </div>
 </div>
@@ -1380,6 +1405,134 @@ async function abrirPDFHidraulicos() {
     window.open(`${API}/api/cursos/hidraulicos/pdf/stream?token=${idToken}`, '_blank');
   } catch(e) {
     alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MERCANCÍAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const MERCANCIAS_TITULOS = {
+  1:  "Sistemas de Rociadores y Requisitos (Clase 1)",
+  2:  "Sistemas de Rociadores y Requisitos (Clase 2)",
+  3:  "Soportería para Sistemas de Rociadores en Almacenes (Clase 1)",
+  4:  "Soportería para Sistemas de Rociadores en Almacenes (Clase 2)",
+  5:  "Protección Sísmica del Sistema en Almacenes (Clase 1)",
+  6:  "Protección Sísmica del Sistema en Almacenes (Clase 2)",
+  7:  "Protección Sísmica del Sistema en Almacenes (Clase 3)",
+  8:  "Protección Sísmica del Sistema en Almacenes (Clase 4)",
+  9:  "Protección Sísmica del Sistema en Almacenes (Clase 5)",
+  10: "Protección Sísmica del Sistema en Almacenes (Clase 6)",
+  11: "Protección Sísmica del Sistema en Almacenes (Clase 7)",
+  12: "Definiciones Relacionadas con el Almacenamiento (Clase 1)",
+  13: "Definiciones Relacionadas con el Almacenamiento (Clase 2)",
+  14: "Clasificación de Mercancías (Clase 1)",
+  15: "Clasificación de Mercancías (Clase 2)",
+  16: "Clasificación de Mercancías (Clase 3)",
+  17: "Requerimientos Generales para la Protección de Almacenamientos (Clase 1)",
+  18: "Requerimientos Generales para la Protección de Almacenamientos (Clase 2)",
+  19: "Protección de Almacenamiento Misceláneo (Clase Única)",
+  20: "Generalidades acerca de Rociadores CMDA",
+  21: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 1)",
+  22: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 2)",
+  23: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 3)",
+  24: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 4)",
+  25: "Criterios de Protección con Rociadores CMDA — Ejemplos",
+  26: "Generalidades acerca de Rociadores CMSA",
+  27: "Criterios de Protección con Rociadores CMSA",
+  28: "Criterios de Protección con Rociadores CMSA — Ejemplos",
+  29: "Generalidades sobre Rociadores ESFR",
+  30: "Generalidades sobre Rociadores ESFR — Adenda 2022",
+  31: "Obstrucciones en Rociadores ESFR",
+  32: "Protección de Mercancías con ESFR 2022 — Parte 1",
+  33: "Protección de Mercancías con ESFR 2022 — Parte 2",
+  34: "Prácticas de Diseño con ESFR 2022",
+  35: "Criterios de Protección con Rociadores In-Rack (Clase 1)",
+  36: "Criterios de Protección con Rociadores In-Rack (Clase 2)",
+  37: "Criterios de Protección con Rociadores In-Rack (Clase 3)",
+  38: "Criterios de Protección con Rociadores In-Rack (Clase 4)",
+  39: "Criterios de Protección con Rociadores In-Rack (Clase 5)",
+  40: "Criterios de Protección con Rociadores In-Rack (Clase 6)",
+  41: "Criterios de Protección con Rociadores In-Rack (Clase 7)",
+  42: "Criterios de Protección con Rociadores In-Rack (Clase 8)",
+  43: "Diseños Alternativos para Protección de Almacenamientos",
+  44: "Diseños Especiales para Protección de Almacenamientos",
+  45: "Protección de Mercancías FM Global — Parte 1",
+  46: "Protección de Mercancías FM Global — Parte 2",
+  47: "Protección de Mercancías FM Global — Parte 3",
+  48: "Protección de Mercancías FM Global — Parte 4",
+  49: "Suministro de Agua para Sistemas de Rociadores — Parte 1",
+  50: "Suministro de Agua para Sistemas de Rociadores — Parte 2",
+  51: "Diseño Basado en el Desempeño (Parte 1)",
+  52: "Diseño Basado en el Desempeño (Parte 2)",
+};
+
+const TOTAL_CLASES_MERCANCIAS = 52;
+let _merClaseActual = null;
+
+function abrirMercancias() {
+  const sidebar = document.getElementById('mer-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_MERCANCIAS; i++) {
+      const titulo = MERCANCIAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="mer-btn-${i}" onclick="cargarClaseMercancias(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-mercancias').classList.add('visible');
+}
+
+function cerrarMercancias() {
+  const video = document.getElementById('mer-video');
+  video.pause();
+  video.src = '';
+  _merClaseActual = null;
+  document.querySelectorAll('#mer-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mer-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('mer-placeholder').style.display = 'flex';
+  document.getElementById('mer-error').style.display = 'none';
+  document.getElementById('panel-mercancias').classList.remove('visible');
+}
+
+async function cargarClaseMercancias(n) {
+  if (_merClaseActual === n) return;
+  _merClaseActual = n;
+
+  document.querySelectorAll('#mer-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`mer-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('mer-video');
+  const placeholder = document.getElementById('mer-placeholder');
+  const loading     = document.getElementById('mer-loading');
+  const errorEl     = document.getElementById('mer-error');
+  const tituloEl    = document.getElementById('mer-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = MERCANCIAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/mercancias/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
   }
 }
 
