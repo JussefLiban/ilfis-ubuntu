@@ -149,8 +149,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-ver-clases:hover { background: #a93226; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -509,16 +509,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
 
-      <div class="curso-card">
+      <div class="curso-card curso-card-activo">
         <div class="curso-thumb-wrap">
           <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Calculos-Hidraulicos-de-Sistemas-de-Agua-Contra-Incendios-300x300.jpg" alt="Cálculos Hidráulicos">
-          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
         </div>
         <div class="curso-body">
           <div class="curso-tipo">Diplomado</div>
-          <div class="curso-nombre">Diplomado de Cálculos Hidráulicos</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <a class="btn-curso-info" href="https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/" target="_blank">Ver descripción →</a>
+          <div class="curso-nombre">Diplomado Especializado en Cálculos Hidráulicos</div>
+          <div class="curso-estado"><strong>Disponible</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirHidraulicos()">Ver Clases</button>
         </div>
       </div>
 
@@ -637,6 +637,36 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="roc-error" id="roc-error"></div>
       <div style="margin-top:4px;">
         <button onclick="abrirPDF()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL HIDRÁULICOS (overlay) ──────────────────────────── -->
+<div id="panel-hidraulicos">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarHidraulicos()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado Especializado en Cálculos Hidráulicos</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="hid-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="hid-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="hid-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="hid-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="hid-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="hid-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFHidraulicos()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
           📄 Material de Estudio (PDF completo)
         </button>
       </div>
@@ -1266,6 +1296,88 @@ async function abrirPDF() {
     const idToken = await user.getIdToken();
     // Abrir el PDF en una nueva pestaña vía proxy del backend
     window.open(`${API}/api/cursos/rociadores/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// HIDRÁULICOS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const TOTAL_CLASES_HIDRAULICOS = 35;
+let _hidClaseActual = null;
+
+function abrirHidraulicos() {
+  const sidebar = document.getElementById('hid-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_HIDRAULICOS; i++) {
+      html += `<button class="roc-clase-btn" id="hid-btn-${i}" onclick="cargarClaseHidraulicos(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>Clase ${i}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-hidraulicos').classList.add('visible');
+}
+
+function cerrarHidraulicos() {
+  const video = document.getElementById('hid-video');
+  video.pause();
+  video.src = '';
+  _hidClaseActual = null;
+  document.querySelectorAll('#hid-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('hid-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('hid-placeholder').style.display = 'flex';
+  document.getElementById('hid-error').style.display = 'none';
+  document.getElementById('panel-hidraulicos').classList.remove('visible');
+}
+
+async function cargarClaseHidraulicos(n) {
+  if (_hidClaseActual === n) return;
+  _hidClaseActual = n;
+
+  document.querySelectorAll('#hid-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`hid-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('hid-video');
+  const placeholder = document.getElementById('hid-placeholder');
+  const loading     = document.getElementById('hid-loading');
+  const errorEl     = document.getElementById('hid-error');
+  const tituloEl    = document.getElementById('hid-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    tituloEl.textContent = `Clase ${n} — Diplomado Especializado en Cálculos Hidráulicos`;
+    video.src = `${API}/api/cursos/hidraulicos/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirPDFHidraulicos() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/hidraulicos/pdf/stream?token=${idToken}`, '_blank');
   } catch(e) {
     alert('Error al abrir el PDF: ' + e.message);
   }
