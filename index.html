@@ -71,6 +71,14 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .panel { display: none; flex: 1; flex-direction: column; }
 .panel.active { display: flex; }
 
+/* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
+.hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
+.hist-item { background:#16213e; border:1px solid #2a2a5a; border-radius:10px; padding:16px; margin-bottom:12px; }
+.hist-fecha { font-size:0.75rem; color:#888; margin-bottom:6px; }
+.hist-pregunta { font-size:0.95rem; color:#ccc; margin-bottom:8px; }
+.hist-respuesta { font-size:0.9rem; color:#e0e0e0; line-height:1.5; }
+.hist-badge-small { display:inline-block; margin-top:8px; padding:4px 10px; background:#1a472a; border-radius:6px; color:#2ecc71; font-size:0.78rem; font-weight:bold; }
+
 /* ─── PANEL CONSULTAS ────────────────────────────────────── */
 #panel-consultar { align-items: center; }
 .consultar-inner { max-width: 860px; width: 100%; margin: 40px auto; padding: 0 20px; }
@@ -354,6 +362,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         ✅ Revisado y mejorado por experto ILFIS
       </div>
     </div>
+    <div class="hist-titulo">📋 Mis preguntas anteriores</div>
+    <div id="experto-historial"></div>
   </div>
 </div>
 
@@ -791,6 +801,9 @@ auth.onAuthStateChanged(async function(user) {
     // Clases premium
     document.getElementById('clases-nopremium').style.display = isPremium ? 'none' : 'block';
     document.getElementById('clases-premium').style.display  = isPremium ? 'block' : 'none';
+    // Restaurar pestaña activa e historial
+    _restaurarTab();
+    _renderHistorial(user.uid);
   } else {
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth-overlay').style.display = 'flex';
@@ -907,9 +920,62 @@ function showTab(name, btn) {
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'explorador' && !_expInit) initExplorador();
+  localStorage.setItem('ilfis_tab_activa', name);
+}
+
+function _restaurarTab() {
+  const tab = localStorage.getItem('ilfis_tab_activa');
+  if (!tab) return;
+  const btn = document.querySelector(`.tab-btn[onclick="showTab('${tab}', this)"]`);
+  if (btn) showTab(tab, btn);
 }
 
 function setEjemplo(el) { document.getElementById('pregunta').value = el.textContent; }
+
+// ── HISTORIAL EXPERTO (localStorage por UID) ──────────────
+function _claveHistorial(uid) { return `ilfis_historial_${uid}`; }
+
+function _guardarPregunta(uid, qid, pregunta, respuesta_ia) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  hist.unshift({ id: qid, pregunta, respuesta_ia, respuesta_final: null, nombre_profesor: null, fuente: 'ia', fecha: new Date().toISOString() });
+  if (hist.length > 50) hist.pop();
+  localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
+  _renderHistorial(uid);
+}
+
+function _actualizarRespuesta(uid, qid, respuesta_prof, nombre_prof) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  const entry = hist.find(h => h.id === qid);
+  if (entry) {
+    entry.respuesta_final = respuesta_prof;
+    entry.nombre_profesor = nombre_prof;
+    entry.fuente = 'profesor';
+    localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
+    _renderHistorial(uid);
+  }
+}
+
+function _renderHistorial(uid) {
+  const el = document.getElementById('experto-historial');
+  if (!el) return;
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  if (hist.length === 0) {
+    el.innerHTML = '<p style="color:#666;font-size:0.88rem;">Aún no has hecho preguntas.</p>';
+    return;
+  }
+  el.innerHTML = hist.map(h => {
+    const fecha = new Date(h.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+    const respuesta = h.respuesta_final || h.respuesta_ia;
+    const autor = h.fuente === 'profesor' ? `💬 <strong>${h.nombre_profesor}</strong>` : '🤖 IA';
+    const badge = h.fuente === 'profesor' ? `<span class="hist-badge-small">✅ Revisado por experto</span>` : '';
+    return `<div class="hist-item">
+      <div class="hist-fecha">${fecha}</div>
+      <div class="hist-pregunta">❓ ${h.pregunta}</div>
+      <div class="hist-respuesta">${autor}: ${respuesta}</div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
 
 // ── MÓDULO PREGÚNTALE AL EXPERTO ──────────────────────────
 let _expertoQid    = null;
@@ -947,6 +1013,10 @@ async function preguntarExperto() {
     box.style.display = 'block';
     estado.innerHTML = '✅ Respuesta generada. Un experto revisará y mejorará si es necesario.';
 
+    // Guardar en historial local
+    const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+    _guardarPregunta(_uid, data.question_id, pregunta, data.respuesta);
+
     _iniciarPollingExperto();
   } catch (e) {
     estado.innerHTML = '❌ Error al conectar: ' + e.message;
@@ -970,12 +1040,15 @@ function _iniciarPollingExperto() {
       const data = await res.json();
 
       if (data.fuente === 'profesor') {
-        document.getElementById('experto-respuesta').textContent = data.respuesta;
         const nombreProf = data.nombre_profesor || 'Experto ILFIS';
+        document.getElementById('experto-respuesta').textContent = data.respuesta;
         document.getElementById('experto-label').textContent = `💬 Respuesta de ${nombreProf}`;
         document.getElementById('experto-badge').style.display = 'block';
         document.getElementById('experto-badge').textContent = `✅ Revisado y mejorado por ${nombreProf}`;
         document.getElementById('estado-experto').innerHTML = '';
+        // Actualizar historial local
+        const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+        _actualizarRespuesta(_uid, _expertoQid, data.respuesta, nombreProf);
         clearInterval(_expertoPoller);
       }
     } catch (e) { /* ignorar errores de polling */ }
