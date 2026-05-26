@@ -745,6 +745,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
       <div class="roc-error" id="bom-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFBombas()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -770,6 +775,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
       <div class="roc-error" id="mer-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFMercancias()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1712,6 +1722,17 @@ function cerrarBombas() {
   document.getElementById('panel-bombas').classList.remove('visible');
 }
 
+async function abrirPDFBombas() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/bombas/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
 async function cargarClaseBombas(n) {
   if (_bomClaseActual === n) return;
   _bomClaseActual = n;
@@ -1840,6 +1861,17 @@ function cerrarMercancias() {
   document.getElementById('panel-mercancias').classList.remove('visible');
 }
 
+async function abrirPDFMercancias() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/mercancias/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
 async function cargarClaseMercancias(n) {
   if (_merClaseActual === n) return;
   _merClaseActual = n;
@@ -1952,4 +1984,3 @@ function renderExplorador() {
 </script>
 </body>
 </html>
- 
