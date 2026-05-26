@@ -149,8 +149,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-ver-clases:hover { background: #a93226; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores, #panel-hidraulicos, #panel-mercancias { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -163,7 +163,7 @@ textarea::placeholder { color: #5a7a9a; }
 .roc-player-area { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 14px; }
 .roc-video-titulo { color: #fff; font-size: 1rem; font-weight: bold; }
 .roc-video-wrap { position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; }
-#roc-video, #hid-video, #mer-video { width: 100%; height: 100%; display: block; background: #000; }
+#roc-video, #hid-video, #mer-video, #bom-video { width: 100%; height: 100%; display: block; background: #000; }
 .roc-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a6a7a; gap: 10px; font-size: 0.88rem; }
 .roc-video-placeholder i { font-size: 3rem; }
 .roc-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
@@ -392,16 +392,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
 
-      <div class="curso-card">
+      <div class="curso-card curso-card-activo">
         <div class="curso-thumb-wrap">
           <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diseno-Instalacion-y-Mantenimiento-de-Bombas-Contra-Incendios-300x300.jpg" alt="Bombas Contra Incendios">
-          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
         </div>
         <div class="curso-body">
           <div class="curso-tipo">Diplomado</div>
           <div class="curso-nombre">Diplomado de Bombas Contra Incendios</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <a class="btn-curso-info" href="https://ilfislatinoamerica.com/producto/diplomado-de-bombas-contra-incendios/" target="_blank">Ver descripción →</a>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 51 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirBombas()">▶ Ver clases</button>
         </div>
       </div>
 
@@ -666,6 +666,31 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           📄 Material de Estudio (PDF completo)
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL BOMBAS (overlay) ──────────────────────────────── -->
+<div id="panel-bombas">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarBombas()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Bombas Contra Incendios</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="bom-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="bom-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="bom-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="bom-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="bom-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="bom-error"></div>
     </div>
   </div>
 </div>
@@ -1401,6 +1426,133 @@ async function abrirPDFHidraulicos() {
     window.open(`${API}/api/cursos/hidraulicos/pdf/stream?token=${idToken}`, '_blank');
   } catch(e) {
     alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// BOMBAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const BOMBAS_TITULOS = {
+  1:  "Hidráulica Básica para SCI - Clase 1",
+  2:  "Hidráulica Básica para SCI - Clase 2",
+  3:  "Hidráulica Básica para SCI - Clase 3",
+  4:  "Hidráulica Básica para SCI - Ejercicios",
+  5:  "Generalidades sobre Bombas",
+  6:  "Bombas Centrífugas Contra Incendio - Clase 1",
+  7:  "Bombas Centrífugas Contra Incendio - Clase 2",
+  8:  "Bombas Verticales Contra Incendios",
+  9:  "Motores de Combustión Interna Diesel",
+  10: "Motores Diesel para Bombas SCI - Clase 1",
+  11: "Motores Diesel para Bombas SCI - Clase 2",
+  12: "Motores Diesel para Bombas SCI - Clase 3",
+  13: "Controladores de Motores Diesel - Clase 1",
+  14: "Controladores de Motores Diesel - Clase 2",
+  15: "Controladores de Motores Diesel - Clase 3",
+  16: "Principios de Circuitos Eléctricos - Clase 1",
+  17: "Principios de Circuitos Eléctricos - Clase 2",
+  18: "Principios de Distribución Eléctrica",
+  19: "Fuentes de Energía",
+  20: "Motores Eléctricos para Bombas Contra Incendios",
+  21: "Controladores de Motores Eléctricos - Clase 1",
+  22: "Controladores de Motores Eléctricos - Clase 2",
+  23: "Controladores de Motores Eléctricos - Clase 3",
+  24: "Controladores de Motores Eléctricos - Clase 4",
+  25: "Controladores de Motores Eléctricos - ALIVE",
+  26: "Herramientas de Productividad – Selector de Bombas ALIVE",
+  27: "Protocolos de Comunicación Controladores",
+  28: "Instalaciones Eléctricas para Bombas Contra Incendios",
+  29: "Cálculos Eléctricos Básicos",
+  30: "Selección de Bombas Contra Incendios - Clase 1",
+  31: "Selección de Bombas Contra Incendios - Clase 2",
+  32: "Arreglos Especiales de Bombas SCI",
+  33: "Válvulas y Accesorios de Bombas Contra Incendios",
+  34: "Req. Generales Instalaciones BCI - Clase 1",
+  35: "Req. Generales Instalaciones BCI - Clase 2",
+  36: "Req. Generales Instalaciones BCI - Clase 3",
+  37: "Req. Generales Instalaciones BCI - Clase 4",
+  38: "Medición de Caudal y Bomba Jockey",
+  39: "Bombas Contra Incendio para Edificios de Gran Altura - Clase 1",
+  40: "Bombas Contra Incendio para Edificios de Gran Altura - Clase 2",
+  41: "Pruebas de Aceptación de BCI - Clase 1",
+  42: "Pruebas de Aceptación de BCI - Clase 2",
+  43: "Mantenimiento de BCI - Clase 1",
+  44: "Mantenimiento de BCI - Clase 2",
+  45: "Requerimientos de FM Global",
+  46: "Norma UNE 23500 - Generalidades",
+  47: "Análisis de Riesgo en Selección de Bombas - Clase 1",
+  48: "Análisis de Riesgo en Selección de Bombas - Clase 2",
+  49: "Sistemas de Monitoreo Remoto de BCI",
+  50: "Cimentaciones para Bombas Contra Incendios",
+  51: "Fuentes y Tanques de Agua para BCI",
+};
+
+const TOTAL_CLASES_BOMBAS = 51;
+let _bomClaseActual = null;
+
+function abrirBombas() {
+  const sidebar = document.getElementById('bom-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_BOMBAS; i++) {
+      const titulo = BOMBAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="bom-btn-${i}" onclick="cargarClaseBombas(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-bombas').classList.add('visible');
+}
+
+function cerrarBombas() {
+  const video = document.getElementById('bom-video');
+  video.pause();
+  video.src = '';
+  _bomClaseActual = null;
+  document.querySelectorAll('#bom-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('bom-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('bom-placeholder').style.display = 'flex';
+  document.getElementById('bom-error').style.display = 'none';
+  document.getElementById('panel-bombas').classList.remove('visible');
+}
+
+async function cargarClaseBombas(n) {
+  if (_bomClaseActual === n) return;
+  _bomClaseActual = n;
+
+  document.querySelectorAll('#bom-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`bom-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('bom-video');
+  const placeholder = document.getElementById('bom-placeholder');
+  const loading     = document.getElementById('bom-loading');
+  const errorEl     = document.getElementById('bom-error');
+  const tituloEl    = document.getElementById('bom-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = BOMBAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/bombas/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
   }
 }
 
