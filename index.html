@@ -48,7 +48,12 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #
 #app { display: none; flex-direction: column; min-height: 100vh; }
 
 /* ── HEADER ─────────────────────────────────────────────── */
-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30px; display: flex; align-items: center; gap: 14px; }
+header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+/* Banner "gratis hasta..." */
+.banner-gratis { display: flex; align-items: center; gap: 8px; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.35); border-radius: 20px; padding: 6px 14px; flex-shrink: 0; }
+.banner-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71; flex-shrink: 0; animation: pulso-dot 1.4s ease-in-out infinite; }
+@keyframes pulso-dot { 0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #2ecc71; } 50% { transform: scale(1.5); opacity: 0.55; box-shadow: 0 0 14px #2ecc71; } }
+.banner-txt { font-size: 0.72rem; color: #2ecc71; font-weight: 600; white-space: nowrap; letter-spacing: 0.3px; }
 .header-text h1 { font-size: 1.4rem; color: #fff; letter-spacing: 1px; }
 .header-text p { font-size: 0.68rem; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
 .header-user { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -185,7 +190,7 @@ textarea::placeholder { color: #5a7a9a; }
 /* ─── PAYWALL MODAL ──────────────────────────────────────── */
 #paywall-overlay { position: fixed; inset: 0; background: rgba(10,10,20,0.92); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
 #paywall-overlay.visible { display: flex; }
-.paywall-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 16px; padding: 36px 28px; max-width: 400px; width: 100%; text-align: center; position: relative; }
+.paywall-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 16px; padding: 36px 32px; max-width: 520px; width: 100%; text-align: center; position: relative; }
 .paywall-close-x { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #5a6a7a; font-size: 1.2rem; cursor: pointer; line-height: 1; }
 .paywall-close-x:hover { color: #aaa; }
 .paywall-lock { font-size: 2.8rem; margin-bottom: 10px; }
@@ -204,12 +209,14 @@ textarea::placeholder { color: #5a7a9a; }
 #paywall-form { display: none; }
 .pf-row { display: flex; gap: 10px; }
 .pf-group { display: flex; flex-direction: column; gap: 5px; flex: 1; margin-bottom: 12px; }
-.pf-label { font-size: 0.68rem; color: #5a7a9a; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; }
-.pf-input { background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 6px; color: #e0e8f0; font-size: 0.9rem; padding: 10px 12px; width: 100%; letter-spacing: 1px; }
+.pf-header { font-size: 0.78rem; color: #5a7a9a; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.pf-header svg { flex-shrink: 0; }
+.pf-label { font-size: 0.82rem; color: #7a9abf; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; }
+.pf-input { background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 8px; color: #e0e8f0; font-size: 1.1rem; padding: 14px 16px; width: 100%; letter-spacing: 2px; }
 .pf-input:focus { outline: none; border-color: #5daaff; }
-.pf-input::placeholder { color: #3a4a6a; letter-spacing: 0; }
-.pf-error { font-size: 0.75rem; color: #e87272; margin: -6px 0 10px; text-align: left; display: none; }
-.btn-pagar { width: 100%; padding: 14px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 4px; }
+.pf-input::placeholder { color: #3a4a6a; letter-spacing: 0; font-size: 0.95rem; }
+.pf-error { font-size: 0.82rem; color: #e87272; margin: -4px 0 10px; text-align: left; display: none; }
+.btn-pagar { width: 100%; padding: 17px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 6px; }
 .btn-pagar:hover { background: #f0b429; }
 .btn-pagar:disabled { background: #5a5a3a; color: #8a8a5a; cursor: not-allowed; }
 .pf-back { background: none; border: none; color: #5a6a7a; font-size: 0.78rem; cursor: pointer; text-decoration: underline; margin-top: 10px; display: block; width: 100%; }
@@ -330,6 +337,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
   <div class="header-text">
     <h1>UBUNTU</h1>
     <p>Plataforma Interactiva Asistida por Inteligencia Artificial</p>
+  </div>
+  <div class="banner-gratis">
+    <div class="banner-dot"></div>
+    <span class="banner-txt">🎓 Disfruta la plataforma gratuita hasta el 31/12/2026</span>
   </div>
   <div class="header-user">
     <div class="user-avatar" id="user-avatar-el"></div>
@@ -729,9 +740,13 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
     <!-- Vista 2: formulario de tarjeta -->
     <div id="paywall-form">
+      <div class="pf-header">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#009cde"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.25-1.57-.01-2.64-.35-3.3z"/></svg>
+        Pagar con PayPal — ingresa los datos de tu tarjeta
+      </div>
       <div class="pf-group">
         <label class="pf-label">Número de tarjeta</label>
-        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="1234 5678 9012 3456" oninput="this.value=this.value.replace(/[^0-9 ]/g,'')">
+        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="9999 9999 9999 9999" oninput="var v=this.value.replace(/[^0-9]/g,'').slice(0,16);this.value=v.replace(/(.{4})(?=.)/g,'$1 ')">
       </div>
       <div class="pf-group">
         <label class="pf-label">Nombre en la tarjeta</label>
@@ -2219,7 +2234,7 @@ function mostrarPaywall(curso) {
       <li>${info.clases} clases grabadas en alta calidad por expertos ILFIS</li>
       <li>PDF completo del material de estudio incluido</li>
       <li>Acceso ilimitado durante 30 días</li>
-      <li>Tutoría permanente con un experto ILFIS — todas tus preguntas del curso respondidas en menos de 12 h (fines de semana puede demorar un poco más)</li>
+      <li>Tutoría permanente con un experto ILFIS — todas tus preguntas respondidas en menos de 12 h con un 90% de confianza (fines de semana puede demorar un poco más)</li>
       <li>Renovación simple — cancela cuando quieras</li>
     </ul>`;
   document.getElementById('paywall-overlay').classList.add('visible');
@@ -2272,9 +2287,9 @@ async function _submitPago() {
   const errEl  = document.getElementById('pf-error');
   const btnEl  = document.getElementById('btn-pagar');
 
-  // Validación básica de campos vacíos
-  if (!numero || !nombre || !vence || !cvv) {
-    errEl.textContent = 'Completa todos los campos para continuar.';
+  // Solo el número de tarjeta es obligatorio (los demás son decorativos hasta integrar PayPal real)
+  if (!numero) {
+    errEl.textContent = 'Ingresa el número de tarjeta para continuar.';
     errEl.style.display = 'block'; return;
   }
 
