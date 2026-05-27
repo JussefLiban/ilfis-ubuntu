@@ -79,6 +79,13 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 /* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
 .hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
 .hist-item { background:#16213e; border:1px solid #2a2a5a; border-radius:10px; padding:16px; margin-bottom:12px; }
+.hist-msg { display:flex; flex-direction:column; gap:3px; padding:8px 12px; border-radius:8px; }
+.hist-msg-ia { background:#1a2a3a; border:1px solid #2a3a5a; }
+.hist-msg-exp { background:#0d2a1a; border:1px solid #1a4a2a; }
+.hist-msg-autor { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; }
+.hist-msg-ia .hist-msg-autor { color:#5daaff; }
+.hist-msg-exp .hist-msg-autor { color:#2ecc71; }
+.hist-msg-texto { font-size:0.82rem; color:#ccd; line-height:1.5; }
 /* Chat thread de respuestas */
 .chat-thread { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
 .chat-burbuja { border-radius:10px; padding:14px 16px; font-size:0.9rem; line-height:1.6; }
@@ -1113,19 +1120,21 @@ function _claveHistorial(uid) { return `ilfis_historial_${uid}`; }
 
 function _guardarPregunta(uid, qid, pregunta, respuesta_ia) {
   const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
-  hist.unshift({ id: qid, pregunta, respuesta_ia, respuesta_final: null, nombre_profesor: null, fuente: 'ia', fecha: new Date().toISOString() });
+  hist.unshift({ id: qid, pregunta, respuesta_ia, messages: [], fecha: new Date().toISOString() });
   if (hist.length > 50) hist.pop();
   localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
   _renderHistorial(uid);
 }
 
-function _actualizarRespuesta(uid, qid, respuesta_prof, nombre_prof) {
+function _actualizarRespuesta(uid, qid, texto_prof, nombre_prof) {
   const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
   const entry = hist.find(h => h.id === qid);
   if (entry) {
-    entry.respuesta_final = respuesta_prof;
-    entry.nombre_profesor = nombre_prof;
-    entry.fuente = 'profesor';
+    // Agrega solo si no es duplicado
+    const yaExiste = entry.messages.some(m => m.texto === texto_prof && m.nombre_profesor === nombre_prof);
+    if (!yaExiste) {
+      entry.messages.push({ texto: texto_prof, nombre_profesor: nombre_prof, ts: new Date().toISOString() });
+    }
     localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
     _renderHistorial(uid);
   }
@@ -1141,14 +1150,28 @@ function _renderHistorial(uid) {
   }
   el.innerHTML = hist.map(h => {
     const fecha = new Date(h.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-    const respuesta = h.respuesta_final || h.respuesta_ia;
-    const autor = h.fuente === 'profesor' ? `💬 <strong>${h.nombre_profesor}</strong>` : '🤖 IA';
-    const badge = h.fuente === 'profesor' ? `<span class="hist-badge-small">✅ Revisado por experto</span>` : '';
+    const msgs = h.messages || [];
+    // Burbuja IA
+    const iaHtml = `<div class="hist-msg hist-msg-ia">
+      <span class="hist-msg-autor">🤖 Respuesta IA</span>
+      <span class="hist-msg-texto">${h.respuesta_ia}</span>
+    </div>`;
+    // Burbujas de expertos
+    const expertHtml = msgs.map(m => `
+      <div class="hist-msg hist-msg-exp">
+        <span class="hist-msg-autor">💬 ${m.nombre_profesor || 'Experto ILFIS'}</span>
+        <span class="hist-msg-texto">${m.texto}</span>
+      </div>`).join('');
+    const badge = msgs.length > 0
+      ? `<span class="hist-badge-small">✅ ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del equipo ILFIS</span>`
+      : `<span class="hist-badge-small" style="background:#252540;color:#5a6a7a;border:1px solid #2a2a5a;">⏳ Pendiente revisión</span>`;
     return `<div class="hist-item">
-      <div class="hist-fecha">${fecha}</div>
+      <div class="hist-fecha">${fecha} · Ticket <code style="font-size:0.7rem;color:#5daaff;">${h.id}</code></div>
       <div class="hist-pregunta">❓ ${h.pregunta}</div>
-      <div class="hist-respuesta">${autor}: ${respuesta}</div>
-      ${badge}
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+        ${iaHtml}${expertHtml}
+      </div>
+      <div style="margin-top:8px;">${badge}</div>
     </div>`;
   }).join('');
 }
