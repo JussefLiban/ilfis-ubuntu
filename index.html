@@ -48,9 +48,9 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #
 #app { display: none; flex-direction: column; min-height: 100vh; }
 
 /* ── HEADER ─────────────────────────────────────────────── */
-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; }
 /* Banner "gratis hasta..." */
-.banner-gratis { display: flex; align-items: center; gap: 8px; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.35); border-radius: 20px; padding: 6px 14px; flex-shrink: 0; }
+.banner-gratis { display: flex; align-items: center; gap: 8px; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.35); border-radius: 20px; padding: 6px 14px; flex-shrink: 0; position: absolute; left: 50%; transform: translateX(-50%); }
 .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71; flex-shrink: 0; animation: pulso-dot 1.4s ease-in-out infinite; }
 @keyframes pulso-dot { 0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #2ecc71; } 50% { transform: scale(1.5); opacity: 0.55; box-shadow: 0 0 14px #2ecc71; } }
 .banner-txt { font-size: 0.72rem; color: #2ecc71; font-weight: 600; white-space: nowrap; letter-spacing: 0.3px; }
@@ -79,6 +79,15 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 /* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
 .hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
 .hist-item { background:#16213e; border:1px solid #2a2a5a; border-radius:10px; padding:16px; margin-bottom:12px; }
+/* Chat thread de respuestas */
+.chat-thread { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+.chat-burbuja { border-radius:10px; padding:14px 16px; font-size:0.9rem; line-height:1.6; }
+.chat-ia { background:#1a2a3a; border:1px solid #2a3a5a; color:#aac; }
+.chat-experto { background:#0d2a1a; border:1px solid #1a4a2a; color:#cec; }
+.chat-autor { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+.chat-ia .chat-autor { color:#5daaff; }
+.chat-experto .chat-autor { color:#2ecc71; }
+.chat-ts { font-size:0.65rem; color:#4a6a5a; margin-top:6px; }
 .hist-fecha { font-size:0.75rem; color:#888; margin-bottom:6px; }
 .hist-pregunta { font-size:0.95rem; color:#ccc; margin-bottom:8px; }
 .hist-respuesta { font-size:0.9rem; color:#e0e0e0; line-height:1.5; }
@@ -408,11 +417,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
     <div class="estado" id="estado-experto"></div>
     <div class="respuesta-box" id="respuesta-experto-box" style="display:none;">
-      <div class="respuesta-label" id="experto-label">🤖 Respuesta IA</div>
-      <div class="respuesta-texto" id="experto-respuesta"></div>
-      <div id="experto-badge" style="display:none; margin-top:12px; padding:10px 14px; background:#1a472a; border-radius:8px; color:#2ecc71; font-weight:bold; font-size:0.9rem;">
-        ✅ Revisado y mejorado por experto ILFIS
-      </div>
+      <div class="respuesta-label" id="experto-label">Conversación del ticket</div>
+      <div class="chat-thread" id="experto-thread"></div>
     </div>
     <div class="hist-titulo">📋 Mis preguntas anteriores</div>
     <div id="experto-historial"></div>
@@ -1177,11 +1183,15 @@ async function preguntarExperto() {
 
     _expertoQid = data.question_id;
 
-    document.getElementById('experto-respuesta').textContent = data.respuesta;
-    document.getElementById('experto-label').textContent = '🤖 Respuesta IA (pendiente revisión del experto)';
-    document.getElementById('experto-badge').style.display = 'none';
+    // Mostrar burbuja IA
+    const thread = document.getElementById('experto-thread');
+    thread.innerHTML = `
+      <div class="chat-burbuja chat-ia">
+        <div class="chat-autor">🤖 Respuesta IA — pendiente revisión del experto</div>
+        ${data.respuesta.replace(/\n/g,'<br>')}
+      </div>`;
     box.style.display = 'block';
-    estado.innerHTML = '✅ Respuesta generada. Un experto revisará y mejorará si es necesario.';
+    estado.innerHTML = '⏳ Tu pregunta fue enviada. El experto responderá en menos de 12 h.';
 
     // Guardar en historial local
     const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
@@ -1195,8 +1205,11 @@ async function preguntarExperto() {
   }
 }
 
+let _expertoMsgCount = 0;  // cantidad de mensajes de experto ya renderizados
+
 function _iniciarPollingExperto() {
   if (_expertoPoller) clearInterval(_expertoPoller);
+  _expertoMsgCount = 0;
   let intentos = 0;
   const MAX = 360; // 30 minutos (cada 5s)
 
@@ -1209,20 +1222,37 @@ function _iniciarPollingExperto() {
       if (!res.ok) return;
       const data = await res.json();
 
-      if (data.fuente === 'profesor') {
-        const nombreProf = data.nombre_profesor || 'Experto ILFIS';
-        document.getElementById('experto-respuesta').textContent = data.respuesta;
-        document.getElementById('experto-label').textContent = `💬 Respuesta de ${nombreProf}`;
-        document.getElementById('experto-badge').style.display = 'block';
-        document.getElementById('experto-badge').textContent = `✅ Revisado y mejorado por ${nombreProf}`;
-        document.getElementById('estado-experto').innerHTML = '';
-        // Actualizar historial local
+      const msgs = data.messages || [];
+      if (msgs.length > _expertoMsgCount) {
+        // Hay mensajes nuevos — renderizar todos desde cero (más simple y seguro)
+        _expertoMsgCount = msgs.length;
+        _renderThread(data.respuesta_ia_original || null, msgs);
+        document.getElementById('estado-experto').innerHTML =
+          `💬 ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del equipo ILFIS`;
+        // Actualizar historial con el último mensaje
         const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
-        _actualizarRespuesta(_uid, _expertoQid, data.respuesta, nombreProf);
-        clearInterval(_expertoPoller);
+        _actualizarRespuesta(_uid, _expertoQid, msgs[msgs.length-1].texto, msgs[msgs.length-1].nombre_profesor);
       }
     } catch (e) { /* ignorar errores de polling */ }
   }, 5000);
+}
+
+function _renderThread(aiText, expertMsgs) {
+  const thread = document.getElementById('experto-thread');
+  if (!thread) return;
+  // Mantener la burbuja IA (ya está), agregar burbujas de expertos
+  const expertHtml = expertMsgs.map(m => {
+    const hora = m.ts ? new Date(m.ts).toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'}) : '';
+    const fecha = m.ts ? new Date(m.ts).toLocaleDateString('es-PE', {day:'2-digit', month:'short'}) : '';
+    return `<div class="chat-burbuja chat-experto">
+      <div class="chat-autor">💬 ${m.nombre_profesor || 'Experto ILFIS'}</div>
+      ${m.texto.replace(/\n/g,'<br>')}
+      <div class="chat-ts">${fecha} ${hora}</div>
+    </div>`;
+  }).join('');
+  // Preservar primera burbuja IA y agregar expertos
+  const iaBurbuja = thread.querySelector('.chat-ia');
+  thread.innerHTML = (iaBurbuja ? iaBurbuja.outerHTML : '') + expertHtml;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
