@@ -161,8 +161,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-sec:hover { background: rgba(255,255,255,0.07) !important; border-color: #fff !important; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -175,7 +175,7 @@ textarea::placeholder { color: #5a7a9a; }
 .roc-player-area { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 14px; }
 .roc-video-titulo { color: #fff; font-size: 1rem; font-weight: bold; }
 .roc-video-wrap { position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; }
-#roc-video, #hid-video, #mer-video, #bom-video { width: 100%; height: 100%; display: block; background: #000; }
+#roc-video, #hid-video, #mer-video, #bom-video, #ala-video { width: 100%; height: 100%; display: block; background: #000; }
 .roc-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a6a7a; gap: 10px; font-size: 0.88rem; }
 .roc-video-placeholder i { font-size: 3rem; }
 .roc-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
@@ -470,6 +470,20 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 52 clases · Online autodidacta</div>
           <button class="btn-ver-clases" onclick="abrirMercancias()">▶ Ver clases sin tutoría, ni evaluaciones</button>
           <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-proteccion-de-mercancias/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diplomado-de-Deteccion-y-Alarmas-de-Incendios-300x300.jpg" alt="Detección y Alarmas de Incendios">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de Detección y Alarmas de Incendios</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 57 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirAlarmas()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-deteccion-y-alarmas-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
         </div>
       </div>
 
@@ -777,6 +791,36 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="roc-error" id="mer-error"></div>
       <div style="margin-top:4px;">
         <button onclick="abrirPDFMercancias()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL ALARMAS (overlay) ─────────────────────────────── -->
+<div id="panel-alarmas">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarAlarmas()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Detección y Alarmas de Incendios</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="ala-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="ala-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="ala-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="ala-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="ala-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="ala-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFAlarmas()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
           📄 Material de Estudio (PDF completo)
         </button>
       </div>
@@ -1908,6 +1952,150 @@ async function cargarClaseMercancias(n) {
     placeholder.style.display = 'none';
   } finally {
     loading.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ALARMAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const ALARMAS_TITULOS = {
+  1:  "El Sonido y la Acústica - Parte 1",
+  2:  "El Sonido y la Acústica - Parte 2",
+  3:  "Principios de Circuitos Eléctricos - Parte 1",
+  4:  "Principios de Circuitos Eléctricos - Parte 2",
+  5:  "Resistencia y Capacitancia Lineal en Cables FPL",
+  6:  "Códigos y Normas - Parte 1",
+  7:  "Códigos y Normas - Parte 2",
+  8:  "Principios de Dinámica del Fuego",
+  9:  "Caracterización de la Ocupación - Parte 1",
+  10: "Caracterización de la Ocupación - Parte 2",
+  11: "Arquitectura Básica Sistema de Detección - Parte 1",
+  12: "Arquitectura Básica Sistema de Detección - Parte 2",
+  13: "Arquitectura Básica Sistema de Detección - Parte 3",
+  14: "Detección de Humo - Parte 1",
+  15: "Detección de Humo - Parte 2",
+  16: "Detección de Humo - Parte 3",
+  17: "Detección de Calor - Parte 1",
+  18: "Detección de Calor - Parte 2",
+  19: "Estrategias de Detección Complementarias - Parte 1",
+  20: "Estrategias de Detección Complementarias - Parte 2",
+  21: "Estrategias de Detección Complementarias - Parte 3",
+  22: "Estrategias de Detección Complementarias - Parte 4",
+  23: "Dispositivos de Inicio Manual",
+  24: "Diseño Básico de Notificación de Alarma - Parte 1",
+  25: "Diseño Básico de Notificación de Alarma - Parte 2",
+  26: "Diseño Básico de Notificación de Alarma - Parte 3",
+  27: "Diseño Avanzado de Notificación de Alarma - Parte 1",
+  28: "Diseño Avanzado de Notificación de Alarma - Parte 2",
+  29: "Diseño Avanzado de Notificación de Alarma - Parte 3",
+  30: "Diseño Avanzado de Notificación de Alarma - Parte 4",
+  31: "Diseño Avanzado de Notificación de Alarma - Parte 5",
+  32: "Notificación Audible en Exteriores",
+  33: "Estrategias de Notificación Complementarias",
+  34: "Cableado de Dispositivos y Clases de Vías - Parte 1",
+  35: "Cableado de Dispositivos y Clases de Vías - Parte 2",
+  36: "Cableado de Dispositivos y Clases de Vías - Parte 3",
+  37: "Módulos de Entrada y Salida y Tarjetas Auxiliares - Parte 1",
+  38: "Módulos de Entrada y Salida y Tarjetas Auxiliares - Parte 2",
+  39: "Paneles Direccionables Analógicos",
+  40: "Cálculos Eléctricos Básicos - Parte 1",
+  41: "Cálculos Eléctricos Básicos - Parte 2",
+  42: "Fuentes Auxiliares y Gerencia de Potencia - Parte 1",
+  43: "Fuentes Auxiliares y Gerencia de Potencia - Parte 2",
+  44: "Causa Efecto y Correlaciones",
+  45: "Interfaces de Control de Emergencia - Parte 1",
+  46: "Interfaces de Control de Emergencia - Parte 2",
+  47: "Audioevacuación - Parte 1",
+  48: "Audioevacuación - Parte 2",
+  49: "Audioevacuación - Parte 3",
+  50: "Conectividad de Paneles - Parte 1",
+  51: "Conectividad de Paneles - Parte 2",
+  52: "Principios de PLCs",
+  53: "Detección para Sistemas de Supresión - Parte 1",
+  54: "Detección para Sistemas de Supresión - Parte 2",
+  55: "Sistemas de Fire and Gas - Parte 1",
+  56: "Sistemas de Fire and Gas - Parte 2",
+  57: "Documentación del Proyecto"
+};
+
+const TOTAL_CLASES_ALARMAS = 57;
+let _alaClaseActual = null;
+
+function abrirAlarmas() {
+  const sidebar = document.getElementById('ala-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_ALARMAS; i++) {
+      const titulo = ALARMAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="ala-btn-${i}" onclick="cargarClaseAlarmas(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-alarmas').classList.add('visible');
+}
+
+function cerrarAlarmas() {
+  const video = document.getElementById('ala-video');
+  video.pause();
+  video.src = '';
+  _alaClaseActual = null;
+  document.querySelectorAll('#ala-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ala-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('ala-placeholder').style.display = 'flex';
+  document.getElementById('ala-error').style.display = 'none';
+  document.getElementById('panel-alarmas').classList.remove('visible');
+}
+
+async function cargarClaseAlarmas(n) {
+  if (_alaClaseActual === n) return;
+  _alaClaseActual = n;
+
+  document.querySelectorAll('#ala-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`ala-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('ala-video');
+  const placeholder = document.getElementById('ala-placeholder');
+  const loading     = document.getElementById('ala-loading');
+  const errorEl     = document.getElementById('ala-error');
+  const tituloEl    = document.getElementById('ala-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = ALARMAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/alarmas/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirPDFAlarmas() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/alarmas/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
   }
 }
 
