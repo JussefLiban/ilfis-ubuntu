@@ -182,6 +182,43 @@ textarea::placeholder { color: #5a7a9a; }
 .roc-loading .loading-spin { display: block; }
 .roc-error { color: #e87272; font-size: 0.84rem; padding: 10px 14px; background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3); border-radius: 6px; display: none; }
 
+/* ─── PAYWALL MODAL ──────────────────────────────────────── */
+#paywall-overlay { position: fixed; inset: 0; background: rgba(10,10,20,0.92); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+#paywall-overlay.visible { display: flex; }
+.paywall-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 16px; padding: 36px 28px; max-width: 400px; width: 100%; text-align: center; position: relative; }
+.paywall-close-x { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #5a6a7a; font-size: 1.2rem; cursor: pointer; line-height: 1; }
+.paywall-close-x:hover { color: #aaa; }
+.paywall-lock { font-size: 2.8rem; margin-bottom: 10px; }
+.paywall-label { font-size: 0.65rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: bold; }
+.paywall-titulo { font-size: 1.05rem; color: #fff; font-weight: bold; margin-bottom: 20px; line-height: 1.4; }
+.paywall-precio { font-size: 2.4rem; color: #fff; font-weight: bold; margin-bottom: 4px; }
+.paywall-precio span { font-size: 1rem; color: #7a8a9a; font-weight: normal; }
+.paywall-incluye { font-size: 0.82rem; color: #7a9abf; margin: 12px 0 22px; line-height: 1.7; }
+.paywall-incluye strong { color: #aac; }
+.paywall-tagline { font-size: 0.88rem; color: #c8d8ea; margin-bottom: 14px; font-style: italic; }
+.paywall-checks { text-align: left; list-style: none; padding: 0; margin: 0; }
+.paywall-checks li { font-size: 0.8rem; color: #7a9abf; padding: 3px 0; }
+.paywall-checks li::before { content: "✅  "; }
+.paywall-seguro { font-size: 0.71rem; color: #3a5a6a; margin-top: 10px; }
+/* Formulario de tarjeta (vista 2 del paywall) */
+#paywall-form { display: none; }
+.pf-row { display: flex; gap: 10px; }
+.pf-group { display: flex; flex-direction: column; gap: 5px; flex: 1; margin-bottom: 12px; }
+.pf-label { font-size: 0.68rem; color: #5a7a9a; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; }
+.pf-input { background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 6px; color: #e0e8f0; font-size: 0.9rem; padding: 10px 12px; width: 100%; letter-spacing: 1px; }
+.pf-input:focus { outline: none; border-color: #5daaff; }
+.pf-input::placeholder { color: #3a4a6a; letter-spacing: 0; }
+.pf-error { font-size: 0.75rem; color: #e87272; margin: -6px 0 10px; text-align: left; display: none; }
+.btn-pagar { width: 100%; padding: 14px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 4px; }
+.btn-pagar:hover { background: #f0b429; }
+.btn-pagar:disabled { background: #5a5a3a; color: #8a8a5a; cursor: not-allowed; }
+.pf-back { background: none; border: none; color: #5a6a7a; font-size: 0.78rem; cursor: pointer; text-decoration: underline; margin-top: 10px; display: block; width: 100%; }
+.pf-back:hover { color: #aaa; }
+.btn-paypal { width: 100%; padding: 14px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-paypal:hover { background: #f0b429; }
+.btn-paywall-cerrar { background: none; border: none; color: #5a6a7a; font-size: 0.8rem; cursor: pointer; text-decoration: underline; margin-top: 14px; display: block; width: 100%; }
+.btn-paywall-cerrar:hover { color: #aaa; }
+
 /* ─── PANEL CLASES ───────────────────────────────────────── */
 #panel-clases { align-items: stretch; }
 .clases-wrap { max-width: 1200px; width: 100%; margin: 0 auto; padding: 28px 20px 48px; }
@@ -475,7 +512,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
       <div class="curso-card curso-card-activo">
         <div class="curso-thumb-wrap">
-          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diplomado-de-Deteccion-y-Alarmas-de-Incendios-300x300.jpg" alt="Detección y Alarmas de Incendios">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-ALARMAS-Y-DETECCION.jpg-600x400.png" alt="Detección y Alarmas de Incendios">
           <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
         </div>
         <div class="curso-body">
@@ -483,7 +520,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <div class="curso-nombre">Diplomado de Detección y Alarmas de Incendios</div>
           <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 57 clases · Online autodidacta</div>
           <button class="btn-ver-clases" onclick="abrirAlarmas()">▶ Ver clases sin tutoría, ni evaluaciones</button>
-          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-deteccion-y-alarmas-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-internacional-de-deteccion-y-alarmas-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
         </div>
       </div>
 
@@ -674,6 +711,49 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
 </div>
 
+<!-- ── PAYWALL MODAL ─────────────────────────────────────── -->
+<div id="paywall-overlay">
+  <div class="paywall-card">
+    <button class="paywall-close-x" onclick="cerrarPaywall()">✕</button>
+    <div class="paywall-lock">🔒</div>
+    <div class="paywall-label">Contenido Premium</div>
+    <div class="paywall-titulo" id="paywall-titulo"></div>
+    <div class="paywall-precio">$100 <span>/ mes</span></div>
+    <div class="paywall-incluye" id="paywall-incluye"></div>
+    <button class="btn-paypal" onclick="iniciarPagoPayPal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#003087"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.23 0 .23 0 0 0 .25-1.57-.01-2.64-.35-3.3z"/></svg>
+      🔓 Sí, quiero acceder por $100/mes
+    </button>
+    <div class="paywall-seguro">Pago 100% seguro vía PayPal · Sin compromisos</div>
+    <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver al curso</button>
+
+    <!-- Vista 2: formulario de tarjeta -->
+    <div id="paywall-form">
+      <div class="pf-group">
+        <label class="pf-label">Número de tarjeta</label>
+        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="1234 5678 9012 3456" oninput="this.value=this.value.replace(/[^0-9 ]/g,'')">
+      </div>
+      <div class="pf-group">
+        <label class="pf-label">Nombre en la tarjeta</label>
+        <input class="pf-input" id="pf-nombre" placeholder="NOMBRE APELLIDO">
+      </div>
+      <div class="pf-row">
+        <div class="pf-group">
+          <label class="pf-label">Vencimiento</label>
+          <input class="pf-input" id="pf-vence" maxlength="5" placeholder="MM/AA" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+        </div>
+        <div class="pf-group">
+          <label class="pf-label">CVV</label>
+          <input class="pf-input" id="pf-cvv" maxlength="4" placeholder="999" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+      </div>
+      <div class="pf-error" id="pf-error"></div>
+      <button class="btn-pagar" id="btn-pagar" onclick="_submitPago()">Pagar $100</button>
+      <button class="pf-back" onclick="_volverPaywall()">← Volver</button>
+    </div>
+  </div>
+</div>
+
 <footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad &nbsp;|&nbsp; ILFIS Ubuntu v2.0</footer>
 
 <!-- ── PANEL ROCIADORES (overlay) ──────────────────────────── -->
@@ -858,6 +938,7 @@ auth.onAuthStateChanged(async function(user) {
     // Verificar premium via custom claims
     const token = await user.getIdTokenResult();
     const isPremium = token.claims.premium === true;
+    _cursosActivos = token.claims.cursos_activos || {};
     // Mostrar app
     const app = document.getElementById('app');
     app.style.display = 'flex';
@@ -1537,6 +1618,7 @@ function cerrarRociadores() {
 }
 
 async function cargarClase(n) {
+  if (!_tieneAcceso('rociadores')) { mostrarPaywall('rociadores'); return; }
   if (_rocClaseActual === n) return;
   _rocClaseActual = n;
 
@@ -1585,11 +1667,11 @@ async function cargarClase(n) {
 }
 
 async function abrirPDF() {
+  if (!_tieneAcceso('rociadores')) { mostrarPaywall('rociadores'); return; }
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Debes iniciar sesión.');
     const idToken = await user.getIdToken();
-    // Abrir el PDF en una nueva pestaña vía proxy del backend
     window.open(`${API}/api/cursos/rociadores/pdf/stream?token=${idToken}`, '_blank');
   } catch(e) {
     alert('Error al abrir el PDF: ' + e.message);
@@ -1630,6 +1712,7 @@ function cerrarHidraulicos() {
 }
 
 async function cargarClaseHidraulicos(n) {
+  if (!_tieneAcceso('hidraulicos')) { mostrarPaywall('hidraulicos'); return; }
   if (_hidClaseActual === n) return;
   _hidClaseActual = n;
 
@@ -1668,6 +1751,7 @@ async function cargarClaseHidraulicos(n) {
 }
 
 async function abrirPDFHidraulicos() {
+  if (!_tieneAcceso('hidraulicos')) { mostrarPaywall('hidraulicos'); return; }
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Debes iniciar sesión.');
@@ -1767,6 +1851,7 @@ function cerrarBombas() {
 }
 
 async function abrirPDFBombas() {
+  if (!_tieneAcceso('bombas')) { mostrarPaywall('bombas'); return; }
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Debes iniciar sesión.');
@@ -1778,6 +1863,7 @@ async function abrirPDFBombas() {
 }
 
 async function cargarClaseBombas(n) {
+  if (!_tieneAcceso('bombas')) { mostrarPaywall('bombas'); return; }
   if (_bomClaseActual === n) return;
   _bomClaseActual = n;
 
@@ -1906,6 +1992,7 @@ function cerrarMercancias() {
 }
 
 async function abrirPDFMercancias() {
+  if (!_tieneAcceso('mercancias')) { mostrarPaywall('mercancias'); return; }
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Debes iniciar sesión.');
@@ -1917,6 +2004,7 @@ async function abrirPDFMercancias() {
 }
 
 async function cargarClaseMercancias(n) {
+  if (!_tieneAcceso('mercancias')) { mostrarPaywall('mercancias'); return; }
   if (_merClaseActual === n) return;
   _merClaseActual = n;
 
@@ -2050,6 +2138,7 @@ function cerrarAlarmas() {
 }
 
 async function cargarClaseAlarmas(n) {
+  if (!_tieneAcceso('alarmas')) { mostrarPaywall('alarmas'); return; }
   if (_alaClaseActual === n) return;
   _alaClaseActual = n;
 
@@ -2089,6 +2178,7 @@ async function cargarClaseAlarmas(n) {
 }
 
 async function abrirPDFAlarmas() {
+  if (!_tieneAcceso('alarmas')) { mostrarPaywall('alarmas'); return; }
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Debes iniciar sesión.');
@@ -2096,6 +2186,140 @@ async function abrirPDFAlarmas() {
     window.open(`${API}/api/cursos/alarmas/pdf/stream?token=${idToken}`, '_blank');
   } catch(e) {
     alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PAYWALL — Control de acceso por curso
+// ══════════════════════════════════════════════════════════
+
+let _cursosActivos = {};  // { rociadores: "2026-06-27T00:00:00Z", ... }
+let _paywallCursoActual = null;
+
+const CURSOS_INFO = {
+  rociadores:  { nombre: "Diplomado de Rociadores Automáticos",             clases: 49 },
+  hidraulicos: { nombre: "Diplomado Especializado en Cálculos Hidráulicos",  clases: 35 },
+  bombas:      { nombre: "Diplomado de Bombas Contra Incendios",             clases: 51 },
+  mercancias:  { nombre: "Diplomado de Protección de Mercancías",            clases: 52 },
+  alarmas:     { nombre: "Diplomado de Detección y Alarmas de Incendios",    clases: 57 },
+};
+
+function _tieneAcceso(curso) {
+  if (!_cursosActivos[curso]) return false;
+  return new Date(_cursosActivos[curso]) > new Date();
+}
+
+function mostrarPaywall(curso) {
+  _paywallCursoActual = curso;
+  const info = CURSOS_INFO[curso] || { nombre: curso, clases: 0 };
+  document.getElementById('paywall-titulo').textContent = info.nombre;
+  document.getElementById('paywall-incluye').innerHTML = `
+    <div class="paywall-tagline">¿Listo para llevar tu carrera al siguiente nivel?</div>
+    <ul class="paywall-checks">
+      <li>${info.clases} clases grabadas en alta calidad por expertos ILFIS</li>
+      <li>PDF completo del material de estudio incluido</li>
+      <li>Acceso ilimitado durante 30 días</li>
+      <li>Tutoría permanente con un experto ILFIS — todas tus preguntas del curso respondidas en menos de 12 h (fines de semana puede demorar un poco más)</li>
+      <li>Renovación simple — cancela cuando quieras</li>
+    </ul>`;
+  document.getElementById('paywall-overlay').classList.add('visible');
+}
+
+function cerrarPaywall() {
+  document.getElementById('paywall-overlay').classList.remove('visible');
+  _paywallCursoActual = null;
+}
+
+const BACKEND = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+
+function iniciarPagoPayPal() {
+  // Oculta la vista comercial, muestra el formulario de tarjeta
+  document.querySelector('.paywall-lock').style.display    = 'none';
+  document.querySelector('.paywall-label').style.display   = 'none';
+  document.querySelector('.paywall-titulo').style.display  = 'none';
+  document.querySelector('.paywall-precio').style.display  = 'none';
+  document.querySelector('.paywall-incluye').style.display = 'none';
+  document.querySelector('.btn-paypal').style.display      = 'none';
+  document.querySelector('.paywall-seguro').style.display  = 'none';
+  document.querySelector('.btn-paywall-cerrar').style.display = 'none';
+  document.getElementById('paywall-form').style.display   = 'block';
+  // Limpiar campos y errores
+  ['pf-numero','pf-nombre','pf-vence','pf-cvv'].forEach(id => document.getElementById(id).value = '');
+  const errEl = document.getElementById('pf-error');
+  errEl.style.display = 'none'; errEl.textContent = '';
+  document.getElementById('btn-pagar').disabled = false;
+  document.getElementById('btn-pagar').textContent = 'Pagar $100';
+}
+
+function _volverPaywall() {
+  // Restaura la vista comercial
+  document.querySelector('.paywall-lock').style.display    = '';
+  document.querySelector('.paywall-label').style.display   = '';
+  document.querySelector('.paywall-titulo').style.display  = '';
+  document.querySelector('.paywall-precio').style.display  = '';
+  document.querySelector('.paywall-incluye').style.display = '';
+  document.querySelector('.btn-paypal').style.display      = '';
+  document.querySelector('.paywall-seguro').style.display  = '';
+  document.querySelector('.btn-paywall-cerrar').style.display = '';
+  document.getElementById('paywall-form').style.display   = 'none';
+}
+
+async function _submitPago() {
+  const numero = document.getElementById('pf-numero').value.replace(/\s/g, '');
+  const nombre = document.getElementById('pf-nombre').value.trim();
+  const vence  = document.getElementById('pf-vence').value.trim();
+  const cvv    = document.getElementById('pf-cvv').value.trim();
+  const errEl  = document.getElementById('pf-error');
+  const btnEl  = document.getElementById('btn-pagar');
+
+  // Validación básica de campos vacíos
+  if (!numero || !nombre || !vence || !cvv) {
+    errEl.textContent = 'Completa todos los campos para continuar.';
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  btnEl.disabled = true;
+  btnEl.textContent = 'Procesando…';
+
+  try {
+    // Obtener ID token fresco del usuario actual
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Sesión expirada. Recarga la página.');
+    const idToken = await user.getIdToken(false);
+
+    // Llamar al backend — en modo test el backend valida si el número es el código de prueba
+    const resp = await fetch(`${BACKEND}/api/pagos/activar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_token: idToken,
+        curso:    _paywallCursoActual,
+        codigo:   numero   // en producción: order_id de PayPal
+      })
+    });
+
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data.detail || `Error ${resp.status}`);
+    }
+
+    // ¡Pago aceptado! Forzar refresh del token para que el navegador vea los nuevos claims
+    btnEl.textContent = '✓ Activando acceso…';
+    await user.getIdToken(true);   // fuerza al SDK a buscar el token nuevo con los claims actualizados
+    const tokenResult = await user.getIdTokenResult();
+    _cursosActivos = tokenResult.claims.cursos_activos || {};
+
+    // Cerrar paywall y mostrar mensaje de éxito breve
+    cerrarPaywall();
+    _volverPaywall();   // reinicia la vista para la próxima vez
+    alert('✅ ¡Acceso activado! Ya puedes ver todas las clases de este diplomado durante 30 días.');
+
+  } catch(err) {
+    errEl.textContent = err.message || 'Error procesando el pago. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    btnEl.disabled = false;
+    btnEl.textContent = 'Pagar $100';
   }
 }
 
