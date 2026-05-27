@@ -746,7 +746,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </div>
       <div class="pf-group">
         <label class="pf-label">Número de tarjeta</label>
-        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="9999 9999 9999 9999" oninput="var v=this.value.replace(/[^0-9]/g,'').slice(0,16);this.value=v.replace(/(.{4})(?=.)/g,'$1 ')">
+        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="9999 9999 9999 9999" oninput="_fmtCard(this)" autocomplete="cc-number" inputmode="numeric">
       </div>
       <div class="pf-group">
         <label class="pf-label">Nombre en la tarjeta</label>
@@ -2246,6 +2246,18 @@ function cerrarPaywall() {
 }
 
 const BACKEND = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+
+function _fmtCard(input) {
+  // Conserva solo dígitos, máximo 16
+  var digits = input.value.replace(/\D/g, '').slice(0, 16);
+  // Inserta espacio cada 4 dígitos
+  var out = '';
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && i % 4 === 0) out += ' ';
+    out += digits[i];
+  }
+  input.value = out;
+}
 
 function iniciarPagoPayPal() {
   // Oculta la vista comercial, muestra el formulario de tarjeta
