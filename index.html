@@ -123,6 +123,54 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .btn-refresh-cuenta { display: flex; align-items: center; gap: 7px; background: transparent; border: 1px solid #2a2a5a; color: #7a8a9a; border-radius: 6px; padding: 6px 13px; font-size: 0.77rem; cursor: pointer; transition: all 0.15s; margin-left: auto; }
 .btn-refresh-cuenta:hover { border-color: #555; color: #ccc; }
 
+/* ─── PANEL ADMIN ────────────────────────────────────────── */
+.admin-gate { max-width: 380px; margin: 80px auto; background: #16213e; border: 1px solid #2a2a5a; border-radius: 14px; padding: 36px 32px; text-align: center; }
+.admin-gate h2 { color: #fff; font-size: 1.1rem; margin-bottom: 6px; }
+.admin-gate p { color: #7a8a9a; font-size: 0.82rem; margin-bottom: 22px; }
+.admin-input { width: 100%; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 1rem; padding: 11px 14px; outline: none; text-align: center; letter-spacing: 4px; margin-bottom: 12px; }
+.admin-input:focus { border-color: #c0392b; }
+.btn-admin-enter { width: 100%; padding: 11px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+.btn-admin-enter:hover { background: #a93226; }
+.admin-err { color: #e87272; font-size: 0.82rem; margin-top: 8px; display: none; }
+.admin-wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 50px; }
+.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; }
+.admin-tab { padding: 9px 20px; font-size: 0.85rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.admin-tab.active { color: #fff; border-bottom-color: #c0392b; }
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+.recaud-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.rc-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; padding: 14px 16px; }
+.rc-nombre { font-size: 0.7rem; color: #8899aa; margin-bottom: 8px; line-height: 1.4; }
+.rc-num { font-size: 1.4rem; font-weight: 700; color: #fff; }
+.rc-sub { font-size: 0.68rem; color: #7a8a9a; margin-top: 2px; }
+.rc-monto { font-size: 0.92rem; font-weight: 700; color: #5dcc85; margin-top: 6px; }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th { font-size: 0.7rem; color: #7a8a9a; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; padding: 8px 12px; border-bottom: 1px solid #2a2a5a; }
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid #1a1a3a; vertical-align: middle; }
+.admin-table tr:hover td { background: #16213e; }
+.a-name { color: #dde; font-weight: 600; font-size: 0.87rem; }
+.a-email { color: #7a8a9a; font-size: 0.72rem; margin-top: 2px; }
+.cbadge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.67rem; font-weight: 700; white-space: nowrap; margin: 2px 3px 2px 0; }
+.cb-ok { background: #1a4a2a; color: #5dcc85; }
+.cb-warn { background: #3a2a00; color: #f0b429; }
+.cb-exp { background: #3a1a1a; color: #e87272; }
+.cb-none { background: #252540; color: #5a6a7a; border: 1px solid #2a2a5a; }
+.btn-a { border-radius: 5px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; white-space: nowrap; }
+.btn-ext { background: transparent; border: 1px solid #2a5a9a; color: #5daaff; }
+.btn-ext:hover { background: #0f3460; }
+.btn-rev { background: transparent; border: 1px solid #5a2a2a; color: #e87272; margin-left: 4px; }
+.btn-rev:hover { background: #3a1a1a; }
+.btn-dar { background: #c0392b; color: #fff; border: none; margin-left: 4px; }
+.btn-dar:hover { background: #a93226; }
+.admin-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; }
+.admin-modal-bg.visible { display: flex; }
+.admin-modal { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; padding: 28px 28px 22px; min-width: 300px; }
+.admin-modal h3 { color: #fff; font-size: 1rem; margin-bottom: 16px; }
+.admin-modal select { width: 100%; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 7px; color: #e0e0e0; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 14px; }
+.admin-modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-cancel { background: transparent; border: 1px solid #3a3a6a; color: #7a8a9a; border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: 0.82rem; }
+.admin-loading { text-align: center; padding: 40px; color: #7a8a9a; }
+
 /* ─── PANEL CONSULTAS ────────────────────────────────────── */
 #panel-consultar { align-items: center; }
 .consultar-inner { max-width: 860px; width: 100%; margin: 40px auto; padding: 0 20px; }
@@ -413,6 +461,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-user-circle" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Mi Cuenta</span><span class="tab-line2">Mis suscripciones</span></span>
   </button>
+  <button class="tab-btn" onclick="showTab('admin', this)">
+    <i class="ti ti-shield-lock" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Intranet</span><span class="tab-line2">Panel Admin</span></span>
+  </button>
 </nav>
 
 <!-- Panel Consultas -->
@@ -456,6 +508,62 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
     <div class="hist-titulo">📋 Mis preguntas anteriores</div>
     <div id="experto-historial"></div>
+  </div>
+</div>
+
+<!-- Panel Admin -->
+<div class="panel" id="panel-admin">
+  <!-- Gate: pantalla de contraseña -->
+  <div id="admin-gate-view">
+    <div class="admin-gate">
+      <i class="ti ti-shield-lock" style="font-size:2.2rem;color:#c0392b;display:block;margin-bottom:14px;" aria-hidden="true"></i>
+      <h2>Zona Intranet</h2>
+      <p>Acceso restringido al equipo ILFIS</p>
+      <input class="admin-input" id="admin-pwd" type="password" placeholder="••••••" maxlength="30"
+        onkeydown="if(event.key==='Enter') adminEntrar()">
+      <button class="btn-admin-enter" onclick="adminEntrar()">Ingresar</button>
+      <div class="admin-err" id="admin-err">Contraseña incorrecta</div>
+    </div>
+  </div>
+  <!-- Panel real (oculto hasta autenticarse) -->
+  <div id="admin-panel-view" style="display:none;">
+    <div class="admin-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <span style="font-size:1rem;color:#fff;font-weight:600;"><i class="ti ti-shield-lock" style="color:#c0392b;margin-right:8px;" aria-hidden="true"></i>Panel Intranet ILFIS</span>
+        <button class="btn-refresh-cuenta" onclick="adminCargar()"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
+        <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+      </div>
+      <!-- Sección Recaudación -->
+      <div class="admin-section active" id="admin-sec-recaud">
+        <div id="admin-recaud-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Alumnos -->
+      <div class="admin-section" id="admin-sec-alumnos">
+        <div id="admin-alumnos-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dar Acceso -->
+<div class="admin-modal-bg" id="admin-modal-dar">
+  <div class="admin-modal">
+    <h3>Dar acceso a curso</h3>
+    <p style="font-size:0.8rem;color:#7a8a9a;margin-bottom:14px;" id="admin-modal-dar-nombre"></p>
+    <select id="admin-modal-dar-curso">
+      <option value="rociadores">Diplomado de Rociadores Automáticos</option>
+      <option value="hidraulicos">Diplomado Especializado en Cálculos Hidráulicos</option>
+      <option value="bombas">Diplomado de Bombas Contra Incendios</option>
+      <option value="mercancias">Diplomado de Protección de Mercancías</option>
+      <option value="alarmas">Diplomado de Detección y Alarmas de Incendios</option>
+    </select>
+    <div class="admin-modal-btns">
+      <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
+      <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarDar()">Dar 30 días de acceso</button>
+    </div>
   </div>
 </div>
 
@@ -1037,9 +1145,9 @@ auth.onAuthStateChanged(async function(user) {
     // Restaurar pestaña activa e historial
     _restaurarTab();
     _renderHistorial(user.uid);
-    // Al cargar, verificar en el backend si llegaron respuestas pendientes
     _verificarRespuestasPendientes(user.uid);
     renderMiCuenta();
+    _adminRestaurarSesion();
   } else {
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth-overlay').style.display = 'flex';
@@ -2500,6 +2608,183 @@ const CATEGORIAS = ['Todas','Rociadores','Bombas','Detección y Alarma','Cálcul
   'Diplomados y Clases','Mitos y Realidades','Conversatorios','Análisis de Incendios','Normativa','Otros'];
 
 let _expInit = false, _catActual = 'Todas';
+
+// ── PANEL ADMIN ────────────────────────────────────────────
+const ADMIN_PWD   = "999";
+const ADMIN_NAMES = {
+  rociadores:  "Rociadores Automáticos",
+  hidraulicos: "Cálculos Hidráulicos",
+  bombas:      "Bombas Contra Incendios",
+  mercancias:  "Protección de Mercancías",
+  alarmas:     "Detección y Alarmas",
+};
+let _adminAlumnos    = [];
+let _adminModalUid   = null;
+let _adminModalEmail = null;
+
+function adminEntrar() {
+  const pwd = document.getElementById('admin-pwd').value.trim();
+  const err = document.getElementById('admin-err');
+  if (pwd !== ADMIN_PWD) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  sessionStorage.setItem('ilfis_admin', '1');
+  document.getElementById('admin-gate-view').style.display  = 'none';
+  document.getElementById('admin-panel-view').style.display = 'block';
+  adminCargar();
+}
+
+function adminShowTab(name, btn) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('admin-sec-' + name).classList.add('active');
+}
+
+async function adminCargar() {
+  document.getElementById('admin-recaud-content').innerHTML  = '<div class="admin-loading">Cargando...</div>';
+  document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': ADMIN_PWD } });
+    if (!r.ok) { throw new Error('Error ' + r.status); }
+    const data = await r.json();
+    _adminAlumnos = data.alumnos || [];
+    adminRenderRecaud();
+    adminRenderAlumnos();
+  } catch(e) {
+    document.getElementById('admin-recaud-content').innerHTML  = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
+    document.getElementById('admin-alumnos-content').innerHTML = '';
+  }
+}
+
+function adminRenderRecaud() {
+  const ahora  = new Date();
+  const conteo = { rociadores:0, hidraulicos:0, bombas:0, mercancias:0, alarmas:0 };
+  for (const u of _adminAlumnos) {
+    for (const [curso, exp] of Object.entries(u.cursos_activos || {})) {
+      if (new Date(exp) > ahora && conteo[curso] !== undefined) conteo[curso]++;
+    }
+  }
+  const PRECIO = 100;
+  const cursos = Object.entries(conteo);
+  const total  = cursos.reduce((s, [,n]) => s + n, 0);
+  const html   = cursos.map(([k, n]) => `
+    <div class="rc-card">
+      <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
+      <div class="rc-num">${n}</div>
+      <div class="rc-sub">alumnos activos</div>
+      <div class="rc-monto">$${n * PRECIO}</div>
+    </div>`).join('') + `
+    <div class="rc-card" style="border-color:#2a7a4a;">
+      <div class="rc-nombre" style="color:#5dcc85;font-weight:700;">TOTAL</div>
+      <div class="rc-num">${total}</div>
+      <div class="rc-sub">alumnos activos</div>
+      <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
+    </div>`;
+  document.getElementById('admin-recaud-content').innerHTML = `<div class="recaud-grid">${html}</div>`;
+}
+
+function adminRenderAlumnos() {
+  const ahora = new Date();
+  if (!_adminAlumnos.length) {
+    document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">No hay alumnos registrados.</div>';
+    return;
+  }
+  const filas = _adminAlumnos.map(u => {
+    const cursos  = u.cursos_activos || {};
+    const keys    = Object.keys(cursos);
+    const badgesHtml = keys.length === 0
+      ? '<span class="cbadge cb-none">Sin suscripción</span>'
+      : keys.map(k => {
+          const exp  = new Date(cursos[k]);
+          const dias = Math.ceil((exp - ahora) / 86400000);
+          const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
+          const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
+          return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
+        }).join('');
+    const acciones = keys.map(k => {
+      const exp  = new Date(cursos[k]);
+      const dias = Math.ceil((exp - ahora) / 86400000);
+      return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
+              ${dias > 0 ? `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Revocar ${ADMIN_NAMES[k]||k}</button>` : ''}`;
+    }).join(' ');
+    return `<tr>
+      <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+      <td>${badgesHtml}</td>
+      <td style="white-space:nowrap;min-width:200px;">
+        ${acciones}
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}')">Dar acceso</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-alumnos-content').innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Alumno</th><th>Suscripciones</th><th>Acciones</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+async function adminExtender(uid, curso) {
+  if (!confirm(`¿Extender 30 días de acceso a ${ADMIN_NAMES[curso]||curso}?`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/extender', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid, curso, dias: 30 })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function adminRevocar(uid, curso, email) {
+  if (!confirm(`¿Revocar acceso de ${email} a ${ADMIN_NAMES[curso]||curso}?`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/revocar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid, curso })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function adminAbrirDar(uid, email, nombre) {
+  _adminModalUid   = uid;
+  _adminModalEmail = email;
+  document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
+  document.getElementById('admin-modal-dar').classList.add('visible');
+}
+
+function adminCerrarModal() {
+  document.getElementById('admin-modal-dar').classList.remove('visible');
+  _adminModalUid = null;
+}
+
+async function adminConfirmarDar() {
+  const curso = document.getElementById('admin-modal-dar-curso').value;
+  try {
+    const r = await fetch(BACKEND + '/admin/dar-acceso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid: _adminModalUid, curso })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    adminCerrarModal();
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// Restaurar sesión admin si ya estaba autenticado
+function _adminRestaurarSesion() {
+  if (sessionStorage.getItem('ilfis_admin') === '1') {
+    document.getElementById('admin-gate-view').style.display  = 'none';
+    document.getElementById('admin-panel-view').style.display = 'block';
+  }
+}
 
 // ── PANEL MI CUENTA ────────────────────────────────────────
 function renderMiCuenta() {
