@@ -981,9 +981,9 @@ auth.onAuthStateChanged(async function(user) {
     } else {
       avatarEl.textContent = name.charAt(0).toUpperCase();
     }
-    // Clases premium
-    document.getElementById('clases-nopremium').style.display = isPremium ? 'none' : 'block';
-    document.getElementById('clases-premium').style.display  = isPremium ? 'block' : 'none';
+    // Clases — siempre mostrar el grid de cursos, el acceso por curso lo controla _cursosActivos
+    document.getElementById('clases-nopremium').style.display = 'block';
+    document.getElementById('clases-premium').style.display  = 'none';
     // Restaurar pestaña activa e historial
     _restaurarTab();
     _renderHistorial(user.uid);
