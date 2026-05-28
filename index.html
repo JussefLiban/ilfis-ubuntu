@@ -987,6 +987,8 @@ auth.onAuthStateChanged(async function(user) {
     // Restaurar pestaña activa e historial
     _restaurarTab();
     _renderHistorial(user.uid);
+    // Al cargar, verificar en el backend si llegaron respuestas pendientes
+    _verificarRespuestasPendientes(user.uid);
   } else {
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth-overlay').style.display = 'flex';
@@ -1258,6 +1260,24 @@ function _iniciarPollingExperto() {
       }
     } catch (e) { /* ignorar errores de polling */ }
   }, 5000);
+}
+
+async function _verificarRespuestasPendientes(uid) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  for (const entry of hist) {
+    if (!entry.messages || entry.messages.length === 0) {
+      try {
+        const r = await fetch(`${BACKEND}/respuesta/${entry.id}`);
+        if (!r.ok) continue;
+        const data = await r.json();
+        if (data.fuente === 'profesor' && data.messages && data.messages.length > 0) {
+          for (const msg of data.messages) {
+            _actualizarRespuesta(uid, entry.id, msg.texto, msg.nombre_profesor);
+          }
+        }
+      } catch(e) {}
+    }
+  }
 }
 
 function _renderThread(aiText, expertMsgs) {
