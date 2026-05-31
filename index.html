@@ -457,6 +457,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
   </button>
+    <button class="tab-btn" onclick="showTab('calcula', this)">
+    <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
+  </button>
   <button class="tab-btn" onclick="showTab('cuenta', this)">
     <i class="ti ti-user-circle" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Mi Cuenta</span><span class="tab-line2">Mis suscripciones</span></span>
@@ -508,6 +512,25 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
     <div class="hist-titulo">📋 Mis preguntas anteriores</div>
     <div id="experto-historial"></div>
+  </div>
+</div>
+
+<!-- Panel Calcula con Ubuntu -->
+<div class="panel" id="panel-calcula">
+  <div class="explorador-inner">
+    <p class="subtitle">Herramientas de cálculo y verificación para diseño contra incendios.<br>Cada calculadora abre en una pestaña nueva.</p>
+    <div class="video-grid">
+      <a href="plano-gabinete-nfpa14/" target="_blank" rel="noopener" class="vcard" style="text-decoration:none;cursor:pointer;">
+        <div class="vcard-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d2a4a;">
+          <i class="ti ti-ruler-measure" style="font-size:3rem;color:#5daaff;"></i>
+        </div>
+        <div class="vcard-body">
+          <div class="vcard-cat">NFPA 14 · Clase III</div>
+          <div class="vcard-title">Plano de Montaje — Gabinete Guardian Serie 1500</div>
+          <span class="vcard-link"><i class="ti ti-external-link"></i> Abrir calculadora</span>
+        </div>
+      </a>
+    </div>
   </div>
 </div>
 
