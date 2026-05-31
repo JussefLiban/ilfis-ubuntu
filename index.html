@@ -1360,6 +1360,44 @@ function _renderHistorial(uid) {
   }).join('');
 }
 
+// ── HELPER: fetch con token Firebase + manejo de errores ───────────────
+// Si el usuario no está logueado, abre el popup de Google.
+// Devuelve la Response. El llamador debe chequear res.ok como siempre.
+// Errores HTTP típicos:
+//   401 → token inválido/expirado. Mensaje pide reiniciar sesión.
+//   429 → tope diario alcanzado. Mensaje claro al usuario.
+async function _authFetch(url, init = {}) {
+  let user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+  if (!user) {
+    // Intentar abrir login (no bloquea, pero avisa al usuario)
+    try { await loginGoogle(); } catch (_) {}
+    user = auth.currentUser;
+    if (!user) {
+      const err = new Error('Inicia sesión con Google para usar el asistente.');
+      err.code = 'NO_AUTH';
+      throw err;
+    }
+  }
+  const idToken = await user.getIdToken();
+  const headers = Object.assign({}, init.headers || {}, {
+    'Authorization': 'Bearer ' + idToken
+  });
+  const res = await fetch(url, Object.assign({}, init, { headers }));
+  if (res.status === 401) {
+    const err = new Error('Tu sesión expiró. Inicia sesión otra vez.');
+    err.code = 'EXPIRED';
+    throw err;
+  }
+  if (res.status === 429) {
+    let msg = 'Llegaste al tope diario de consultas. Vuelve mañana.';
+    try { const j = await res.clone().json(); if (j && j.detail) msg = j.detail; } catch (_) {}
+    const err = new Error(msg);
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
+  return res;
+}
+
 // ── MÓDULO PREGÚNTALE AL EXPERTO ──────────────────────────
 let _expertoQid    = null;
 let _expertoPoller = null;
@@ -1380,7 +1418,7 @@ async function preguntarExperto() {
   try {
     const _u = auth.currentUser;
     const _nombre = _u ? (_u.displayName || _u.email || 'Alumno anónimo') : 'Alumno anónimo';
-    const res = await fetch(API + '/preguntar', {
+    const res = await _authFetch(API + '/preguntar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texto: pregunta, nombre: _nombre })
@@ -1425,7 +1463,7 @@ function _iniciarPollingExperto() {
     if (intentos > MAX || !_expertoQid) { clearInterval(_expertoPoller); return; }
 
     try {
-      const res = await fetch(API + '/respuesta/' + _expertoQid);
+      const res = await _authFetch(API + '/respuesta/' + _expertoQid);
       if (!res.ok) return;
       const data = await res.json();
 
@@ -1451,7 +1489,7 @@ async function _verificarRespuestasPendientes(uid) {
   for (const entry of hist) {
     const localCount = (entry.messages || []).length;
     try {
-      const r = await fetch(`${BACKEND}/respuesta/${entry.id}`);
+      const r = await _authFetch(`${BACKEND}/respuesta/${entry.id}`);
       if (!r.ok) continue;
       const data = await r.json();
       if (data.messages && data.messages.length > localCount) {
@@ -1501,7 +1539,7 @@ async function consultar() {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 120000);
-    const res = await fetch(API + '/consulta', {
+    const res = await _authFetch(API + '/consulta', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ texto: pregunta }), signal: ctrl.signal
     });
@@ -1513,7 +1551,11 @@ async function consultar() {
       ? 'Fuentes: ' + data.fuentes.map(f=>`<span>${f}</span>`).join('') : '';
     box.style.display = 'block'; estado.innerHTML = '';
   } catch(e) {
-    estado.textContent = e.name==='AbortError' ? 'Tiempo agotado. El servidor tardó más de 2 minutos.' : 'Error: '+e.message;
+    if (e.code === 'NO_AUTH' || e.code === 'EXPIRED' || e.code === 'RATE_LIMIT') {
+      estado.textContent = e.message;
+    } else {
+      estado.textContent = e.name==='AbortError' ? 'Tiempo agotado. El servidor tardó más de 2 minutos.' : 'Error: '+e.message;
+    }
   } finally { btn.disabled = false; }
 }
 document.getElementById('pregunta').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();consultar();} });
@@ -1532,7 +1574,7 @@ async function buscarVideo() {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 120000);
-    const res = await fetch(API + '/consulta', {
+    const res = await _authFetch(API + '/consulta', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ texto: pregunta, fuente: 'youtube' }), signal: ctrl.signal
     });
