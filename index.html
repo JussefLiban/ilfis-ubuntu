@@ -933,11 +933,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="paywall-lock">🔒</div>
     <div class="paywall-label">Contenido Premium</div>
     <div class="paywall-titulo" id="paywall-titulo"></div>
-    <div class="paywall-precio">$100 <span>/ mes</span></div>
+    <div class="paywall-precio">$000 <span>/ mes</span></div>
     <div class="paywall-incluye" id="paywall-incluye"></div>
     <button class="btn-paypal" onclick="iniciarPagoPayPal()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="#003087"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.23 0 .23 0 0 0 .25-1.57-.01-2.64-.35-3.3z"/></svg>
-      🔓 Sí, quiero acceder por $100/mes
+      🔓 Sí, quiero acceder por $000/mes
     </button>
     <div class="paywall-seguro">Pago 100% seguro vía PayPal · Sin compromisos</div>
     <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver al curso</button>
@@ -967,7 +967,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
       </div>
       <div class="pf-error" id="pf-error"></div>
-      <button class="btn-pagar" id="btn-pagar" onclick="_submitPago()">Pagar $100</button>
+      <button class="btn-pagar" id="btn-pagar" onclick="_submitPago()">Pagar $000</button>
       <button class="pf-back" onclick="_volverPaywall()">← Volver</button>
     </div>
   </div>
@@ -2584,7 +2584,7 @@ function iniciarPagoPayPal() {
   const errEl = document.getElementById('pf-error');
   errEl.style.display = 'none'; errEl.textContent = '';
   document.getElementById('btn-pagar').disabled = false;
-  document.getElementById('btn-pagar').textContent = 'Pagar $100';
+  document.getElementById('btn-pagar').textContent = 'Pagar $000';
 }
 
 function _volverPaywall() {
@@ -2656,7 +2656,7 @@ async function _submitPago() {
     errEl.textContent = err.message || 'Error procesando el pago. Intenta de nuevo.';
     errEl.style.display = 'block';
     btnEl.disabled = false;
-    btnEl.textContent = 'Pagar $100';
+    btnEl.textContent = 'Pagar $000';
   }
 }
 
@@ -2742,7 +2742,7 @@ function adminRenderRecaud() {
       if (new Date(exp) > ahora && conteo[curso] !== undefined) conteo[curso]++;
     }
   }
-  const PRECIO = 100;
+  const PRECIO = 000;
   const cursos = Object.entries(conteo);
   const total  = cursos.reduce((s, [,n]) => s + n, 0);
   const html   = cursos.map(([k, n]) => `
