@@ -2685,7 +2685,19 @@ const CATEGORIAS = ['Todas','Rociadores','Bombas','Detección y Alarma','Cálcul
 let _expInit = false, _catActual = 'Todas';
 
 // ── PANEL ADMIN ────────────────────────────────────────────
-const ADMIN_PWD   = "999";
+const ADMIN_PWD = null;
+const _getAdminKey = () => localStorage.getItem('ilfis_admin_key') || '';
+const _setAdminKey = (k) => localStorage.setItem('ilfis_admin_key', k);
+const _clearAdminKey = () => {
+  localStorage.removeItem('ilfis_admin_key');
+  sessionStorage.removeItem('ilfis_admin');
+  const gate = document.getElementById('admin-gate-view');
+  const pnl  = document.getElementById('admin-panel-view');
+  if (gate) gate.style.display = '';
+  if (pnl)  pnl.style.display  = 'none';
+  const e = document.getElementById('admin-err');
+  if (e) { e.textContent = 'Contraseña incorrecta o expirada'; e.style.display = 'block'; }
+};
 const ADMIN_NAMES = {
   rociadores:  "Rociadores Automáticos",
   hidraulicos: "Cálculos Hidráulicos",
@@ -2700,10 +2712,8 @@ let _adminModalEmail = null;
 function adminEntrar() {
   const pwd = document.getElementById('admin-pwd').value.trim();
   const err = document.getElementById('admin-err');
-  if (pwd !== ADMIN_PWD) {
-    err.style.display = 'block';
-    return;
-  }
+  if (!pwd) { const e = document.getElementById('admin-err'); if (e) { e.textContent = 'Escribe la contraseña'; e.style.display = 'block'; } return; }
+  _setAdminKey(pwd);
   err.style.display = 'none';
   sessionStorage.setItem('ilfis_admin', '1');
   document.getElementById('admin-gate-view').style.display  = 'none';
@@ -2722,8 +2732,8 @@ async function adminCargar() {
   document.getElementById('admin-recaud-content').innerHTML  = '<div class="admin-loading">Cargando...</div>';
   document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
   try {
-    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': ADMIN_PWD } });
-    if (!r.ok) { throw new Error('Error ' + r.status); }
+    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) { throw new Error('Error ' + r.status); }
     const data = await r.json();
     _adminAlumnos = data.alumnos || [];
     adminRenderRecaud();
@@ -2806,10 +2816,10 @@ async function adminExtender(uid, curso) {
   try {
     const r = await fetch(BACKEND + '/admin/extender', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
       body: JSON.stringify({ uid, curso, dias: 30 })
     });
-    if (!r.ok) throw new Error((await r.json()).detail);
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     await adminCargar();
   } catch(e) { alert('Error: ' + e.message); }
 }
@@ -2819,10 +2829,10 @@ async function adminRevocar(uid, curso, email) {
   try {
     const r = await fetch(BACKEND + '/admin/revocar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
       body: JSON.stringify({ uid, curso })
     });
-    if (!r.ok) throw new Error((await r.json()).detail);
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     await adminCargar();
   } catch(e) { alert('Error: ' + e.message); }
 }
@@ -2844,10 +2854,10 @@ async function adminConfirmarDar() {
   try {
     const r = await fetch(BACKEND + '/admin/dar-acceso', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
       body: JSON.stringify({ uid: _adminModalUid, curso })
     });
-    if (!r.ok) throw new Error((await r.json()).detail);
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     adminCerrarModal();
     await adminCargar();
   } catch(e) { alert('Error: ' + e.message); }
@@ -2855,7 +2865,7 @@ async function adminConfirmarDar() {
 
 // Restaurar sesión admin si ya estaba autenticado
 function _adminRestaurarSesion() {
-  if (sessionStorage.getItem('ilfis_admin') === '1') {
+  if (_getAdminKey() !== '') {
     document.getElementById('admin-gate-view').style.display  = 'none';
     document.getElementById('admin-panel-view').style.display = 'block';
   }
