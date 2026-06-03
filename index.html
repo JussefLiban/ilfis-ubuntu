@@ -1,1 +1,2978 @@
-undefined
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ILFIS Ubuntu</title>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Deps -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; }
+
+/* ── LOADING SCREEN ──────────────────────────────────────── */
+#loading-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px; }
+.loading-spin { width: 36px; height: 36px; border: 3px solid #2a2a5a; border-top-color: #c0392b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+/* ── AUTH OVERLAY ────────────────────────────────────────── */
+#auth-overlay { position: fixed; inset: 0; background: #1a1a2e; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; overflow-y: auto; }
+.auth-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 16px; padding: 36px 32px; width: 100%; max-width: 420px; }
+.auth-logo { text-align: center; margin-bottom: 26px; }
+.auth-logo-box { background: #fff; padding: 6px 14px; border-radius: 8px; display: inline-block; margin-bottom: 12px; }
+.auth-logo-box img { height: 38px; display: block; }
+.auth-logo h2 { font-size: 1.25rem; color: #fff; letter-spacing: 1px; margin-bottom: 4px; }
+.auth-logo p { font-size: 0.72rem; color: #7a8a9a; text-transform: uppercase; letter-spacing: 1px; }
+.auth-tabs { display: flex; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; }
+.auth-tab-btn { flex: 1; padding: 10px; background: none; border: none; color: #7a8a9a; font-size: 0.88rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.auth-tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
+.auth-input-group { margin-bottom: 14px; }
+.auth-input-group label { display: block; font-size: 0.75rem; color: #7a8a9a; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.8px; }
+.auth-input { width: 100%; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; padding: 11px 14px; outline: none; transition: border 0.2s; }
+.auth-input:focus { border-color: #c0392b; }
+.auth-input::placeholder { color: #4a6a8a; }
+.btn-auth-primary { width: 100%; padding: 12px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s; margin-top: 4px; }
+.btn-auth-primary:hover { background: #a93226; }
+.btn-auth-primary:disabled { background: #555; cursor: not-allowed; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: #4a5a6a; font-size: 0.8rem; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #2a2a5a; }
+.btn-google { width: 100%; padding: 11px; background: #fff; color: #333; border: none; border-radius: 8px; font-size: 0.92rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s; }
+.btn-google:hover { background: #f0f0f0; }
+.auth-error { margin-top: 12px; padding: 10px 14px; background: rgba(192,57,43,0.15); border: 1px solid rgba(192,57,43,0.4); border-radius: 6px; color: #e87272; font-size: 0.84rem; display: none; }
+.auth-success { margin-top: 12px; padding: 10px 14px; background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); border-radius: 6px; color: #5dcc85; font-size: 0.84rem; display: none; }
+
+/* ── APP PRINCIPAL ───────────────────────────────────────── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* ── HEADER ─────────────────────────────────────────────── */
+header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; }
+/* Banner "gratis hasta..." */
+.banner-gratis { display: flex; align-items: center; gap: 8px; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.35); border-radius: 20px; padding: 6px 14px; flex-shrink: 0; position: absolute; left: 50%; transform: translateX(-50%); }
+.banner-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71; flex-shrink: 0; animation: pulso-dot 1.4s ease-in-out infinite; }
+@keyframes pulso-dot { 0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #2ecc71; } 50% { transform: scale(1.5); opacity: 0.55; box-shadow: 0 0 14px #2ecc71; } }
+.banner-txt { font-size: 0.72rem; color: #2ecc71; font-weight: 600; white-space: nowrap; letter-spacing: 0.3px; }
+.header-text h1 { font-size: 1.4rem; color: #fff; letter-spacing: 1px; }
+.header-text p { font-size: 0.68rem; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.header-user { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #c0392b; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; color: #fff; overflow: hidden; flex-shrink: 0; }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-name { font-size: 0.82rem; color: #aac; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-logout { padding: 5px 12px; background: transparent; border: 1px solid #3a3a6a; color: #7a8a9a; border-radius: 6px; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-logout:hover { border-color: #c0392b; color: #e87272; }
+
+/* ── TABS NAV ────────────────────────────────────────────── */
+nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; padding: 0 30px; overflow-x: auto; }
+nav.tabs .tab-btn { padding: 10px 20px; font-size: 0.88rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 9px; transition: color 0.2s; letter-spacing: 0.3px; white-space: nowrap; }
+.tab-label { display: flex; flex-direction: column; text-align: left; }
+.tab-line1 { font-size: 0.85rem; line-height: 1.35; font-weight: 600; }
+.tab-line2 { font-size: 0.71rem; line-height: 1.3; opacity: 0.7; letter-spacing: 0.2px; }
+nav.tabs .tab-btn:hover { color: #cdd; }
+nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
+
+/* ── PANELS ──────────────────────────────────────────────── */
+.panel { display: none; flex: 1; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
+.hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
+.hist-item { background:#16213e; border:1px solid #2a2a5a; border-radius:10px; padding:16px; margin-bottom:12px; }
+.hist-msg { display:flex; flex-direction:column; gap:3px; padding:8px 12px; border-radius:8px; }
+.hist-msg-ia { background:#1a2a3a; border:1px solid #2a3a5a; }
+.hist-msg-exp { background:#0d2a1a; border:1px solid #1a4a2a; }
+.hist-msg-autor { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; }
+.hist-msg-ia .hist-msg-autor { color:#5daaff; }
+.hist-msg-exp .hist-msg-autor { color:#2ecc71; }
+.hist-msg-texto { font-size:0.82rem; color:#ccd; line-height:1.5; }
+/* Chat thread de respuestas */
+.chat-thread { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+.chat-burbuja { border-radius:10px; padding:14px 16px; font-size:0.9rem; line-height:1.6; }
+.chat-ia { background:#1a2a3a; border:1px solid #2a3a5a; color:#aac; }
+.chat-experto { background:#0d2a1a; border:1px solid #1a4a2a; color:#cec; }
+.chat-autor { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+.chat-ia .chat-autor { color:#5daaff; }
+.chat-experto .chat-autor { color:#2ecc71; }
+.chat-ts { font-size:0.65rem; color:#4a6a5a; margin-top:6px; }
+.hist-fecha { font-size:0.75rem; color:#888; margin-bottom:6px; }
+.hist-pregunta { font-size:0.95rem; color:#ccc; margin-bottom:8px; }
+.hist-respuesta { font-size:0.9rem; color:#e0e0e0; line-height:1.5; }
+.hist-badge-small { display:inline-block; margin-top:8px; padding:4px 10px; background:#1a472a; border-radius:6px; color:#2ecc71; font-size:0.78rem; font-weight:bold; }
+
+/* ─── PANEL MI CUENTA ────────────────────────────────────── */
+.cuenta-wrap { max-width: 700px; width: 100%; margin: 40px auto; padding: 0 20px 60px; }
+.cuenta-section { margin-bottom: 32px; }
+.cuenta-section-title { font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; border-bottom: 1px solid #2a2a5a; padding-bottom: 8px; display:flex; align-items:center; }
+.cuenta-user-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; }
+.cuenta-avatar { width: 54px; height: 54px; border-radius: 50%; background: #c0392b; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: bold; color: #fff; flex-shrink: 0; overflow: hidden; }
+.cuenta-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.cuenta-user-info { flex: 1; }
+.cuenta-user-name { font-size: 1.05rem; color: #fff; font-weight: 600; }
+.cuenta-user-email { font-size: 0.8rem; color: #7a8a9a; margin-top: 3px; }
+.curso-crm-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.curso-crm-nombre { font-size: 0.95rem; color: #dde; font-weight: 600; flex: 1; min-width: 180px; }
+.curso-crm-expiry { font-size: 0.75rem; color: #5a6a7a; white-space: nowrap; }
+.curso-crm-dias { font-size: 0.82rem; font-weight: bold; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+.dias-ok   { background: #1a4a2a; color: #5dcc85; }
+.dias-warn { background: #3a2a00; color: #f0b429; }
+.dias-crit { background: #3a1a1a; color: #e87272; }
+.btn-renovar { background: #c0392b; color: #fff; border: none; border-radius: 6px; padding: 7px 16px; font-size: 0.82rem; font-weight: bold; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.btn-renovar:hover { background: #a93226; }
+.cuenta-empty { text-align: center; padding: 32px 20px; background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; color: #5a6a7a; font-size: 0.9rem; line-height: 1.7; }
+.btn-refresh-cuenta { display: flex; align-items: center; gap: 7px; background: transparent; border: 1px solid #2a2a5a; color: #7a8a9a; border-radius: 6px; padding: 6px 13px; font-size: 0.77rem; cursor: pointer; transition: all 0.15s; margin-left: auto; }
+.btn-refresh-cuenta:hover { border-color: #555; color: #ccc; }
+
+/* ─── PANEL ADMIN ────────────────────────────────────────── */
+.admin-gate { max-width: 380px; margin: 80px auto; background: #16213e; border: 1px solid #2a2a5a; border-radius: 14px; padding: 36px 32px; text-align: center; }
+.admin-gate h2 { color: #fff; font-size: 1.1rem; margin-bottom: 6px; }
+.admin-gate p { color: #7a8a9a; font-size: 0.82rem; margin-bottom: 22px; }
+.admin-input { width: 100%; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 1rem; padding: 11px 14px; outline: none; text-align: center; letter-spacing: 4px; margin-bottom: 12px; }
+.admin-input:focus { border-color: #c0392b; }
+.btn-admin-enter { width: 100%; padding: 11px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+.btn-admin-enter:hover { background: #a93226; }
+.admin-err { color: #e87272; font-size: 0.82rem; margin-top: 8px; display: none; }
+.admin-wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 50px; }
+.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; }
+.admin-tab { padding: 9px 20px; font-size: 0.85rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.admin-tab.active { color: #fff; border-bottom-color: #c0392b; }
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+.recaud-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.rc-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; padding: 14px 16px; }
+.rc-nombre { font-size: 0.7rem; color: #8899aa; margin-bottom: 8px; line-height: 1.4; }
+.rc-num { font-size: 1.4rem; font-weight: 700; color: #fff; }
+.rc-sub { font-size: 0.68rem; color: #7a8a9a; margin-top: 2px; }
+.rc-monto { font-size: 0.92rem; font-weight: 700; color: #5dcc85; margin-top: 6px; }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th { font-size: 0.7rem; color: #7a8a9a; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; padding: 8px 12px; border-bottom: 1px solid #2a2a5a; }
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid #1a1a3a; vertical-align: middle; }
+.admin-table tr:hover td { background: #16213e; }
+.a-name { color: #dde; font-weight: 600; font-size: 0.87rem; }
+.a-email { color: #7a8a9a; font-size: 0.72rem; margin-top: 2px; }
+.cbadge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.67rem; font-weight: 700; white-space: nowrap; margin: 2px 3px 2px 0; }
+.cb-ok { background: #1a4a2a; color: #5dcc85; }
+.cb-warn { background: #3a2a00; color: #f0b429; }
+.cb-exp { background: #3a1a1a; color: #e87272; }
+.cb-none { background: #252540; color: #5a6a7a; border: 1px solid #2a2a5a; }
+.btn-a { border-radius: 5px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; white-space: nowrap; }
+.btn-ext { background: transparent; border: 1px solid #2a5a9a; color: #5daaff; }
+.btn-ext:hover { background: #0f3460; }
+.btn-rev { background: transparent; border: 1px solid #5a2a2a; color: #e87272; margin-left: 4px; }
+.btn-rev:hover { background: #3a1a1a; }
+.btn-dar { background: #c0392b; color: #fff; border: none; margin-left: 4px; }
+.btn-dar:hover { background: #a93226; }
+.admin-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; }
+.admin-modal-bg.visible { display: flex; }
+.admin-modal { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; padding: 28px 28px 22px; min-width: 300px; }
+.admin-modal h3 { color: #fff; font-size: 1rem; margin-bottom: 16px; }
+.admin-modal select { width: 100%; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 7px; color: #e0e0e0; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 14px; }
+.admin-modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-cancel { background: transparent; border: 1px solid #3a3a6a; color: #7a8a9a; border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: 0.82rem; }
+.admin-loading { text-align: center; padding: 40px; color: #7a8a9a; }
+
+/* ─── PANEL CONSULTAS ────────────────────────────────────── */
+#panel-consultar { align-items: center; }
+.consultar-inner { max-width: 860px; width: 100%; margin: 40px auto; padding: 0 20px; }
+.subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.95rem; line-height: 1.6; }
+.consulta-box { background: #16213e; border-radius: 12px; padding: 24px; border: 1px solid #2a2a5a; }
+.consulta-box label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+textarea { width: 100%; height: 110px; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 1rem; padding: 14px; resize: vertical; outline: none; transition: border 0.2s; }
+textarea:focus { border-color: #c0392b; }
+textarea::placeholder { color: #5a7a9a; }
+.btn-consultar { margin-top: 14px; width: 100%; padding: 14px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
+.btn-consultar:hover { background: #a93226; }
+.btn-consultar:disabled { background: #555; cursor: not-allowed; }
+.estado { text-align: center; margin-top: 16px; color: #aaa; font-style: italic; font-size: 0.9rem; min-height: 22px; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #555; border-top-color: #c0392b; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.respuesta-box { margin-top: 28px; background: #16213e; border-radius: 12px; padding: 24px; border: 1px solid #2a2a5a; border-left: 4px solid #c0392b; display: none; }
+.respuesta-label { font-size: 0.78rem; color: #c0392b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+.respuesta-texto { font-size: 1rem; line-height: 1.8; color: #dde; }
+.respuesta-texto h1,.respuesta-texto h2,.respuesta-texto h3 { color: #fff; margin: 16px 0 8px 0; }
+.respuesta-texto p { margin-bottom: 12px; }
+.respuesta-texto ul,.respuesta-texto ol { margin: 8px 0 12px 20px; }
+.respuesta-texto li { margin-bottom: 4px; }
+.respuesta-texto strong { color: #fff; }
+.respuesta-texto a { color: #e87272; text-decoration: underline; word-break: break-all; }
+.respuesta-texto a:hover { color: #ff9999; }
+.respuesta-texto blockquote { border-left: 3px solid #c0392b; padding-left: 12px; color: #aaa; margin: 12px 0; font-style: italic; }
+.respuesta-texto code { background: #0f3460; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+.fuentes { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a5a; font-size: 0.8rem; color: #7a8a9a; }
+.fuentes span { background: #0f3460; padding: 3px 8px; border-radius: 4px; margin-right: 6px; display: inline-block; margin-top: 4px; }
+.ejemplos { margin-top: 28px; }
+.ejemplos p { font-size: 0.8rem; color: #7a8a9a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.ejemplo-btn { display: inline-block; background: #0f3460; border: 1px solid #2a5a9a; color: #aac; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; margin: 4px 6px 4px 0; transition: background 0.2s; }
+.ejemplo-btn:hover { background: #1a4a80; color: #fff; }
+
+/* ─── PANEL VIDEOS ───────────────────────────────────────── */
+#panel-videos { align-items: center; }
+.video-result { background: #16213e; border: 1px solid #2a2a5a; border-left: 4px solid #c0392b; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+.video-result-title { font-size: 0.88rem; color: #fff; font-weight: 600; margin-bottom: 5px; }
+.video-result-meta { font-size: 0.75rem; color: #7a8a9a; margin-bottom: 8px; }
+.video-result-excerpt { font-size: 0.82rem; color: #aaa; line-height: 1.6; margin-bottom: 10px; font-style: italic; border-left: 2px solid #2a2a5a; padding-left: 10px; }
+.video-result-link { display: inline-flex; align-items: center; gap: 5px; background: #c0392b; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+.video-result-link:hover { background: #a93226; }
+.videos-coming { margin-top: 28px; text-align: center; padding: 28px; background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; }
+.videos-coming i { font-size: 2.5rem; color: #c0392b; display: block; margin-bottom: 14px; }
+.videos-coming p { color: #7a8a9a; font-size: 0.88rem; line-height: 1.7; margin-bottom: 4px; }
+.videos-coming p strong { color: #aac; }
+
+/* ─── PANEL EXPLORADOR ───────────────────────────────────── */
+#panel-explorador { align-items: stretch; }
+.explorador-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 24px 20px 40px; }
+.explorador-inner .subtitle { text-align: left; margin-bottom: 18px; }
+.search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-input { flex: 1; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; padding: 11px 16px; outline: none; transition: border 0.2s; }
+.search-input:focus { border-color: #c0392b; }
+.search-input::placeholder { color: #5a7a9a; }
+.cats { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.cat-btn { padding: 5px 13px; border: 1px solid #2a2a5a; border-radius: 20px; background: #16213e; color: #8899aa; font-size: 0.77rem; cursor: pointer; transition: all 0.15s; }
+.cat-btn:hover { color: #cdd; border-color: #555; }
+.cat-btn.active { background: #c0392b; color: #fff; border-color: #c0392b; }
+.exp-count { font-size: 0.78rem; color: #5a6a7a; margin-bottom: 16px; }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.vcard { background: #16213e; border: 1px solid #2a2a5a; border-radius: 10px; overflow: hidden; transition: border-color 0.15s, transform 0.15s; }
+.vcard:hover { border-color: #c0392b; transform: translateY(-2px); }
+.vcard-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #0a1a30; display: block; }
+.vcard-body { padding: 10px 12px 12px; }
+.vcard-cat { font-size: 0.6rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.vcard-title { font-size: 0.79rem; color: #dde; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.2rem; margin-bottom: 10px; }
+.vcard-link { display: inline-flex; align-items: center; gap: 5px; background: #c0392b; color: #fff; padding: 5px 11px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+.vcard-link:hover { background: #a93226; }
+.no-results { text-align: center; padding: 60px 20px; color: #5a6a7a; font-size: 0.9rem; }
+
+/* ─── TARJETA CURSO ACTIVO ───────────────────────────────────── */
+.curso-card-activo { border-color: #2a7a4a !important; box-shadow: 0 0 0 1px #2a7a4a; }
+.curso-badge-activo { background: #1a5a3a !important; color: #5dcc85 !important; }
+.btn-ver-clases { background: #c0392b; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-size: 0.82rem; font-weight: bold; cursor: pointer; width: 100%; text-align: center; transition: background 0.2s; letter-spacing: 0.3px; display: block; text-decoration: none; box-sizing: border-box; margin-top: 0; }
+.btn-ver-clases:hover { background: #a93226; }
+.btn-ver-clases + .btn-ver-clases { margin-top: 6px; }
+.btn-ver-clases:disabled, .btn-ver-clases.btn-nodisponible { opacity: 0.45; cursor: not-allowed; background: #c0392b; }
+.btn-sec { background: transparent !important; border: 1.5px solid rgba(255,255,255,0.55) !important; color: #fff !important; }
+.btn-sec:hover { background: rgba(255,255,255,0.07) !important; border-color: #fff !important; }
+
+/* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible { display: flex; }
+.roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
+.roc-back:hover { border-color: #c0392b; color: #e87272; }
+.roc-title { color: #fff; font-size: 1rem; font-weight: bold; }
+.roc-body { display: flex; flex: 1; overflow: hidden; }
+.roc-sidebar { width: 260px; flex-shrink: 0; background: #0d1b2a; border-right: 2px solid #c0392b; overflow-y: auto; padding: 12px 0; }
+.roc-clase-btn { display: block; width: 100%; text-align: left; background: none; border: none; color: #ccc; padding: 9px 18px; font-size: 0.82rem; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; line-height: 1.4; }
+.roc-clase-btn:hover { background: #1e2d50; color: #fff; }
+.roc-clase-btn.active { background: #1e2d50; color: #fff; border-left-color: #c0392b; }
+.roc-player-area { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 14px; }
+.roc-video-titulo { color: #fff; font-size: 1rem; font-weight: bold; }
+.roc-video-wrap { position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; }
+#roc-video, #hid-video, #mer-video, #bom-video, #ala-video { width: 100%; height: 100%; display: block; background: #000; }
+.roc-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a6a7a; gap: 10px; font-size: 0.88rem; }
+.roc-video-placeholder i { font-size: 3rem; }
+.roc-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
+.roc-loading .loading-spin { display: block; }
+.roc-error { color: #e87272; font-size: 0.84rem; padding: 10px 14px; background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3); border-radius: 6px; display: none; }
+
+/* ─── PAYWALL MODAL ──────────────────────────────────────── */
+#paywall-overlay { position: fixed; inset: 0; background: rgba(10,10,20,0.92); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+#paywall-overlay.visible { display: flex; }
+.paywall-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 16px; padding: 36px 32px; max-width: 520px; width: 100%; text-align: center; position: relative; }
+.paywall-close-x { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #5a6a7a; font-size: 1.2rem; cursor: pointer; line-height: 1; }
+.paywall-close-x:hover { color: #aaa; }
+.paywall-lock { font-size: 2.8rem; margin-bottom: 10px; }
+.paywall-label { font-size: 0.65rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: bold; }
+.paywall-titulo { font-size: 1.05rem; color: #fff; font-weight: bold; margin-bottom: 20px; line-height: 1.4; }
+.paywall-precio { font-size: 2.4rem; color: #fff; font-weight: bold; margin-bottom: 4px; }
+.paywall-precio span { font-size: 1rem; color: #7a8a9a; font-weight: normal; }
+.paywall-incluye { font-size: 0.82rem; color: #7a9abf; margin: 12px 0 22px; line-height: 1.7; }
+.paywall-incluye strong { color: #aac; }
+.paywall-tagline { font-size: 0.88rem; color: #c8d8ea; margin-bottom: 14px; font-style: italic; }
+.paywall-checks { text-align: left; list-style: none; padding: 0; margin: 0; }
+.paywall-checks li { font-size: 0.8rem; color: #7a9abf; padding: 3px 0; }
+.paywall-checks li::before { content: "✅  "; }
+.paywall-seguro { font-size: 0.71rem; color: #3a5a6a; margin-top: 10px; }
+/* Formulario de tarjeta (vista 2 del paywall) */
+#paywall-form { display: none; }
+.pf-row { display: flex; gap: 10px; }
+.pf-group { display: flex; flex-direction: column; gap: 5px; flex: 1; margin-bottom: 12px; }
+.pf-header { font-size: 0.78rem; color: #5a7a9a; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.pf-header svg { flex-shrink: 0; }
+.pf-label { font-size: 0.82rem; color: #7a9abf; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; }
+.pf-input { background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 8px; color: #e0e8f0; font-size: 1.1rem; padding: 14px 16px; width: 100%; letter-spacing: 2px; }
+.pf-input:focus { outline: none; border-color: #5daaff; }
+.pf-input::placeholder { color: #3a4a6a; letter-spacing: 0; font-size: 0.95rem; }
+.pf-error { font-size: 0.82rem; color: #e87272; margin: -4px 0 10px; text-align: left; display: none; }
+.btn-pagar { width: 100%; padding: 17px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 6px; }
+.btn-pagar:hover { background: #f0b429; }
+.btn-pagar:disabled { background: #5a5a3a; color: #8a8a5a; cursor: not-allowed; }
+.pf-back { background: none; border: none; color: #5a6a7a; font-size: 0.78rem; cursor: pointer; text-decoration: underline; margin-top: 10px; display: block; width: 100%; }
+.pf-back:hover { color: #aaa; }
+.btn-paypal { width: 100%; padding: 14px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-paypal:hover { background: #f0b429; }
+.btn-paywall-cerrar { background: none; border: none; color: #5a6a7a; font-size: 0.8rem; cursor: pointer; text-decoration: underline; margin-top: 14px; display: block; width: 100%; }
+.btn-paywall-cerrar:hover { color: #aaa; }
+
+/* ─── PANEL CLASES ───────────────────────────────────────── */
+#panel-clases { align-items: stretch; }
+.clases-wrap { max-width: 1200px; width: 100%; margin: 0 auto; padding: 28px 20px 48px; }
+.clases-header { text-align: center; margin-bottom: 28px; }
+.clases-header h2 { font-size: 1.5rem; color: #fff; margin-bottom: 8px; }
+.clases-header p { color: #aaa; font-size: 0.9rem; line-height: 1.7; max-width: 620px; margin: 0 auto; }
+.cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.curso-card { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; overflow: hidden; position: relative; transition: border-color 0.2s, transform 0.15s; }
+.curso-card:hover { border-color: #c0392b; transform: translateY(-3px); }
+.curso-thumb-wrap { position: relative; }
+.curso-thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; filter: brightness(0.72); }
+.curso-lock-badge { position: absolute; top: 8px; right: 8px; background: rgba(16,21,46,0.88); border: 1px solid #c0392b; border-radius: 20px; padding: 3px 9px; font-size: 0.68rem; color: #e87272; display: flex; align-items: center; gap: 4px; }
+.curso-body { padding: 12px 14px 14px; }
+.curso-tipo { font-size: 0.6rem; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.curso-nombre { font-size: 0.82rem; color: #dde; line-height: 1.4; min-height: 2.4rem; margin-bottom: 8px; }
+.curso-estado { font-size: 0.74rem; color: #5a7a9a; margin-bottom: 10px; }
+.curso-estado strong { color: #8aaacc; }
+.btn-curso-info { width: 100%; padding: 8px; background: transparent; border: 1px solid #2a3a5a; color: #7a8a9a; border-radius: 6px; font-size: 0.76rem; cursor: pointer; transition: all 0.15s; text-decoration: none; display: block; text-align: center; }
+.btn-curso-info:hover { border-color: #c0392b; color: #e87272; }
+.clases-aviso { margin-top: 28px; padding: 16px 20px; background: rgba(192,57,43,0.07); border: 1px solid rgba(192,57,43,0.22); border-radius: 10px; text-align: center; color: #7a8a9a; font-size: 0.84rem; line-height: 1.7; }
+.clases-aviso strong { color: #e87272; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; border-top: 1px solid #1e1e3a; margin-top: auto; }
+</style>
+</head>
+<body>
+
+<!-- ── PANTALLA DE CARGA ───────────────────────────────────── -->
+<div id="loading-screen">
+  <div style="text-align:center;">
+    <div style="background:#fff;padding:8px 16px;border-radius:10px;display:inline-block;margin-bottom:20px;">
+      <img src="logo-nuevo.png" style="height:42px;display:block;">
+    </div>
+    <div class="loading-spin" style="margin:0 auto;"></div>
+  </div>
+</div>
+
+<!-- ── PANTALLA DE AUTH (Login / Registro) ────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <div class="auth-logo-box">
+        <img src="logo-nuevo.png" alt="ILFIS">
+      </div>
+      <h2>UBUNTU</h2>
+      <p>Plataforma Interactiva Asistida por IA</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tab-login-btn" onclick="showAuthTab('login')">Ingresar</button>
+      <button class="auth-tab-btn" id="tab-register-btn" onclick="showAuthTab('register')">Crear cuenta</button>
+    </div>
+
+    <!-- FORMULARIO LOGIN -->
+    <div id="auth-login-form">
+      <div class="auth-input-group">
+        <label>Correo electrónico</label>
+        <input class="auth-input" type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email">
+      </div>
+      <div class="auth-input-group">
+        <label>Contraseña</label>
+        <input class="auth-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-auth-primary" id="btn-login" onclick="loginEmail()">Ingresar</button>
+      <div class="auth-divider">o</div>
+      <button class="btn-google" onclick="loginGoogle()">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuar con Google
+      </button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+
+    <!-- FORMULARIO REGISTRO -->
+    <div id="auth-register-form" style="display:none;">
+      <div class="auth-input-group">
+        <label>Nombre completo</label>
+        <input class="auth-input" type="text" id="reg-name" placeholder="Ing. Juan Pérez" autocomplete="name">
+      </div>
+      <div class="auth-input-group">
+        <label>Correo electrónico</label>
+        <input class="auth-input" type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email">
+      </div>
+      <div class="auth-input-group">
+        <label>Contraseña</label>
+        <input class="auth-input" type="password" id="reg-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+      <button class="btn-auth-primary" id="btn-register" onclick="registerEmail()">Crear cuenta</button>
+      <div class="auth-divider">o</div>
+      <button class="btn-google" onclick="loginGoogle()">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuar con Google
+      </button>
+      <div class="auth-error" id="register-error"></div>
+      <div class="auth-success" id="register-success"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── APP PRINCIPAL ───────────────────────────────────────── -->
+<div id="app">
+
+<header>
+  <div style="background:#fff; padding:5px 10px; border-radius:8px; display:flex; align-items:center;">
+    <img src="logo-nuevo.png" alt="ILFIS Latinoamérica" style="height:40px; display:block;">
+  </div>
+  <div class="header-text">
+    <h1>UBUNTU</h1>
+    <p>Plataforma Interactiva Asistida por Inteligencia Artificial</p>
+  </div>
+  <div class="banner-gratis">
+    <div class="banner-dot"></div>
+    <span class="banner-txt">🎓 Disfruta la plataforma gratuita hasta el 31/12/2026</span>
+  </div>
+  <div class="header-user">
+    <div class="user-avatar" id="user-avatar-el"></div>
+    <span class="user-name" id="user-name-el"></span>
+    <button class="btn-logout" onclick="logout()"><i class="ti ti-logout"></i> Salir</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="showTab('consultar', this)">
+    <i class="ti ti-message-question" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Consultas a</span><span class="tab-line2">Expertos ILFIS</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('videos', this)">
+    <i class="ti ti-brand-youtube" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Búsqueda Interactiva</span><span class="tab-line2">de Videos Youtube</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('explorador', this)">
+    <i class="ti ti-layout-grid" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Explorador Interactivo</span><span class="tab-line2">de Videos Youtube</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('clases', this)">
+    <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Clases Premium</span><span class="tab-line2">Acceso Total</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('experto', this)">
+    <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
+  </button>
+    <button class="tab-btn" onclick="showTab('calcula', this)">
+    <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('cuenta', this)">
+    <i class="ti ti-user-circle" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Mi Cuenta</span><span class="tab-line2">Mis suscripciones</span></span>
+  </button>
+  <button class="tab-btn" onclick="showTab('admin', this)">
+    <i class="ti ti-shield-lock" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">Intranet</span><span class="tab-line2">Panel Admin</span></span>
+  </button>
+</nav>
+
+<!-- Panel Consultas -->
+<div class="panel active" id="panel-consultar">
+  <div class="consultar-inner">
+    <p class="subtitle">Consulta el corpus de expertos en sistemas contra incendios.<br>Las respuestas provienen de discusiones reales con cita de fecha y fuente.</p>
+    <div class="consulta-box">
+      <label>Tu pregunta técnica</label>
+      <textarea id="pregunta" placeholder="Ej: ¿Cuál es la clasificación de riesgo para un hangar de aeronaves según NFPA 13?"></textarea>
+      <button class="btn-consultar" id="btn" onclick="consultar()">Consultar corpus ILFIS</button>
+    </div>
+    <div class="estado" id="estado"></div>
+    <div class="respuesta-box" id="respuesta-box">
+      <div class="respuesta-label">📋 Respuesta del corpus ILFIS</div>
+      <div class="respuesta-texto" id="respuesta-texto"></div>
+      <div class="fuentes" id="fuentes"></div>
+    </div>
+    <div class="ejemplos">
+      <p>Preguntas de ejemplo</p>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Presión mínima en rociadores NFPA 13</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Clasificación de riesgo para talleres de soldadura</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">Distancia máxima entre rociadores en riesgo leve</span>
+      <span class="ejemplo-btn" onclick="setEjemplo(this)">¿Cuándo se usa sistema diluvio vs preacción?</span>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Pregúntale al Experto -->
+<div class="panel" id="panel-experto">
+  <div class="consultar-inner">
+    <p class="subtitle">Haz tu pregunta técnica. La IA responde en segundos.<br>Un experto ILFIS revisará la respuesta y la mejorará si es necesario.</p>
+    <div class="consulta-box">
+      <label>Tu pregunta técnica</label>
+      <textarea id="exp-pregunta" placeholder="Ej: ¿Cuál es la presión mínima de diseño para rociadores ESFR en un almacén de alto rack?"></textarea>
+      <button class="btn-consultar" id="btn-experto" onclick="preguntarExperto()">Enviar al experto</button>
+    </div>
+    <div class="estado" id="estado-experto"></div>
+    <div class="respuesta-box" id="respuesta-experto-box" style="display:none;">
+      <div class="respuesta-label" id="experto-label">Conversación del ticket</div>
+      <div class="chat-thread" id="experto-thread"></div>
+    </div>
+    <div class="hist-titulo">📋 Mis preguntas anteriores</div>
+    <div id="experto-historial"></div>
+  </div>
+</div>
+
+<!-- Panel Calcula con Ubuntu -->
+<div class="panel" id="panel-calcula">
+  <div class="explorador-inner">
+    <p class="subtitle">Herramientas de cálculo y verificación para diseño contra incendios.<br>Cada calculadora abre en una pestaña nueva.</p>
+    <div class="video-grid">
+      <a href="plano-gabinete-nfpa14/" target="_blank" rel="noopener" class="vcard" style="text-decoration:none;cursor:pointer;">
+        <div class="vcard-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d2a4a;">
+          <i class="ti ti-ruler-measure" style="font-size:3rem;color:#5daaff;"></i>
+        </div>
+        <div class="vcard-body">
+          <div class="vcard-cat">NFPA 14 · Clase III</div>
+          <div class="vcard-title">Plano de Montaje — Gabinete Guardian Serie 1500</div>
+          <span class="vcard-link"><i class="ti ti-external-link"></i> Abrir calculadora</span>
+        </div>
+      </a>
+      <a href="calculadora-hidraulica/" target="_blank" rel="noopener" class="vcard" style="text-decoration:none;cursor:pointer;">
+        <div class="vcard-thumb" style="background:#0a1a30;">
+          <img src="calculadora-hidraulica/thumb.jpg" alt="Calculadora Hidráulica" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+        <div class="vcard-body">
+          <div class="vcard-cat">Bombas · Hidráulica PCI</div>
+          <div class="vcard-title">Calculadora Hidráulica — Bomba contra incendios + demandas</div>
+          <span class="vcard-link"><i class="ti ti-external-link"></i> Abrir calculadora</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Admin -->
+<div class="panel" id="panel-admin">
+  <!-- Gate: pantalla de contraseña -->
+  <div id="admin-gate-view">
+    <div class="admin-gate">
+      <i class="ti ti-shield-lock" style="font-size:2.2rem;color:#c0392b;display:block;margin-bottom:14px;" aria-hidden="true"></i>
+      <h2>Zona Intranet</h2>
+      <p>Acceso restringido al equipo ILFIS</p>
+      <input class="admin-input" id="admin-pwd" type="password" placeholder="••••••" maxlength="30"
+        onkeydown="if(event.key==='Enter') adminEntrar()">
+      <button class="btn-admin-enter" onclick="adminEntrar()">Ingresar</button>
+      <div class="admin-err" id="admin-err">Contraseña incorrecta</div>
+    </div>
+  </div>
+  <!-- Panel real (oculto hasta autenticarse) -->
+  <div id="admin-panel-view" style="display:none;">
+    <div class="admin-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <span style="font-size:1rem;color:#fff;font-weight:600;"><i class="ti ti-shield-lock" style="color:#c0392b;margin-right:8px;" aria-hidden="true"></i>Panel Intranet ILFIS</span>
+        <button class="btn-refresh-cuenta" onclick="adminCargar()"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
+        <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+      </div>
+      <!-- Sección Recaudación -->
+      <div class="admin-section active" id="admin-sec-recaud">
+        <div id="admin-recaud-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Alumnos -->
+      <div class="admin-section" id="admin-sec-alumnos">
+        <div id="admin-alumnos-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dar Acceso -->
+<div class="admin-modal-bg" id="admin-modal-dar">
+  <div class="admin-modal">
+    <h3>Dar acceso a curso</h3>
+    <p style="font-size:0.8rem;color:#7a8a9a;margin-bottom:14px;" id="admin-modal-dar-nombre"></p>
+    <select id="admin-modal-dar-curso">
+      <option value="rociadores">Diplomado de Rociadores Automáticos</option>
+      <option value="hidraulicos">Diplomado Especializado en Cálculos Hidráulicos</option>
+      <option value="bombas">Diplomado de Bombas Contra Incendios</option>
+      <option value="mercancias">Diplomado de Protección de Mercancías</option>
+      <option value="alarmas">Diplomado de Detección y Alarmas de Incendios</option>
+    </select>
+    <div class="admin-modal-btns">
+      <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
+      <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarDar()">Dar 30 días de acceso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Mi Cuenta -->
+<div class="panel" id="panel-cuenta">
+  <div class="cuenta-wrap">
+    <div class="cuenta-section">
+      <div class="cuenta-section-title">
+        <span style="flex:1;">👤 Mi perfil</span>
+        <button class="btn-refresh-cuenta" onclick="actualizarCuenta()"><i class="ti ti-refresh"></i> Actualizar</button>
+      </div>
+      <div class="cuenta-user-card">
+        <div class="cuenta-avatar" id="cuenta-avatar-crm"></div>
+        <div class="cuenta-user-info">
+          <div class="cuenta-user-name" id="cuenta-nombre-crm">—</div>
+          <div class="cuenta-user-email" id="cuenta-email-crm">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="cuenta-section">
+      <div class="cuenta-section-title" style="display:block;">🎓 Mis suscripciones</div>
+      <div id="cuenta-cursos-lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Videos -->
+<div class="panel" id="panel-videos">
+  <div class="consultar-inner">
+    <p class="subtitle">Busca el momento exacto en que los expertos ILFIS explican el tema que necesitas.<br>Cada resultado te lleva directo al minuto exacto del video en YouTube.</p>
+    <div class="consulta-box">
+      <label>¿Qué tema quieres encontrar en los videos?</label>
+      <textarea id="pregunta-video" placeholder="Ej: ¿Cómo se instala una válvula de alarma en sistema húmedo?"></textarea>
+      <button class="btn-consultar" id="btn-video" onclick="buscarVideo()">Buscar en videos ILFIS</button>
+    </div>
+    <div class="estado" id="estado-video"></div>
+    <div class="respuesta-box" id="respuesta-video-box">
+      <div class="respuesta-label">📹 Momentos encontrados en videos</div>
+      <div id="resultados-video"></div>
+    </div>
+    <div class="videos-coming" id="videos-coming">
+      <i class="ti ti-video"></i>
+      <p><strong>310 videos del canal ILFIS</strong> indexados con timestamps exactos.</p>
+      <p>Escribe un tema y llega al minuto exacto de cada clase.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Panel Explorador -->
+<div class="panel" id="panel-explorador">
+  <div class="explorador-inner">
+    <p class="subtitle"><strong style="color:#fff;">310 videos del canal ILFIS</strong> — navega por categoría o busca por título.</p>
+    <div class="search-row">
+      <input class="search-input" id="exp-search" type="text" placeholder="Buscar por título..." oninput="renderExplorador()">
+    </div>
+    <div class="cats" id="cat-chips"></div>
+    <div class="exp-count" id="exp-count"></div>
+    <div class="video-grid" id="video-grid"></div>
+  </div>
+</div>
+
+<!-- Panel Clases -->
+<div class="panel" id="panel-clases">
+
+  <!-- Sin premium -->
+  <div id="clases-nopremium" class="clases-wrap">
+    <div class="clases-header">
+      <h2>🎓 Clases Premium ILFIS</h2>
+      <p>Cursos online autodidactas — accede a las clases grabadas de los diplomados y cursos ILFIS a tu propio ritmo, sin tutoría permanente ni evaluaciones.</p>
+    </div>
+    <div class="cursos-grid">
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2026/01/ILFIS-NOTIFICACION-AUDIBLE-EN-ESPACIOS-EXTERIORES-300x300.jpeg" alt="Notificación de Alarma">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Capacitación Especializada</div>
+          <div class="curso-nombre">Notificación de Alarma en Grandes Espacios y Exteriores</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/notificacion-de-alarma-en-grandes-espacios-y-exteriores/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diseno-Instalacion-y-Mantenimiento-de-Bombas-Contra-Incendios-300x300.jpg" alt="Bombas Contra Incendios">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de Bombas Contra Incendios</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 51 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirBombas()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-bombas-contra-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Sistemas-de-Rociadores-Automaticos-Contra-Incendios-300x300.jpg" alt="Rociadores Automáticos">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de Rociadores Automáticos</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 49 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirRociadores()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diseno-de-Sistemas-Contra-Incendios-para-Proteccion-de-Mercancias-300x300.jpg" alt="Protección de Mercancías">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de Protección de Mercancías</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 52 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirMercancias()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-proteccion-de-mercancias/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-ALARMAS-Y-DETECCION.jpg-600x400.png" alt="Detección y Alarmas de Incendios">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de Detección y Alarmas de Incendios</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 57 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirAlarmas()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-internacional-de-deteccion-y-alarmas-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-DE-REVIT-2-300x300.png" alt="Revit SCI">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Especializado para el Modelado Revit de SCI</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-especializado-para-el-modelado-revit/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-ALARMAS-Y-DETECCION.jpg-300x300.png" alt="Detección y Alarmas">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Internacional de Detección y Alarmas de Incendios</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-internacional-de-deteccion-y-alarmas-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/04/Curso-Hidraulica-Basica-300x300.webp" alt="Hidráulica Básica">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Curso</div>
+          <div class="curso-nombre">Curso de Hidráulica Básica</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/curso-de-hidraulica-basica/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diplomado-Internacional-de-Dinamica-de-Incendios-300x300.jpg" alt="Dinámica de Incendios">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado en Dinámica de Incendios</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-en-dinamica-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diplomado-Avanzado-de-Dinamica-de-Incendios-300x300.jpg" alt="Dinámica Avanzada">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Avanzado en Dinámica de Incendios</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-dinamica-de-incendios/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/09/Curso-de-Mangueras-3-300x300.png" alt="Montantes y Mangueras">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Curso</div>
+          <div class="curso-nombre">Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/curso-sistemas-de-montantes-y-mangueras/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card curso-card-activo">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Calculos-Hidraulicos-de-Sistemas-de-Agua-Contra-Incendios-300x300.jpg" alt="Cálculos Hidráulicos">
+          <span class="curso-lock-badge curso-badge-activo"><i class="ti ti-circle-check"></i> Disponible</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Especializado en Cálculos Hidráulicos</div>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 35 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirHidraulicos()">▶ Ver clases sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-DE-CALCULOS-AVANZADOS-2-1-300x300.png" alt="Cálculos Hidráulicos Avanzado">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Avanzado de Cálculos Hidráulicos</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-avanzado-de-calculos-hidraulicos/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-DE-IPM-2-300x300.png" alt="IPM Extinción">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado de IPM de Sistemas de Extinción a Base de Agua</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-de-ipm-de-sistemas-de-extincion-a-base-de-agua/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2026/03/CURSO-ANALISIS-DE-SEGURIDAD-HUMANA-300x300.jpg" alt="Seguridad Humana">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Curso</div>
+          <div class="curso-nombre">Curso Análisis de Seguridad Humana en Edificaciones</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-i/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-EN-SEGURIDAD-HUMANA-FASE-I-3-300x300.png" alt="Seguridad Humana Fase I">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Avanzado en Seguridad Humana Fase I</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-i/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+      <div class="curso-card">
+        <div class="curso-thumb-wrap">
+          <img class="curso-thumb" src="https://ilfislatinoamerica.com/wp-content/uploads/2025/02/DIPLOMADO-EN-SEGURIDAD-HUMANA-FASE-II-2-300x300.png" alt="Seguridad Humana Fase II">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="curso-body">
+          <div class="curso-tipo">Diplomado</div>
+          <div class="curso-nombre">Diplomado Avanzado en Seguridad Humana Fase II</div>
+          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
+          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-ii/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
+        </div>
+      </div>
+
+    </div><!-- fin cursos-grid -->
+  </div><!-- fin clases-nopremium -->
+
+  <!-- Con premium activo -->
+  <div id="clases-premium" class="clases-wrap" style="display:none;">
+    <div class="clases-header">
+      <div style="font-size:3rem;margin-bottom:12px;">🎓</div>
+      <h2>Acceso Premium Activo</h2>
+      <p style="color:#5dcc85;margin-top:6px;">● Tu suscripción está activa — los cursos se irán habilitando progresivamente.</p>
+    </div>
+    <div class="cursos-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#5a7a9a;font-size:0.88rem;">
+        Los cursos estarán disponibles próximamente. ¡Gracias por tu paciencia!
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── PAYWALL MODAL ─────────────────────────────────────── -->
+<div id="paywall-overlay">
+  <div class="paywall-card">
+    <button class="paywall-close-x" onclick="cerrarPaywall()">✕</button>
+    <div class="paywall-lock">🔒</div>
+    <div class="paywall-label">Contenido Premium</div>
+    <div class="paywall-titulo" id="paywall-titulo"></div>
+    <div class="paywall-precio">$000 <span>/ mes</span></div>
+    <div class="paywall-incluye" id="paywall-incluye"></div>
+    <button class="btn-paypal" onclick="iniciarPagoPayPal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#003087"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.23 0 .23 0 0 0 .25-1.57-.01-2.64-.35-3.3z"/></svg>
+      🔓 Sí, quiero acceder por $000/mes
+    </button>
+    <div class="paywall-seguro">Pago 100% seguro vía PayPal · Sin compromisos</div>
+    <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver al curso</button>
+
+    <!-- Vista 2: formulario de tarjeta -->
+    <div id="paywall-form">
+      <div class="pf-header">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#009cde"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.25-1.57-.01-2.64-.35-3.3z"/></svg>
+        Pagar con PayPal — ingresa los datos de tu tarjeta
+      </div>
+      <div class="pf-group">
+        <label class="pf-label">Número de tarjeta</label>
+        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="9999 9999 9999 9999" oninput="_fmtCard(this)" autocomplete="cc-number" inputmode="numeric">
+      </div>
+      <div class="pf-group">
+        <label class="pf-label">Nombre en la tarjeta</label>
+        <input class="pf-input" id="pf-nombre" placeholder="NOMBRE APELLIDO">
+      </div>
+      <div class="pf-row">
+        <div class="pf-group">
+          <label class="pf-label">Vencimiento</label>
+          <input class="pf-input" id="pf-vence" maxlength="5" placeholder="MM/AA" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
+        </div>
+        <div class="pf-group">
+          <label class="pf-label">CVV</label>
+          <input class="pf-input" id="pf-cvv" maxlength="4" placeholder="999" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+      </div>
+      <div class="pf-error" id="pf-error"></div>
+      <button class="btn-pagar" id="btn-pagar" onclick="_submitPago()">Pagar $000</button>
+      <button class="pf-back" onclick="_volverPaywall()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad &nbsp;|&nbsp; ILFIS Ubuntu v2.0</footer>
+
+<!-- ── PANEL ROCIADORES (overlay) ──────────────────────────── -->
+<div id="panel-rociadores">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarRociadores()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Rociadores Automáticos</div>
+  </div>
+  <div class="roc-body">
+    <!-- Sidebar: lista de clases -->
+    <div class="roc-sidebar" id="roc-sidebar"></div>
+    <!-- Área del player -->
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="roc-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="roc-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="roc-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="roc-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="roc-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDF()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL HIDRÁULICOS (overlay) ──────────────────────────── -->
+<div id="panel-hidraulicos">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarHidraulicos()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado Especializado en Cálculos Hidráulicos</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="hid-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="hid-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="hid-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="hid-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="hid-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="hid-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFHidraulicos()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL BOMBAS (overlay) ──────────────────────────────── -->
+<div id="panel-bombas">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarBombas()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Bombas Contra Incendios</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="bom-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="bom-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="bom-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="bom-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="bom-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="bom-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFBombas()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL MERCANCÍAS (overlay) ──────────────────────────── -->
+<div id="panel-mercancias">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarMercancias()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Protección de Mercancías</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="mer-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="mer-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="mer-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="mer-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="mer-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="mer-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFMercancias()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PANEL ALARMAS (overlay) ─────────────────────────────── -->
+<div id="panel-alarmas">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarAlarmas()">← Volver</button>
+    <div class="roc-title">🎓 Diplomado de Detección y Alarmas de Incendios</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="ala-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="ala-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="ala-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="ala-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="ala-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="ala-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFAlarmas()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- fin #app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// Reemplaza los valores con los de tu proyecto en:
+// Firebase Console → Configuración del proyecto → Tu app web
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
+  authDomain:        "ilfis-ubuntu.firebaseapp.com",
+  projectId:         "ilfis-ubuntu",
+  storageBucket:     "ilfis-ubuntu.firebasestorage.app",
+  messagingSenderId: "986363919942",
+  appId:             "1:986363919942:web:438195736e93511eafd447"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Mantener sesión activa entre reinicios del navegador/PC
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+// ── AUTH STATE ─────────────────────────────────────────────
+auth.onAuthStateChanged(async function(user) {
+  document.getElementById('loading-screen').style.display = 'none';
+  if (user) {
+    // Verificar premium via custom claims
+    const token = await user.getIdTokenResult();
+    const isPremium = token.claims.premium === true;
+    _cursosActivos = token.claims.cursos_activos || {};
+    // Mostrar app
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    app.style.flexDirection = 'column';
+    document.getElementById('auth-overlay').style.display = 'none';
+    // Header
+    const name = user.displayName || user.email.split('@')[0];
+    document.getElementById('user-name-el').textContent = name;
+    const avatarEl = document.getElementById('user-avatar-el');
+    if (user.photoURL) {
+      avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      avatarEl.textContent = name.charAt(0).toUpperCase();
+    }
+    // Clases — siempre mostrar el grid de cursos, el acceso por curso lo controla _cursosActivos
+    document.getElementById('clases-nopremium').style.display = 'block';
+    document.getElementById('clases-premium').style.display  = 'none';
+    // Restaurar pestaña activa e historial
+    _restaurarTab();
+    _renderHistorial(user.uid);
+    _verificarRespuestasPendientes(user.uid);
+    renderMiCuenta();
+    _adminRestaurarSesion();
+  } else {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-overlay').style.display = 'flex';
+  }
+});
+
+// ── LOGIN EMAIL ────────────────────────────────────────────
+async function loginEmail() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const btn   = document.getElementById('btn-login');
+  const errEl = document.getElementById('login-error');
+  if (!email || !pass) { showErr(errEl, 'Completa todos los campos.'); return; }
+  btn.disabled = true; btn.textContent = 'Ingresando...'; errEl.style.display = 'none';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    showErr(errEl, tradErr(e.code));
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+// ── REGISTRO EMAIL ─────────────────────────────────────────
+async function registerEmail() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-password').value;
+  const btn   = document.getElementById('btn-register');
+  const errEl = document.getElementById('register-error');
+  const okEl  = document.getElementById('register-success');
+  if (!email || !pass) { showErr(errEl, 'Completa todos los campos.'); return; }
+  if (pass.length < 6) { showErr(errEl, 'La contraseña debe tener al menos 6 caracteres.'); return; }
+  btn.disabled = true; btn.textContent = 'Creando cuenta...'; errEl.style.display = 'none';
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    if (name) await cred.user.updateProfile({ displayName: name });
+    okEl.textContent = '✓ Cuenta creada. Ingresando...';
+    okEl.style.display = 'block';
+  } catch(e) {
+    showErr(errEl, tradErr(e.code));
+    btn.disabled = false; btn.textContent = 'Crear cuenta';
+  }
+}
+
+// ── LOGIN GOOGLE ───────────────────────────────────────────
+async function loginGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await auth.signInWithPopup(provider);
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      showErr(document.getElementById('login-error'), tradErr(e.code));
+    }
+  }
+}
+
+// ── LOGOUT ─────────────────────────────────────────────────
+async function logout() { await auth.signOut(); }
+
+// ── AUTH UI HELPERS ────────────────────────────────────────
+function showAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('auth-login-form').style.display    = isLogin ? 'block' : 'none';
+  document.getElementById('auth-register-form').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('tab-login-btn').classList.toggle('active',  isLogin);
+  document.getElementById('tab-register-btn').classList.toggle('active', !isLogin);
+}
+
+function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+function tradErr(code) {
+  return ({
+    'auth/user-not-found':      'No existe una cuenta con este correo.',
+    'auth/wrong-password':      'Contraseña incorrecta.',
+    'auth/invalid-credential':  'Correo o contraseña incorrectos.',
+    'auth/email-already-in-use':'Este correo ya tiene una cuenta.',
+    'auth/weak-password':       'La contraseña debe tener al menos 6 caracteres.',
+    'auth/invalid-email':       'El correo no es válido.',
+    'auth/too-many-requests':   'Demasiados intentos. Espera unos minutos.',
+    'auth/network-request-failed': 'Error de conexión. Revisa tu internet.',
+  })[code] || 'Error al autenticar. Intenta nuevamente.';
+}
+
+// ── SOLICITAR ACCESO PREMIUM ───────────────────────────────
+function solicitarAcceso() {
+  const user = auth.currentUser;
+  const name  = user ? (user.displayName || '') : '';
+  const email = user ? user.email : '';
+  const sub   = encodeURIComponent('Solicitud Acceso Premium — ILFIS Ubuntu');
+  const body  = encodeURIComponent(
+    `Hola ILFIS,\n\nSolicito acceso al Plan Premium de ILFIS Ubuntu.\n\nNombre: ${name}\nCorreo: ${email}\n\nQuedo atento a las instrucciones de pago.\n\nGracias.`
+  );
+  window.open(`mailto:grupo3speru@gmail.com?subject=${sub}&body=${body}`);
+}
+
+// Enter en formularios de auth
+document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') loginEmail(); });
+document.getElementById('reg-password').addEventListener('keydown',   e => { if(e.key==='Enter') registerEmail(); });
+
+// ═══════════════════════════════════════════════════════════
+// APP
+// ═══════════════════════════════════════════════════════════
+const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+marked.setOptions({ breaks: true, gfm: true });
+const renderer = new marked.Renderer();
+renderer.link = function(href, title, text) {
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+};
+marked.setOptions({ renderer });
+
+function showTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'explorador' && !_expInit) initExplorador();
+  localStorage.setItem('ilfis_tab_activa', name);
+}
+
+function _restaurarTab() {
+  const tab = localStorage.getItem('ilfis_tab_activa');
+  if (!tab) return;
+  const btn = document.querySelector(`.tab-btn[onclick="showTab('${tab}', this)"]`);
+  if (btn) showTab(tab, btn);
+}
+
+function setEjemplo(el) { document.getElementById('pregunta').value = el.textContent; }
+
+// ── HISTORIAL EXPERTO (localStorage por UID) ──────────────
+function _claveHistorial(uid) { return `ilfis_historial_${uid}`; }
+
+function _guardarPregunta(uid, qid, pregunta, respuesta_ia) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  hist.unshift({ id: qid, pregunta, respuesta_ia, messages: [], fecha: new Date().toISOString() });
+  if (hist.length > 50) hist.pop();
+  localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
+  _renderHistorial(uid);
+}
+
+function _actualizarRespuesta(uid, qid, texto_prof, nombre_prof) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  const entry = hist.find(h => h.id === qid);
+  if (entry) {
+    // Agrega solo si no es duplicado
+    const yaExiste = entry.messages.some(m => m.texto === texto_prof && m.nombre_profesor === nombre_prof);
+    if (!yaExiste) {
+      entry.messages.push({ texto: texto_prof, nombre_profesor: nombre_prof, ts: new Date().toISOString() });
+    }
+    localStorage.setItem(_claveHistorial(uid), JSON.stringify(hist));
+    _renderHistorial(uid);
+  }
+}
+
+function _renderHistorial(uid) {
+  const el = document.getElementById('experto-historial');
+  if (!el) return;
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  if (hist.length === 0) {
+    el.innerHTML = '<p style="color:#666;font-size:0.88rem;">Aún no has hecho preguntas.</p>';
+    return;
+  }
+  el.innerHTML = hist.map(h => {
+    const fecha = new Date(h.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+    const msgs = h.messages || [];
+    // Burbuja IA
+    const iaHtml = `<div class="hist-msg hist-msg-ia">
+      <span class="hist-msg-autor">🤖 Respuesta IA</span>
+      <span class="hist-msg-texto">${h.respuesta_ia}</span>
+    </div>`;
+    // Burbujas de expertos
+    const expertHtml = msgs.map(m => `
+      <div class="hist-msg hist-msg-exp">
+        <span class="hist-msg-autor">💬 ${m.nombre_profesor || 'Experto ILFIS'}</span>
+        <span class="hist-msg-texto">${m.texto}</span>
+      </div>`).join('');
+    const badge = msgs.length > 0
+      ? `<span class="hist-badge-small">✅ ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del equipo ILFIS</span>`
+      : `<span class="hist-badge-small" style="background:#252540;color:#5a6a7a;border:1px solid #2a2a5a;">⏳ Pendiente revisión</span>`;
+    return `<div class="hist-item">
+      <div class="hist-fecha">${fecha} · Ticket <code style="font-size:0.7rem;color:#5daaff;">${h.id}</code></div>
+      <div class="hist-pregunta">❓ ${h.pregunta}</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+        ${iaHtml}${expertHtml}
+      </div>
+      <div style="margin-top:8px;">${badge}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── HELPER: fetch con token Firebase + manejo de errores ───────────────
+// Si el usuario no está logueado, abre el popup de Google.
+// Devuelve la Response. El llamador debe chequear res.ok como siempre.
+// Errores HTTP típicos:
+//   401 → token inválido/expirado. Mensaje pide reiniciar sesión.
+//   429 → tope diario alcanzado. Mensaje claro al usuario.
+async function _authFetch(url, init = {}) {
+  let user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+  if (!user) {
+    // Intentar abrir login (no bloquea, pero avisa al usuario)
+    try { await loginGoogle(); } catch (_) {}
+    user = auth.currentUser;
+    if (!user) {
+      const err = new Error('Inicia sesión con Google para usar el asistente.');
+      err.code = 'NO_AUTH';
+      throw err;
+    }
+  }
+  const idToken = await user.getIdToken();
+  const headers = Object.assign({}, init.headers || {}, {
+    'Authorization': 'Bearer ' + idToken
+  });
+  const res = await fetch(url, Object.assign({}, init, { headers }));
+  if (res.status === 401) {
+    const err = new Error('Tu sesión expiró. Inicia sesión otra vez.');
+    err.code = 'EXPIRED';
+    throw err;
+  }
+  if (res.status === 429) {
+    let msg = 'Llegaste al tope diario de consultas. Vuelve mañana.';
+    try { const j = await res.clone().json(); if (j && j.detail) msg = j.detail; } catch (_) {}
+    const err = new Error(msg);
+    err.code = 'RATE_LIMIT';
+    throw err;
+  }
+  return res;
+}
+
+// ── MÓDULO PREGÚNTALE AL EXPERTO ──────────────────────────
+let _expertoQid    = null;
+let _expertoPoller = null;
+
+async function preguntarExperto() {
+  const pregunta = document.getElementById('exp-pregunta').value.trim();
+  if (!pregunta) return;
+
+  const btn    = document.getElementById('btn-experto');
+  const estado = document.getElementById('estado-experto');
+  const box    = document.getElementById('respuesta-experto-box');
+
+  btn.disabled = true;
+  estado.innerHTML = '<span class="spinner"></span>Consultando corpus y notificando al experto...';
+  box.style.display = 'none';
+  if (_expertoPoller) clearInterval(_expertoPoller);
+
+  try {
+    const _u = auth.currentUser;
+    const _nombre = _u ? (_u.displayName || _u.email || 'Alumno anónimo') : 'Alumno anónimo';
+    const res = await _authFetch(API + '/preguntar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: pregunta, nombre: _nombre })
+    });
+    if (!res.ok) throw new Error('Error ' + res.status);
+    const data = await res.json();
+
+    _expertoQid = data.question_id;
+
+    // Mostrar burbuja IA
+    const thread = document.getElementById('experto-thread');
+    thread.innerHTML = `
+      <div class="chat-burbuja chat-ia">
+        <div class="chat-autor">🤖 Respuesta IA — pendiente revisión del experto</div>
+        ${data.respuesta.replace(/\n/g,'<br>')}
+      </div>`;
+    box.style.display = 'block';
+    estado.innerHTML = '⏳ Tu pregunta fue enviada. El experto responderá en menos de 12 h.';
+
+    // Guardar en historial local
+    const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+    _guardarPregunta(_uid, data.question_id, pregunta, data.respuesta);
+
+    _iniciarPollingExperto();
+  } catch (e) {
+    estado.innerHTML = '❌ Error al conectar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+let _expertoMsgCount = 0;  // cantidad de mensajes de experto ya renderizados
+
+function _iniciarPollingExperto() {
+  if (_expertoPoller) clearInterval(_expertoPoller);
+  _expertoMsgCount = 0;
+  let intentos = 0;
+  const MAX = 360; // 30 minutos (cada 5s)
+
+  _expertoPoller = setInterval(async () => {
+    intentos++;
+    if (intentos > MAX || !_expertoQid) { clearInterval(_expertoPoller); return; }
+
+    try {
+      const res = await _authFetch(API + '/respuesta/' + _expertoQid);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      const msgs = data.messages || [];
+      if (msgs.length > _expertoMsgCount) {
+        // Hay mensajes nuevos — renderizar todos desde cero (más simple y seguro)
+        _expertoMsgCount = msgs.length;
+        _renderThread(data.respuesta_ia_original || null, msgs);
+        document.getElementById('estado-experto').innerHTML =
+          `💬 ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del equipo ILFIS`;
+        // Actualizar historial con TODOS los mensajes nuevos (no solo el último)
+        const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+        for (const msg of msgs) {
+          _actualizarRespuesta(_uid, _expertoQid, msg.texto, msg.nombre_profesor);
+        }
+      }
+    } catch (e) { /* ignorar errores de polling */ }
+  }, 5000);
+}
+
+async function _verificarRespuestasPendientes(uid) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistorial(uid)) || '[]');
+  for (const entry of hist) {
+    const localCount = (entry.messages || []).length;
+    try {
+      const r = await _authFetch(`${BACKEND}/respuesta/${entry.id}`);
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (data.messages && data.messages.length > localCount) {
+        // El backend tiene más mensajes que localStorage — sincronizar todos
+        for (const msg of data.messages) {
+          _actualizarRespuesta(uid, entry.id, msg.texto, msg.nombre_profesor);
+        }
+      }
+    } catch(e) {}
+  }
+}
+
+function _renderThread(aiText, expertMsgs) {
+  const thread = document.getElementById('experto-thread');
+  if (!thread) return;
+  // Mantener la burbuja IA (ya está), agregar burbujas de expertos
+  const expertHtml = expertMsgs.map(m => {
+    const hora = m.ts ? new Date(m.ts).toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'}) : '';
+    const fecha = m.ts ? new Date(m.ts).toLocaleDateString('es-PE', {day:'2-digit', month:'short'}) : '';
+    return `<div class="chat-burbuja chat-experto">
+      <div class="chat-autor">💬 ${m.nombre_profesor || 'Experto ILFIS'}</div>
+      ${m.texto.replace(/\n/g,'<br>')}
+      <div class="chat-ts">${fecha} ${hora}</div>
+    </div>`;
+  }).join('');
+  // Preservar primera burbuja IA y agregar expertos
+  const iaBurbuja = thread.querySelector('.chat-ia');
+  thread.innerHTML = (iaBurbuja ? iaBurbuja.outerHTML : '') + expertHtml;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('exp-pregunta');
+  if (ta) ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntarExperto(); }
+  });
+});
+
+// ── CONSULTAS ─────────────────────────────────────────────
+async function consultar() {
+  const pregunta = document.getElementById('pregunta').value.trim();
+  if (!pregunta) return;
+  const btn = document.getElementById('btn');
+  const estado = document.getElementById('estado');
+  const box = document.getElementById('respuesta-box');
+  btn.disabled = true; box.style.display = 'none';
+  estado.innerHTML = '<span class="spinner"></span>Consultando corpus ILFIS... (primera consulta puede tardar hasta 60s)';
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 120000);
+    const res = await _authFetch(API + '/consulta', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ texto: pregunta }), signal: ctrl.signal
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('Error del servidor: ' + res.status);
+    const data = await res.json();
+    document.getElementById('respuesta-texto').innerHTML = marked.parse(data.respuesta);
+    document.getElementById('fuentes').innerHTML = (data.fuentes && data.fuentes.length)
+      ? 'Fuentes: ' + data.fuentes.map(f=>`<span>${f}</span>`).join('') : '';
+    box.style.display = 'block'; estado.innerHTML = '';
+  } catch(e) {
+    if (e.code === 'NO_AUTH' || e.code === 'EXPIRED' || e.code === 'RATE_LIMIT') {
+      estado.textContent = e.message;
+    } else {
+      estado.textContent = e.name==='AbortError' ? 'Tiempo agotado. El servidor tardó más de 2 minutos.' : 'Error: '+e.message;
+    }
+  } finally { btn.disabled = false; }
+}
+document.getElementById('pregunta').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();consultar();} });
+
+// ── BÚSQUEDA EN VIDEOS ────────────────────────────────────
+async function buscarVideo() {
+  const pregunta = document.getElementById('pregunta-video').value.trim();
+  if (!pregunta) return;
+  const btn = document.getElementById('btn-video');
+  const estado = document.getElementById('estado-video');
+  const box = document.getElementById('respuesta-video-box');
+  const coming = document.getElementById('videos-coming');
+  btn.disabled = true; box.style.display = 'none';
+  if(coming) coming.style.display = 'none';
+  estado.innerHTML = '<span class="spinner"></span>Buscando en los videos ILFIS...';
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 120000);
+    const res = await _authFetch(API + '/consulta', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ texto: pregunta, fuente: 'youtube' }), signal: ctrl.signal
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('Error del servidor: ' + res.status);
+    const data = await res.json();
+    const container = document.getElementById('resultados-video');
+    if (data.fragmentos && data.fragmentos.length > 0) {
+      container.innerHTML = data.fragmentos.map(f => {
+        const ts = f.timestamp_segundos || 0;
+        const min = Math.floor(ts/60), sec = String(ts%60).padStart(2,'0');
+        const url = f.video_id ? `https://www.youtube.com/watch?v=${f.video_id}&t=${ts}s` : '#';
+        return `<div class="video-result">
+          <div class="video-result-title">${f.titulo||'Video ILFIS'}</div>
+          <div class="video-result-meta"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px;"></i> Minuto ${min}:${sec}</div>
+          ${f.texto?`<div class="video-result-excerpt">"${f.texto.substring(0,180)}…"</div>`:''}
+          <a class="video-result-link" href="${url}" target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-brand-youtube" style="font-size:14px;"></i> Ver en YouTube — ${min}:${sec}
+          </a>
+        </div>`;
+      }).join('');
+    } else {
+      container.innerHTML = marked.parse(data.respuesta || 'Sin resultados en videos.');
+    }
+    box.style.display = 'block'; estado.innerHTML = '';
+  } catch(e) {
+    if(coming) coming.style.display = 'block';
+    estado.textContent = e.name==='AbortError' ? 'Tiempo agotado.' : 'Error: '+e.message;
+  } finally { btn.disabled = false; }
+}
+document.getElementById('pregunta-video').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();buscarVideo();} });
+
+// ── EXPLORADOR ────────────────────────────────────────────
+const VIDEOS = [
+  ["0sA3bKHzt8A","PROPUESTAS DE DETECCIÓN DE INCENDIO PARA BATERÍAS DE IONES DE LITIO"],
+  ["du3NEc8clCY","HOSE CONNECTION LOCATIONS"],
+  ["QLmXqWijfoc","DIFFERENCE BETWEEN ACCEPTANCE TESTING AND ANNUAL TESTING OF FIRE PUMPS"],
+  ["wONe-je4KGE","CAUDALES Y PRESIONES EN SISTEMAS DE MONTANTES Y MANGUERAS"],
+  ["gntFClhYp48","DISEÑO DE SISTEMAS DE BOMBEO CONTRA INCENDIOS CON REVIT"],
+  ["TtalmWwf6Q0","ASPECTOS BASICOS DE SISTEMAS DE ROCIADORES PARTE 2"],
+  ["jwAlNWJtQdc","ASPECTOS BASICOS DE SISTEMAS DE ROCIADORES"],
+  ["yIqzTs-tgkc","LONGITUD EQUIVALENTE DE ACCESORIOS Y VÁLVULAS"],
+  ["r0Wp9LZLPG0","GENERALIDADES DE LA PROTECCIÓN CONTRA INCENDIOS EN ALMACENES"],
+  ["DSSWiR8sYKU","BUENAS PRÁCTICAS EN LA INSTALACIÓN DE BOMBAS CONTRA INCENDIO"],
+  ["eZdlx9HkyYY","FORMULARIOS Y DOCUMENTOS PARA LA IMPLANTACIÓN DE PROGRAMAS DE IPM"],
+  ["bXDeCiy_MBA","CÁLCULO DE PÉRDIDAS DE PRESIÓN POR FRICCIÓN LAZOS DE TUBERÍAS"],
+  ["Avu90c3feMA","DISEÑO INTEGRAL DE SISTEMAS DE ROCIADORES CON REVIT"],
+  ["2OhZFPfQEYs","ECUACIONES PARA CALCULAR PÉRDIDAS DE PRESIÓN POR FRICCIÓN"],
+  ["mcl0MtT3SKo","ASPECTOS FUNDAMENTALES PARA CÁLCULOS HIDRÁULICOS DE SISTEMAS DE EXTINCIÓN CON AGUA"],
+  ["Ejmdr9AJjYY","CAPACITACIÓN ESPECIALIZADA: MX ONE"],
+  ["vHDd2NA27GY","PROCEDIMIENTOS DE PRUEBAS DE DESEMPEÑO DE BOMBAS CONTRA INCENDIO"],
+  ["rrf7j_wRJX0","Simulaciones de Evacuación para el Análisis de la Seguridad en Edificaciones Complejas"],
+  ["BFtRIfkuL4o","INCENDIOS HISTÓRICOS DEL SIGLO XX"],
+  ["dJ8KUwmnH_4","ERRORES Y OMISIONES COMUNES EN PRUEBAS DE DESEMPEÑO HIDRÁULICO DE BOMBAS"],
+  ["R5uP-61yEvo","CÁLCULO DE CAUDAL DE AGUA PARA COMBATE DE INCENDIOS"],
+  ["tn6GWVuGByg","Nuevas Fronteras en PCI: Integración de la Inteligencia Artificial"],
+  ["ssDq6C4E5Bc","HERRAMIENTAS DE APRENDIZAJE EN CÁLCULOS HIDRÁULICOS DE ILFIS"],
+  ["IcY32j_Dg68","Fronteras de la Innovación: Tecnologías Alternativas en Protección Contra Incendios"],
+  ["GzzI9_qmdmg","NPSH Y CAVITACION EN BOMBAS CONTRA INCENDIO"],
+  ["7cUC22yW97w","Soluciones de Extinción y Detección para Bodegas de Alta Elevación"],
+  ["05AUxtAKtAM","IT-16 PLANES DE EVACUACIÓN"],
+  ["uLlxHnuyd-Q","PRINCIPALES CAMBIOS EN EL IT-43 EDIFICACIONES EXISTENTES"],
+  ["cL_BMnhlgLU","Notificación de Alarma de Incendios y Emergencias en Espacios Exteriores"],
+  ["tetR_90YgPs","REVIT EN LA CONSTRUCCIÓN DE SISTEMAS CONTRA INCENDIOS"],
+  ["FKZ_5ArNRj4","Más allá del Frío: Protección en Frigoríficos mediante Rociadores"],
+  ["A9yhfveaKho","CÁLCULO HIDRÁULICO DE SISTEMAS DE ROCIADORES CON REVIT Y VCALC"],
+  ["wsjV69AOpg8","OMISIONES Y FALLAS EN PROGRAMAS DE IPM"],
+  ["wgD2onCRb74","BATERÍAS DE ION-LITIO: DESAFÍOS PARA LA INGENIERÍA DE PCI"],
+  ["bSU8_RR4nLs","Criterios de Selección Costo-Efectiva de Bombas Contra Incendio"],
+  ["H4l8oBCiEUo","Integración de Lean Construction y BIM para la Optimización de la PCI"],
+  ["BvwvX4zxcPk","Estrategias Detección Asociada a la Supresión de Incendios"],
+  ["Qmnx6GUypN8","Estrategias para gestión de proyectos de PCI"],
+  ["sVb_8IXHpG0","INTRODUCCIÓN AL DISEÑO DE SISTEMAS DE ROCIADORES"],
+  ["ucsDFOmiZGU","Análisis Comparativo NFPA 13 y FM DS 2-0 Protección Sísmica SCI"],
+  ["67I_j98ax6Q","Desafíos de la PCI en la Industria de los Hidrocarburos"],
+  ["BO371oi9DXI","INTRODUCCIÓN A LA PROTECCIÓN DE ALMACENES CON ROCIADORES"],
+  ["MNWdS3B7ZkM","VENTAJAS DEL ANÁLISIS HIDRÁULICO EN SISTEMAS CONTRA INCENDIOS"],
+  ["uNaghVGwh7c","Mangueras y su Importancia en la Seguridad de los Ocupantes"],
+  ["G4ZroBw4v38","El impacto de los riesgos de incendio en la transición energética"],
+  ["E_QkvAoviM4","CÓMO DETERMINAR PÉRDIDAS DE PRESIÓN EN SISTEMAS CONTRA INCENDIOS"],
+  ["jOOJtqBgLLA","Seguridad contra incendios en los edificios existentes"],
+  ["lVjz5Xfz0JE","Bomba contra incendio Eléctrica Vs Diesel"],
+  ["KvkzP_uEnp8","CÁLCULO DE SISTEMA DE ROCIADORES CON SOFTWARE SHC"],
+  ["bCLA_3ZeLAc","ERRORES COMUNES EN EL DISEÑO DE SISTEMAS DE DETECCIÓN Y ALARMA"],
+  ["8p0FNbjsjxw","Limitaciones del uso de Rociadores ESFR"],
+  ["wCjjDi4STi0","Tanques empernados contra incendios norma NFPA 22"],
+  ["p1eWSiRPbqQ","APLICACIÓN DE BIM PARA EVITAR LA OBSTRUCCIÓN DE ROCIADORES"],
+  ["yxdVOq6OLaU","Computer simulation of fires in oil tanks"],
+  ["H78GoefdAWQ","Requerimientos Normativos Válvulas de Alivio BCI"],
+  ["50L5530cr60","Impacto cálculos hidráulicos desarrollo de un SPCI"],
+  ["8uti_7XYjCk","FUNDAMENTOS PARA EL MONTAJE DE SISTEMAS DE BOMBEO CONTRA INCENDIO"],
+  ["-9TGfpUCbg0","BOMBAS CENTRÍFUGAS - FUNCIONAMIENTO, CLASIFICACIÓN Y DESEMPEÑO"],
+  ["U4I4W2c7D-o","MONITOREO REMOTO DE SISTEMAS CONTRA INCENDIOS"],
+  ["2-oTMe9dZWU","DINÁMICA DE INCENDIOS: MODELADO Y SIMULACIÓN CON CFAST"],
+  ["lWG0a-5tE-k","FACHADAS COMBUSTIBLES: EL PELIGRO OCULTO DE LOS POLÍMEROS"],
+  ["3h-jr5dr-Ug","PROPUESTAS TECNOLÓGICAS DE FIKE PARA RIESGOS ESPECIALES"],
+  ["SiwHdohWHL0","APLICACIONES Y LIMITACIONES DE LOS SISTEMAS DE ROCIADORES DE PRE-ACCIÓN"],
+  ["7cziClqhUTo","INTRODUCCIÓN A LA SEGURIDAD HUMANA SEGÚN NFPA 101"],
+  ["8i8kJgNnJ4w","INTRODUCCIÓN AL USO DE REVIT APLICADO A SISTEMAS CONTRA INCENDIOS"],
+  ["2n8CRnr6d8k","PASOS PARA EL CALCULO DE UN SISTEMA DE MANGUERAS"],
+  ["_CvsEY5QrlM","ASPECTOS ADMINISTRATIVOS DE NORMATIVA URUGUAYA"],
+  ["JC4KacLWNjs","PROTECCIÓN DE MERCANCÍAS POR FM GLOBAL (PARTE 2)"],
+  ["DGYX2vopr8s","PROTECCIÓN DE MERCANCÍAS POR FM GLOBAL (PARTE 1)"],
+  ["8elxxGFvkI8","¿Son Costosos los Sistemas de Rociadores? Trazabilidad en Latam"],
+  ["TrrzZ7-q0hw","La Importancia de los Cálculos Hidráulicos en Proyectos de PCI"],
+  ["qnUqwUyndj8","Vestíbulos Previos Como Herramienta de Protección Pasiva"],
+  ["UXtKYk1QPlg","PRINCIPALES CAMBIOS EN LA NORMATIVA DE PCI EN URUGUAY"],
+  ["QRPMHVM2BkM","APLICACIÓN DE ROCIADORES CMSA EN LA PROTECCIÓN DE ALMACENES"],
+  ["Qn3oGURX4uo","HERRAMIENTAS DE CÁLCULO DISPONIBLES PARA EL ESPECIALISTA EN SCI"],
+  ["-Y-cj-0NmjY","Investigación sobre el incendio en la boda de Qaraqosh"],
+  ["xwIyrr8NcT0","No eches agua al aceite caliente: deflagración violenta y mortal"],
+  ["PfqyHaJD6RE","LISTADO Y APROBADO: SIGNIFICADO EN EL CONTEXTO DE LAS NORMAS NFPA"],
+  ["A-AoLfp-6zQ","SISTEMAS DE MONTANTES Y MANGUERAS CONTRA INCENDIOS"],
+  ["rpP7rgT-kE8","LA CLASIFICACION DE RIESGOS COMO FUNDAMENTO DEL DISEÑO DE UN SISTEMA DE ROCIADORES"],
+  ["lvZSYnyzum4","Avances Tecnológicos Alternativos en Protección Contra Incendios"],
+  ["P9q4CxgEMlQ","INTEGRACIÓN DEL COMPORTAMIENTO HUMANO A LA INGENIERÍA DE SEGURIDAD CONTRA INCENDIOS"],
+  ["pSgDC_TrWGg","CURVAS DE DESEMPEÑO DE BOMBAS CONTRA INCENDIO"],
+  ["uelawP7qO5U","Uso de Tuberías no Metálicas en Sistemas Contra Incendios"],
+  ["0Jty3WsEp0c","OBSTRUCCIONES Y SU EFECTO EN EL DESEMPEÑO DE LOS ROCIADORES (CLASE 2)"],
+  ["Z5fIxS3_ROM","Previsiones de Diseño de Audio Evacuación Basada en la Inteligibilidad"],
+  ["-tGu9XTaoJ0","OBSTRUCCIONES Y SU EFECTO EN EL DESEMPEÑO DE LOS ROCIADORES (CLASE 1)"],
+  ["MWLAVXJJmuM","Sistemas de Bombeo Contra Incendio en Edificios de Gran Altura"],
+  ["THp6RW-5SQM","La Protección Sísmica de los Sistemas Contra Incendios"],
+  ["R8pcjIel4Vc","CONVERSATORIO: UBICACIÓN PRESCRIPTIVA DE DISPOSITIVOS DE DETECCIÓN Y ALARMA"],
+  ["0JrezYw8cc8","PRUEBAS DE FLUJO EN SISTEMAS CONTRA INCENDIOS"],
+  ["y4XKm1F918o","ADVANCED COURSE ON FIRE DETECTION AND ALARM"],
+  ["3bM2l9TIm04","La Importancia del RTI en la Selección de los Rociadores"],
+  ["qzIpYLI9J-g","Advanced Alarm Notification: Audible and Visual Notification (Part 1)"],
+  ["8p0fJUjMwWw","MITO 29: A LA DEMANDA DE ROCIADORES SIEMPRE SE DEBE AGREGAR EL CAUDAL PARA MANGUERAS"],
+  ["e8w9nbjVK38","NFPA 770: SISTEMAS HÍBRIDOS DE EXTINCIÓN DE INCENDIOS (AGUA Y GAS INERTE)"],
+  ["owOfRbgziFs","Las Implicaciones de las Instalaciones de PCI en La Arquitectura"],
+  ["NXFupBWzoOY","MITO 28: ¿EL MANIFOLD DE PRUEBA SIEMPRE ES OBLIGATORIO?"],
+  ["rsi8qN23B-0","Diseño Alternativo de Protección de Almacenes con Espumas de Alta Expansión"],
+  ["rJr278u3UfI","CONVERSATORIO: SIMULACIÓN COMPUTACIONAL ¿CÓMO MODELAR LA DINÁMICA DE LOS INCENDIOS?"],
+  ["ss7xZgGPkbE","Mitos y Realidades de los Rociadores ESFR y su Impacto En Latinoamérica"],
+  ["Azz8RR4AkyM","MITO 27: ¿LA PREALARMA SIGNIFICA LO MISMO QUE LA SECUENCIA POSITIVA DE ALARMA?"],
+  ["8UvE0Z8EXcA","MYTH 26: NOMINAL FLOW RATE OF AN IBC VS FLOW RATE REQUIRED BY THE SYSTEM"],
+  ["v1s6YGhBMqg","CONVERSATORIO: NOTIFICACIÓN DE ALARMA Y AUDIBILIDAD EN ESPACIOS EXTERIORES"],
+  ["8OhTLw00kWg","MYTH 25: DO SPRINKLERS NEED TO BE TESTED TO PROVE THEIR EFFECTIVENESS?"],
+  ["3tjaVBMb098","MITO 24: ¿LA DETECCIÓN DE INCENDIOS SIEMPRE IMPLICA DETECTORES AUTOMÁTICOS?"],
+  ["LrFoGf5i1mU","MITO 23: LOS ROCIADORES ESFR SON UNA PANACEA PARA LA PROTECCIÓN DE ALMACENAMIENTO"],
+  ["sy5YGoLb2kA","CONVERSATORIO: PÉRDIDAS DE PRESIÓN EN SISTEMAS CONTRA INCENDIOS"],
+  ["n6-A0hHZXNU","CONVERSATORIO: VÁLVULAS Y ACCESORIOS DE BOMBAS CONTRA INCENDIO"],
+  ["WkApMpNjVpg","DIPLOMADO AVANZADO DE CÁLCULO HIDRÁULICO (Contenido)"],
+  ["kiFI6CGWBlM","DIPLOMADO AVANZADO DE CÁLCULO HIDRÁULICO (Propósito)"],
+  ["ihsT8fklE9E","DIPLOMADO AVANZADO DE CÁLCULO HIDRÁULICO (Objetivos)"],
+  ["M8JGnmar_0s","DIPLOMADO AVANZADO DE CÁLCULO HIDRÁULICO (Introducción)"],
+  ["_x9gBN6KW1E","DIPLOMADO ESPECIALIZADO EN TEMAS AVANZADOS DE CÁLCULO HIDRÁULICO"],
+  ["Q69qdg53COc","CONVERSATORIO: JUSTIFICACIÓN DE SISTEMA DE DETECCIÓN Y ALARMA (2)"],
+  ["JpLQmqcAcqs","CONVERSATORIO: JUSTIFICACIÓN DE SISTEMA DE DETECCIÓN Y ALARMA (1)"],
+  ["oQaP2sGprB0","CONVERSATORIO: TUBERÍAS ENTERRADAS PARA REDES CONTRA INCENDIO"],
+  ["SazViczIu1o","ILFIS RESPONDE: Tipos de Rociadores y su Aplicación"],
+  ["f45qY5_838A","CONVERSATORIO: IMPORTANCIA DE LA PROTECCIÓN PASIVA EN LAS EDIFICACIONES"],
+  ["pzUY9MHvlEk","CONVERSATORIO: CAUDAL PARA MANGUERAS SEGÚN NFPA 13"],
+  ["y0Sj1n2UuB0","Palabras Finales Congreso ILFIS 2022 — Victor Romero (Costa Rica)"],
+  ["BQXn5yEfk98","Palabras Finales Congreso ILFIS 2022 — Luis Ybirma (Venezuela)"],
+  ["b2lkpVvIUfw","ILFIS RESPONDE: Almacenamiento Misceláneo y de Baja Altura"],
+  ["K42gwxXqzn0","Palabras Finales Congreso ILFIS 2022 — Fernando Bálbaro (Perú)"],
+  ["Janl4IKnbFc","Palabras Finales Congreso ILFIS 2022 — José Prada (Colombia)"],
+  ["AE5P9a5vz0w","Palabras Finales Congreso ILFIS 2022 — Federico Latosinski (Argentina)"],
+  ["IZYX_1Lq7AE","Palabras Finales Congreso ILFIS 2022 — Antonio Molina (España)"],
+  ["R7WfNoyuKtw","Palabras Finales Congreso ILFIS 2022 — Andrés Pedreira (España)"],
+  ["L75jT_Ha7CU","CONVERSATORIO: INCENDIOS DE LÍQUIDOS, MODELADO Y CÁLCULO"],
+  ["XT-TX1Jrh_g","CONVERSATORIO: MANTENIMIENTO DE BOMBAS CONTRA INCENDIOS"],
+  ["JgOX3Mq5paI","ILFIS RESPONDE: Protección de Tanques"],
+  ["4XKpAEj1JPU","Invitación Congreso ILFIS 2022: Seguridad Humana en Edificios"],
+  ["hcTLhB5KHrA","Invitación Congreso ILFIS 2022: Diseño Basado en Desempeño"],
+  ["YPfsRu2jfC4","Video institucional ILFIS"],
+  ["H4PEGgwbT7o","Invitación Congreso ILFIS 2022: Protección Sísmica"],
+  ["83eQWy7Rflw","Invitación Congreso ILFIS 2022: Investigación de Incendios"],
+  ["4KM_SwZgBuE","Invitación Congreso ILFIS 2022: Tuberías Plásticas"],
+  ["4xjI6pa_Zyw","Invitación Congreso ILFIS 2022: Audio Evacuación"],
+  ["crx-_orzhzQ","Invitación Congreso ILFIS 2022: Notificación Audible y Visual"],
+  ["rPjcyCxPu68","Invitación Congreso ILFIS 2022: Rociadores ESFR"],
+  ["naITQMMz1Iw","Invitación Congreso ILFIS 2022: Cálculos Hidráulicos"],
+  ["9UdZa-cOcuU","Invitación Congreso ILFIS 2022: Espumas de Alta Expansión"],
+  ["7jTTvHxifyQ","Invitación Congreso ILFIS 2022: Vestíbulos Previos"],
+  ["luciXIaUOpU","Invitación Congreso ILFIS 2022: Implicancias de la PCI en la Arquitectura"],
+  ["wsrxTXbHUpU","Invitación Congreso ILFIS 2022"],
+  ["8ungEfBKYyY","CONVERSATORIO: UBICACIÓN PRESCRIPTIVA DE DETECTORES Y ALARMAS"],
+  ["CZQA_yJwtrI","DIPLOMADO INTERNACIONAL: PROTECCIÓN DE MERCANCÍAS (1)"],
+  ["gIVU4frx_8g","DIPLOMADO ESPECIALIZADO EN CÁLCULOS HIDRÁULICOS"],
+  ["YvXZJY3rzag","DIPLOMADO INTERNACIONAL: PROTECCIÓN DE MERCANCÍAS (2)"],
+  ["f_J7Luz0cAk","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS"],
+  ["TyzrKMKKJHM","ILFIS RESPONDE: La Hidráulica y los Cálculos de Sistemas de Extinción"],
+  ["PrY8RJ_eMlM","PROTECTION OF WAREHOUSE YARDS USING MONITORS"],
+  ["q6k2-mGoO4Y","ILFIS RESPONDE: Área de Diseño en Cálculos Hidráulicos de Rociadores"],
+  ["pVStF5FBKu8","TUBERÍAS PLÁSTICAS PARA REDES CONTRA INCENDIOS CLASE 2"],
+  ["nZX1Aa1WSFc","TUBERÍAS PLÁSTICAS PARA REDES CONTRA INCENDIOS CLASE 1"],
+  ["jq8P11Lh3gc","CONVERSATORIO: CONEXIONES DE MANGUERA EN LAS NORMAS NFPA 13 Y 14"],
+  ["u9kwYLzJzzE","ILFIS RESPONDE: Sistemas de mangueras contra incendios"],
+  ["3kcII1TrWKs","ILFIS RESPONDE: Cálculo de sistemas de rociadores"],
+  ["4-FCF7fz8WQ","CONVERSATORIO: CARGA COMBUSTIBLE Y TASA DE LIBERACIÓN DE ENERGÍA"],
+  ["eNZXWC4yj28","OPORTUNIDADES DE MEJORA EN INSTALACIONES DE SISTEMAS CONTRA INCENDIOS"],
+  ["Cx5jDAmBzF4","ILFIS RESPONDS: Warehouse Protection with Automatic Sprinklers"],
+  ["2Zu6WG2fuc0","CONVERSATORIO: DESARROLLO Y APLICACIÓN DE LOS ROCIADORES ESFR"],
+  ["bBcpX7aQeLA","CONVERSATORIO: CRITERIOS DE SELECCIÓN DE BOMBAS CONTRA INCENDIOS"],
+  ["-LZLnAask3o","BOMBAS CONTRA INCENDIO PARA EDIFICIOS DE GRAN ALTURA CLASE 1"],
+  ["Jgvr5UvYbTU","ANÁLISIS PRESCRIPTIVO Y PRESTACIONAL DEL TIEMPO DE RESPUESTA DE UN ROCIADOR"],
+  ["XR2Vwpn6-vY","CONVERSATORIO DE SEGURIDAD HUMANA: MÉTODOS PARA CALCULAR TIEMPOS DE EVACUACIÓN"],
+  ["VrBrCmXSz1s","BOMBAS CONTRA INCENDIO PARA EDIFICIOS DE GRAN ALTURA CLASE 2"],
+  ["E7Cc7niWX6c","Contenido del Diplomado Rociadores"],
+  ["d77O1OWaR0w","Diplomado Especializado en Rociadores Automáticos Contra Incendios (1)"],
+  ["7MWWiPrSdI8","Diplomado Especializado en Rociadores Automáticos Contra Incendios (2)"],
+  ["t1VkIDXmRvA","Diplomado Especializado en Rociadores Automáticos Contra Incendios (3)"],
+  ["5xFxpWQZ3Yc","Diplomado Especializado en Cálculos Hidráulicos"],
+  ["JkE3kC2nfq8","Clase Cálculos Hidráulicos Demo 29"],["VspqGjlgS1Y","Clase Cálculos Hidráulicos Demo 28"],
+  ["RFaONjy9lkQ","Clase Cálculos Hidráulicos Demo 27"],["G1oZIrdbWd0","Clase Cálculos Hidráulicos Demo 26"],
+  ["MAI7nCzCDPo","Clase Cálculos Hidráulicos Demo 25"],["a1t7D6Q7Te0","Clase Cálculos Hidráulicos Demo 24"],
+  ["7US8zxVcsJI","Clase Cálculos Hidráulicos Demo 23"],["csUo2Y8HweA","Clase Cálculos Hidráulicos Demo 22"],
+  ["5ZyQ_hi-rC4","Clase Cálculos Hidráulicos Demo 21"],["3pF_n6W2AXE","Clase Cálculos Hidráulicos Demo 20"],
+  ["sjuB5ZN7yyQ","Clase Cálculos Hidráulicos Demo 19"],["XHy3fwZhxpA","Clase Cálculos Hidráulicos Demo 18"],
+  ["xsWm26M1A6s","Clase Cálculos Hidráulicos Demo 17"],["OcP2KBz0cqY","Clase Cálculos Hidráulicos Demo 16"],
+  ["stYTQr04DtE","Clase Cálculos Hidráulicos Demo 14"],["uwKr7i0MQ18","Clase Cálculos Hidráulicos Demo 15"],
+  ["RlE0cS1hbRM","Clase Cálculos Hidráulicos Demo 14b"],["W1GKaGVYkC0","Clase Cálculos Hidráulicos Demo 13"],
+  ["G48-HuNgias","Clase Cálculos Hidráulicos Demo 12"],["BVNSTvCD0Lo","Clase Cálculos Hidráulicos Demo 11"],
+  ["hrhmxASOa4I","Clase Cálculos Hidráulicos Demo 10"],["9DV8q-F5EiE","Clase Cálculos Hidráulicos Demo 9"],
+  ["Kk526eg-DXI","Clase Cálculos Hidráulicos Demo 8"],["7bn7XpTGmSE","Clase Cálculos Hidráulicos Demo 8b"],
+  ["YBrxv_iSdZY","Clase Cálculos Hidráulicos Demo 7"],["ypPXssE06qk","Clase Cálculos Hidráulicos Demo 6"],
+  ["ZzgHxePXvhs","Clase Cálculos Hidráulicos Demo 5"],["OItV87_axyY","Clase Cálculos Hidráulicos Demo 4"],
+  ["i4eH0P5TiIA","Clase Cálculos Hidráulicos Demo 3"],["hIt-CaGQtv8","Clase Cálculos Hidráulicos Demo 2"],
+  ["w-tpbhsXZ98","Clase Cálculos Hidráulicos Demo 1"],
+  ["DeMHAJoNp2k","ILFIS: La Ciencia Detrás del Fuego"],
+  ["xRrxAAqArVM","CLASE SINCRÓNICA DIPLOMADO BOMBAS: FUENTES DE ENERGÍA Y GENERADORES"],
+  ["pvSXx679tj8","CLASE SINCRÓNICA DUDAS SOBRE MOTORES DIESEL SEMANA 04"],
+  ["YNdDmh2jeiY","CLASE SINCRÓNICA DIPLOMADO DE BOMBAS DUDAS SEMANA 03"],
+  ["Xlf7wz9WHkU","Clase Sincrónica DIPLOMADO BOMBAS CONTRA INCENDIOS — Mayo 2021"],
+  ["UzVySclehAM","Presentation International Diploma in Fire Dynamics"],
+  ["hScRBlANzUk","DETECCIÓN Y ALARMA CLASE SINCRÓNICA 05 — GERENCIA DE POTENCIA"],
+  ["pe5V29WJnbQ","DIPLOMADO INTERNACIONAL DE BOMBAS CONTRA INCENDIOS - CLASE 0"],
+  ["nLVKvL6TfPQ","CONVERSATORIO: INCENDIO DEL SUPERMERCADO YCUA BOLAÑOS"],
+  ["jivR0-3YQKg","Video Pathfinder Completo"],
+  ["N7j-VlzUZ3w","Video Pathfinder Visión Global"],
+  ["9Xn_1QMwHHg","Video Pathfinder 1ra Persona"],
+  ["LZ7Sapl3CtY","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (A)"],
+  ["wghRSNsRhBo","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (B)"],
+  ["j1cSRr-Z-14","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (C)"],
+  ["rfRPHMXHP-8","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (D)"],
+  ["fhIwsW4KKeo","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (E)"],
+  ["GVoi4Y8TaN4","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (F)"],
+  ["BR_2-Gpf998","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (G)"],
+  ["hXnRyEa23nU","DIPLOMADO ESPECIALIZADO EN ROCIADORES AUTOMÁTICOS (H)"],
+  ["KwRQ90-EEWE","MITO 22: ¿EL PÁNICO INCAPACITA A LAS PERSONAS PARA EVACUAR?"],
+  ["C9pz_JxXqJ4","CONVERSATORIO: MANGUERAS CONTRA INCENDIO Y SEGURIDAD DE LOS OCUPANTES"],
+  ["G_Qn1wxRCvs","MITO 21: ¿DONDE SE INSTALA UNA ESTACION MANUAL DEBE IR UNA SIRENA Y ESTROBO?"],
+  ["X4xbqCwgDJs","Clase 20 Métodos Prescriptivos y Prestacionales"],
+  ["w_sKCUuCNjo","Clase 19 Métodos Prescriptivos y Prestacionales"],
+  ["6WscVQAqH_c","Clase 18 Métodos Prescriptivos y Prestacionales"],
+  ["SHDhrJTeOU8","Clase 17 Métodos Prescriptivos y Prestacionales"],
+  ["vZ2wnifon3M","Clase 16 Métodos Prescriptivos y Prestacionales"],
+  ["qFbTBNFvNmA","Clase 15 Métodos Prescriptivos y Prestacionales"],
+  ["1ahSbYlaPeY","Clase 1 Métodos Prescriptivos y Prestacionales"],
+  ["ODRPjAx4lvY","Clase 2 Métodos Prescriptivos y Prestacionales"],
+  ["UcjnYi5HRig","Clase 3 Métodos Prescriptivos y Prestacionales"],
+  ["gxi5BthjBUY","Clase 4 Métodos Prescriptivos y Prestacionales"],
+  ["AIYwrdiUvks","Clase 5 Métodos Prescriptivos y Prestacionales"],
+  ["mE77mdkNnAQ","Clase 6 Métodos Prescriptivos y Prestacionales"],
+  ["ChUf1TtBQ9o","Clase 7 Métodos Prescriptivos y Prestacionales"],
+  ["WbBDy2xgfQ4","Clase 8 Métodos Prescriptivos y Prestacionales"],
+  ["QQu_BqghndY","Clase 9 Métodos Prescriptivos y Prestacionales"],
+  ["b9Ex2kzCPwA","Clase 10 Métodos Prescriptivos y Prestacionales"],
+  ["Nm1_RcEVUWs","Clase 13 Métodos Prescriptivos y Prestacionales"],
+  ["A8BNnWWbdXU","Clase 14 Métodos Prescriptivos y Prestacionales"],
+  ["hBKG8IOTNog","Clase 11 Métodos Prescriptivos y Prestacionales"],
+  ["fxJKJSu8RBg","Clase 12 Métodos Prescriptivos y Prestacionales"],
+  ["mYDARU2by9M","Mitos y Realidades — Precálculo Rociadores Clase 1"],
+  ["VxtdX4_PMQg","Mitos y Realidades — Precálculo Rociadores Clase 2"],
+  ["Zj8kW4wGc3I","Mitos y Realidades — Precálculo Rociadores Clase 3"],
+  ["MFL66fw7qZ4","Mitos y Realidades — Precálculo Rociadores Clase 7"],
+  ["NXI4-1dbIqo","Myths and Realities — Pre-calculation Sprinkler System Class 6"],
+  ["imWR0T1y0ks","Mitos y Realidades — Precálculo Rociadores Clase 5"],
+  ["i6DJZEwZ4zM","Mitos y Realidades — Precálculo Rociadores Clase 4"],
+  ["4oY7PYVU0CI","Mitos y Realidades — Precálculo Rociadores Clase 8"],
+  ["zVAndiJRqns","Mitos y Realidades — Precálculo Rociadores Clase 9"],
+  ["-qNjrkJGK0c","Mitos y Realidades — Precálculo Rociadores Clase 10"],
+  ["COLekxr2kcs","Mitos y Realidades — Precálculo Rociadores Clase 11"],
+  ["qMZtQ2TdVQU","Mitos y Realidades — Precálculo Rociadores Clase 12"],
+  ["F4vq0aV8g6g","Mitos y Realidades — Precálculo Rociadores Clase 14"],
+  ["Xg2BnBaOlJM","Introduction: Myths and Realities in Fire Protection"],
+  ["WZ5rQ6ZqJMw","Mitos y Realidades — Precálculo Rociadores Clase 13"],
+  ["nGD6L74yLSY","Video Demo de Clases 2"],["8pAJtXDvq2E","Video Demo de Clases 3"],
+  ["NilQ5yWIzDQ","Video Demo de Clases 4"],["RvQbGugZza4","Video Demo de Clases 5"],
+  ["QEeabe0c8dg","Video Demo de Clases 6"],["O0IG5SDqQa8","Video Demo de Clases 7"],
+  ["dkprKbIvlU0","Video Demo de Clases 9"],["_sJtLeSUtKs","Video Demo de Clases 10"],
+  ["dImBZy3baBw","Video Demo de Clases 11"],["uONnSwpyt18","Video Demo de Clases 12"],
+  ["5jNy_0I5O7E","Video Demo de Clases 13"],["iUgF99saPAs","Video Demo de Clases 14"],
+  ["WOfcAtMjGd8","Video Demo de Clases 15"],["4zlyjRirioc","Video Demo de Clases 16"],
+  ["-rppvmzOOgk","Video Demo de Clases 17"],["xbF-Wc4NiP4","Video Demo de Clases 18"],
+  ["ScbfpDGArbo","Video Demo de Clases 19"],["hbSPhw1zj1w","Video Demo de Clases 20"],
+  ["xo3SrpldK_g","Myths and Realities — Pre-calculation Sprinkler System Class 13-2"],
+  ["mkrXcbUfhSU","Video Demo de Clases 8"],["TMhVSkiiElk","Video Demo de Clases 1"],
+  ["gr0XUtHFv98","CONVERSATORIO DETECCIÓN DE INCENDIOS"],
+  ["o9nCIzZWZsA","Cómo se Instala Google Drive en tu PC"],
+  ["PMZgF_N-sAw","Cómo se Instala Telegram en tu PC"],
+  ["hFPt05D_ZJY","Cómo se paga con PAYPAL"],
+  ["ojuKPkBMSS0","Video de Bienvenida a ILFIS"],
+  ["LYRsIHnj2zg","DEMO CURSO SELECCIÓN DE AGENTES LIMPIOS"],
+  ["u9t51q2rPOM","ILFIS COURSE DEMO - PRINCIPLES OF FIRE DETECTION"],
+  ["plbP8MCFt2Q","LA TRAGEDIA DE VILLA EL SALVADOR LIMA PERÚ"],
+  ["C9RgbtPCo2s","MITO 20: LOS ROCIADORES REQUIEREN ALTOS COSTOS DE MANTENIMIENTO"],
+  ["JgZ_DpRzNIo","MITO 19: LOS SISTEMAS DE ROCIADORES SON MUY COSTOSOS"],
+  ["Ie1AdtLlXrQ","MITO 18: LOS ROCIADORES NO REDUCEN LOS DAÑOS A LAS PROPIEDADES"],
+  ["jpadhQNwUro","MITO 17: NO SE REQUIEREN ROCIADORES AUTOMÁTICOS EN TECHOS ALTOS"],
+  ["7nkO_5Y65hA","MITO 16: LOS ROCIADORES NO REDUCEN LOS RIESGOS DE MUERTE POR INCENDIO"],
+  ["k9pJlxY984o","MITO 15: LOS ROCIADORES REQUIEREN DE GRANDES BOMBAS PARA FUNCIONAR"],
+  ["7q14HL4FkZM","MITO 14: LOS ROCIADORES REQUIEREN MUCHA PRESIÓN DE AGUA PARA OPERAR"],
+  ["p7HarBR3Q-Y","MITO 13: SE DEBEN INSTALAR DOS BOMBAS, UNA DIESEL Y UNA ELÉCTRICA"],
+  ["rBC-Dgm0kgY","MYTH 12: SPRINKLERS ARE ACTIVATED BY MANUAL STATIONS"],
+  ["FPRcayU5BvI","MYTH 11: SPRINKLERS CAUSE MORE WATER DAMAGE THAN THE FIRE ITSELF"],
+  ["DCxqnPjRP3Q","MITO 10: LOS ROCIADORES REQUIEREN GRANDES VOLÚMENES DE AGUA"],
+  ["_vJgI8N27vs","MITO 09: LOS ROCIADORES QUE OPERAN NO CONTROLAN EL FUEGO"],
+  ["qpfRvra3KQ0","MITO 08: LOS ROCIADORES ESTÁN SUJETOS A FALLAR CON FRECUENCIA"],
+  ["7A3yJH0fDq8","MITO 07: LOS ROCIADORES SON UN PELIGRO"],
+  ["TI2mfQEtLbs","MITO 06: NO SE DEBEN USAR ROCIADORES EN EQUIPOS ELÉCTRICOS"],
+  ["F-UBapXrV7c","MITO 05: LOS ROCIADORES SOLO TIENEN EL PROPÓSITO DE CONTROLAR EL FUEGO"],
+  ["49YzdoVz_N0","MITO 04: LAS TUBERÍAS SCI DEBEN SER ROJAS"],
+  ["GHH1p5p79Ik","MITO 03: LOS ROCIADORES SON EXTREMADAMENTE SENSIBLES"],
+  ["iGyeZUf89zQ","MITO 02: LOS ROCIADORES SE ABREN TODOS A LA VEZ"],
+  ["bSkyoTXgWxU","MITO 01: LOS ROCIADORES CONTRA INCENDIO RESPONDEN AL HUMO"]
+];
+
+// ══════════════════════════════════════════════════════════
+// ROCIADORES — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const TOTAL_CLASES_ROCIADORES = 49;
+let _rocClaseActual = null;
+
+function abrirRociadores() {
+  // Construir sidebar si no se ha hecho
+  const sidebar = document.getElementById('roc-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_ROCIADORES; i++) {
+      html += `<button class="roc-clase-btn" id="roc-btn-${i}" onclick="cargarClase(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>Clase ${i}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-rociadores').classList.add('visible');
+}
+
+function cerrarRociadores() {
+  // Pausar el video al salir
+  const video = document.getElementById('roc-video');
+  video.pause();
+  video.src = '';
+  _rocClaseActual = null;
+  document.querySelectorAll('.roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('roc-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('roc-placeholder').style.display = 'flex';
+  document.getElementById('roc-error').style.display = 'none';
+  document.getElementById('panel-rociadores').classList.remove('visible');
+}
+
+async function cargarClase(n) {
+  if (!_tieneAcceso('rociadores')) { mostrarPaywall('rociadores'); return; }
+  if (_rocClaseActual === n) return;
+  _rocClaseActual = n;
+
+  // Actualizar sidebar
+  document.querySelectorAll('.roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`roc-btn-${n}`);
+  if (btnActivo) {
+    btnActivo.classList.add('active');
+    btnActivo.scrollIntoView({ block: 'nearest' });
+  }
+
+  // UI — mostrar loading
+  const video       = document.getElementById('roc-video');
+  const placeholder = document.getElementById('roc-placeholder');
+  const loading     = document.getElementById('roc-loading');
+  const errorEl     = document.getElementById('roc-error');
+  const tituloEl    = document.getElementById('roc-video-titulo');
+
+  video.pause();
+  video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent  = `Cargando Clase ${n}...`;
+
+  try {
+    // Obtener token Firebase del usuario actual
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+
+    // Ir directo al proxy de streaming (evita CORS y no requiere endpoint extra)
+    tituloEl.textContent = `Clase ${n} — Diplomado de Rociadores Automáticos`;
+    video.src = `${API}/api/cursos/rociadores/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirPDF() {
+  if (!_tieneAcceso('rociadores')) { mostrarPaywall('rociadores'); return; }
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/rociadores/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// HIDRÁULICOS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const TOTAL_CLASES_HIDRAULICOS = 35;
+let _hidClaseActual = null;
+
+function abrirHidraulicos() {
+  const sidebar = document.getElementById('hid-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_HIDRAULICOS; i++) {
+      html += `<button class="roc-clase-btn" id="hid-btn-${i}" onclick="cargarClaseHidraulicos(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>Clase ${i}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-hidraulicos').classList.add('visible');
+}
+
+function cerrarHidraulicos() {
+  const video = document.getElementById('hid-video');
+  video.pause();
+  video.src = '';
+  _hidClaseActual = null;
+  document.querySelectorAll('#hid-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('hid-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('hid-placeholder').style.display = 'flex';
+  document.getElementById('hid-error').style.display = 'none';
+  document.getElementById('panel-hidraulicos').classList.remove('visible');
+}
+
+async function cargarClaseHidraulicos(n) {
+  if (!_tieneAcceso('hidraulicos')) { mostrarPaywall('hidraulicos'); return; }
+  if (_hidClaseActual === n) return;
+  _hidClaseActual = n;
+
+  document.querySelectorAll('#hid-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`hid-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('hid-video');
+  const placeholder = document.getElementById('hid-placeholder');
+  const loading     = document.getElementById('hid-loading');
+  const errorEl     = document.getElementById('hid-error');
+  const tituloEl    = document.getElementById('hid-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    tituloEl.textContent = `Clase ${n} — Diplomado Especializado en Cálculos Hidráulicos`;
+    video.src = `${API}/api/cursos/hidraulicos/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirPDFHidraulicos() {
+  if (!_tieneAcceso('hidraulicos')) { mostrarPaywall('hidraulicos'); return; }
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/hidraulicos/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// BOMBAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const BOMBAS_TITULOS = {
+  1:  "Hidráulica Básica para SCI - Clase 1",
+  2:  "Hidráulica Básica para SCI - Clase 2",
+  3:  "Hidráulica Básica para SCI - Clase 3",
+  4:  "Hidráulica Básica para SCI - Ejercicios",
+  5:  "Generalidades sobre Bombas",
+  6:  "Bombas Centrífugas Contra Incendio - Clase 1",
+  7:  "Bombas Centrífugas Contra Incendio - Clase 2",
+  8:  "Bombas Verticales Contra Incendios",
+  9:  "Motores de Combustión Interna Diesel",
+  10: "Motores Diesel para Bombas SCI - Clase 1",
+  11: "Motores Diesel para Bombas SCI - Clase 2",
+  12: "Motores Diesel para Bombas SCI - Clase 3",
+  13: "Controladores de Motores Diesel - Clase 1",
+  14: "Controladores de Motores Diesel - Clase 2",
+  15: "Controladores de Motores Diesel - Clase 3",
+  16: "Principios de Circuitos Eléctricos - Clase 1",
+  17: "Principios de Circuitos Eléctricos - Clase 2",
+  18: "Principios de Distribución Eléctrica",
+  19: "Fuentes de Energía",
+  20: "Motores Eléctricos para Bombas Contra Incendios",
+  21: "Controladores de Motores Eléctricos - Clase 1",
+  22: "Controladores de Motores Eléctricos - Clase 2",
+  23: "Controladores de Motores Eléctricos - Clase 3",
+  24: "Controladores de Motores Eléctricos - Clase 4",
+  25: "Controladores de Motores Eléctricos - ALIVE",
+  26: "Herramientas de Productividad – Selector de Bombas ALIVE",
+  27: "Protocolos de Comunicación Controladores",
+  28: "Instalaciones Eléctricas para Bombas Contra Incendios",
+  29: "Cálculos Eléctricos Básicos",
+  30: "Selección de Bombas Contra Incendios - Clase 1",
+  31: "Selección de Bombas Contra Incendios - Clase 2",
+  32: "Arreglos Especiales de Bombas SCI",
+  33: "Válvulas y Accesorios de Bombas Contra Incendios",
+  34: "Req. Generales Instalaciones BCI - Clase 1",
+  35: "Req. Generales Instalaciones BCI - Clase 2",
+  36: "Req. Generales Instalaciones BCI - Clase 3",
+  37: "Req. Generales Instalaciones BCI - Clase 4",
+  38: "Medición de Caudal y Bomba Jockey",
+  39: "Bombas Contra Incendio para Edificios de Gran Altura - Clase 1",
+  40: "Bombas Contra Incendio para Edificios de Gran Altura - Clase 2",
+  41: "Pruebas de Aceptación de BCI - Clase 1",
+  42: "Pruebas de Aceptación de BCI - Clase 2",
+  43: "Mantenimiento de BCI - Clase 1",
+  44: "Mantenimiento de BCI - Clase 2",
+  45: "Requerimientos de FM Global",
+  46: "Norma UNE 23500 - Generalidades",
+  47: "Análisis de Riesgo en Selección de Bombas - Clase 1",
+  48: "Análisis de Riesgo en Selección de Bombas - Clase 2",
+  49: "Sistemas de Monitoreo Remoto de BCI",
+  50: "Cimentaciones para Bombas Contra Incendios",
+  51: "Fuentes y Tanques de Agua para BCI",
+};
+
+const TOTAL_CLASES_BOMBAS = 51;
+let _bomClaseActual = null;
+
+function abrirBombas() {
+  const sidebar = document.getElementById('bom-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_BOMBAS; i++) {
+      const titulo = BOMBAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="bom-btn-${i}" onclick="cargarClaseBombas(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-bombas').classList.add('visible');
+}
+
+function cerrarBombas() {
+  const video = document.getElementById('bom-video');
+  video.pause();
+  video.src = '';
+  _bomClaseActual = null;
+  document.querySelectorAll('#bom-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('bom-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('bom-placeholder').style.display = 'flex';
+  document.getElementById('bom-error').style.display = 'none';
+  document.getElementById('panel-bombas').classList.remove('visible');
+}
+
+async function abrirPDFBombas() {
+  if (!_tieneAcceso('bombas')) { mostrarPaywall('bombas'); return; }
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/bombas/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+async function cargarClaseBombas(n) {
+  if (!_tieneAcceso('bombas')) { mostrarPaywall('bombas'); return; }
+  if (_bomClaseActual === n) return;
+  _bomClaseActual = n;
+
+  document.querySelectorAll('#bom-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`bom-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('bom-video');
+  const placeholder = document.getElementById('bom-placeholder');
+  const loading     = document.getElementById('bom-loading');
+  const errorEl     = document.getElementById('bom-error');
+  const tituloEl    = document.getElementById('bom-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = BOMBAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/bombas/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MERCANCÍAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const MERCANCIAS_TITULOS = {
+  1:  "Sistemas de Rociadores y Requisitos (Clase 1)",
+  2:  "Sistemas de Rociadores y Requisitos (Clase 2)",
+  3:  "Soportería para Sistemas de Rociadores en Almacenes (Clase 1)",
+  4:  "Soportería para Sistemas de Rociadores en Almacenes (Clase 2)",
+  5:  "Protección Sísmica del Sistema en Almacenes (Clase 1)",
+  6:  "Protección Sísmica del Sistema en Almacenes (Clase 2)",
+  7:  "Protección Sísmica del Sistema en Almacenes (Clase 3)",
+  8:  "Protección Sísmica del Sistema en Almacenes (Clase 4)",
+  9:  "Protección Sísmica del Sistema en Almacenes (Clase 5)",
+  10: "Protección Sísmica del Sistema en Almacenes (Clase 6)",
+  11: "Protección Sísmica del Sistema en Almacenes (Clase 7)",
+  12: "Definiciones Relacionadas con el Almacenamiento (Clase 1)",
+  13: "Definiciones Relacionadas con el Almacenamiento (Clase 2)",
+  14: "Clasificación de Mercancías (Clase 1)",
+  15: "Clasificación de Mercancías (Clase 2)",
+  16: "Clasificación de Mercancías (Clase 3)",
+  17: "Requerimientos Generales para la Protección de Almacenamientos (Clase 1)",
+  18: "Requerimientos Generales para la Protección de Almacenamientos (Clase 2)",
+  19: "Protección de Almacenamiento Misceláneo (Clase Única)",
+  20: "Generalidades acerca de Rociadores CMDA",
+  21: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 1)",
+  22: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 2)",
+  23: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 3)",
+  24: "Criterios de Protección de Almacenes con Rociadores CMDA (Clase 4)",
+  25: "Criterios de Protección con Rociadores CMDA — Ejemplos",
+  26: "Generalidades acerca de Rociadores CMSA",
+  27: "Criterios de Protección con Rociadores CMSA",
+  28: "Criterios de Protección con Rociadores CMSA — Ejemplos",
+  29: "Generalidades sobre Rociadores ESFR",
+  30: "Generalidades sobre Rociadores ESFR — Adenda 2022",
+  31: "Obstrucciones en Rociadores ESFR",
+  32: "Protección de Mercancías con ESFR 2022 — Parte 1",
+  33: "Protección de Mercancías con ESFR 2022 — Parte 2",
+  34: "Prácticas de Diseño con ESFR 2022",
+  35: "Criterios de Protección con Rociadores In-Rack (Clase 1)",
+  36: "Criterios de Protección con Rociadores In-Rack (Clase 2)",
+  37: "Criterios de Protección con Rociadores In-Rack (Clase 3)",
+  38: "Criterios de Protección con Rociadores In-Rack (Clase 4)",
+  39: "Criterios de Protección con Rociadores In-Rack (Clase 5)",
+  40: "Criterios de Protección con Rociadores In-Rack (Clase 6)",
+  41: "Criterios de Protección con Rociadores In-Rack (Clase 7)",
+  42: "Criterios de Protección con Rociadores In-Rack (Clase 8)",
+  43: "Diseños Alternativos para Protección de Almacenamientos",
+  44: "Diseños Especiales para Protección de Almacenamientos",
+  45: "Protección de Mercancías FM Global — Parte 1",
+  46: "Protección de Mercancías FM Global — Parte 2",
+  47: "Protección de Mercancías FM Global — Parte 3",
+  48: "Protección de Mercancías FM Global — Parte 4",
+  49: "Suministro de Agua para Sistemas de Rociadores — Parte 1",
+  50: "Suministro de Agua para Sistemas de Rociadores — Parte 2",
+  51: "Diseño Basado en el Desempeño (Parte 1)",
+  52: "Diseño Basado en el Desempeño (Parte 2)",
+};
+
+const TOTAL_CLASES_MERCANCIAS = 52;
+let _merClaseActual = null;
+
+function abrirMercancias() {
+  const sidebar = document.getElementById('mer-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_MERCANCIAS; i++) {
+      const titulo = MERCANCIAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="mer-btn-${i}" onclick="cargarClaseMercancias(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-mercancias').classList.add('visible');
+}
+
+function cerrarMercancias() {
+  const video = document.getElementById('mer-video');
+  video.pause();
+  video.src = '';
+  _merClaseActual = null;
+  document.querySelectorAll('#mer-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mer-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('mer-placeholder').style.display = 'flex';
+  document.getElementById('mer-error').style.display = 'none';
+  document.getElementById('panel-mercancias').classList.remove('visible');
+}
+
+async function abrirPDFMercancias() {
+  if (!_tieneAcceso('mercancias')) { mostrarPaywall('mercancias'); return; }
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/mercancias/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+async function cargarClaseMercancias(n) {
+  if (!_tieneAcceso('mercancias')) { mostrarPaywall('mercancias'); return; }
+  if (_merClaseActual === n) return;
+  _merClaseActual = n;
+
+  document.querySelectorAll('#mer-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`mer-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('mer-video');
+  const placeholder = document.getElementById('mer-placeholder');
+  const loading     = document.getElementById('mer-loading');
+  const errorEl     = document.getElementById('mer-error');
+  const tituloEl    = document.getElementById('mer-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = MERCANCIAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/mercancias/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ALARMAS — Video Player Tier 2
+// ══════════════════════════════════════════════════════════
+
+const ALARMAS_TITULOS = {
+  1:  "El Sonido y la Acústica - Parte 1",
+  2:  "El Sonido y la Acústica - Parte 2",
+  3:  "Principios de Circuitos Eléctricos - Parte 1",
+  4:  "Principios de Circuitos Eléctricos - Parte 2",
+  5:  "Resistencia y Capacitancia Lineal en Cables FPL",
+  6:  "Códigos y Normas - Parte 1",
+  7:  "Códigos y Normas - Parte 2",
+  8:  "Principios de Dinámica del Fuego",
+  9:  "Caracterización de la Ocupación - Parte 1",
+  10: "Caracterización de la Ocupación - Parte 2",
+  11: "Arquitectura Básica Sistema de Detección - Parte 1",
+  12: "Arquitectura Básica Sistema de Detección - Parte 2",
+  13: "Arquitectura Básica Sistema de Detección - Parte 3",
+  14: "Detección de Humo - Parte 1",
+  15: "Detección de Humo - Parte 2",
+  16: "Detección de Humo - Parte 3",
+  17: "Detección de Calor - Parte 1",
+  18: "Detección de Calor - Parte 2",
+  19: "Estrategias de Detección Complementarias - Parte 1",
+  20: "Estrategias de Detección Complementarias - Parte 2",
+  21: "Estrategias de Detección Complementarias - Parte 3",
+  22: "Estrategias de Detección Complementarias - Parte 4",
+  23: "Dispositivos de Inicio Manual",
+  24: "Diseño Básico de Notificación de Alarma - Parte 1",
+  25: "Diseño Básico de Notificación de Alarma - Parte 2",
+  26: "Diseño Básico de Notificación de Alarma - Parte 3",
+  27: "Diseño Avanzado de Notificación de Alarma - Parte 1",
+  28: "Diseño Avanzado de Notificación de Alarma - Parte 2",
+  29: "Diseño Avanzado de Notificación de Alarma - Parte 3",
+  30: "Diseño Avanzado de Notificación de Alarma - Parte 4",
+  31: "Diseño Avanzado de Notificación de Alarma - Parte 5",
+  32: "Notificación Audible en Exteriores",
+  33: "Estrategias de Notificación Complementarias",
+  34: "Cableado de Dispositivos y Clases de Vías - Parte 1",
+  35: "Cableado de Dispositivos y Clases de Vías - Parte 2",
+  36: "Cableado de Dispositivos y Clases de Vías - Parte 3",
+  37: "Módulos de Entrada y Salida y Tarjetas Auxiliares - Parte 1",
+  38: "Módulos de Entrada y Salida y Tarjetas Auxiliares - Parte 2",
+  39: "Paneles Direccionables Analógicos",
+  40: "Cálculos Eléctricos Básicos - Parte 1",
+  41: "Cálculos Eléctricos Básicos - Parte 2",
+  42: "Fuentes Auxiliares y Gerencia de Potencia - Parte 1",
+  43: "Fuentes Auxiliares y Gerencia de Potencia - Parte 2",
+  44: "Causa Efecto y Correlaciones",
+  45: "Interfaces de Control de Emergencia - Parte 1",
+  46: "Interfaces de Control de Emergencia - Parte 2",
+  47: "Audioevacuación - Parte 1",
+  48: "Audioevacuación - Parte 2",
+  49: "Audioevacuación - Parte 3",
+  50: "Conectividad de Paneles - Parte 1",
+  51: "Conectividad de Paneles - Parte 2",
+  52: "Principios de PLCs",
+  53: "Detección para Sistemas de Supresión - Parte 1",
+  54: "Detección para Sistemas de Supresión - Parte 2",
+  55: "Sistemas de Fire and Gas - Parte 1",
+  56: "Sistemas de Fire and Gas - Parte 2",
+  57: "Documentación del Proyecto"
+};
+
+const TOTAL_CLASES_ALARMAS = 57;
+let _alaClaseActual = null;
+
+function abrirAlarmas() {
+  const sidebar = document.getElementById('ala-sidebar');
+  if (sidebar.children.length === 0) {
+    let html = '';
+    for (let i = 1; i <= TOTAL_CLASES_ALARMAS; i++) {
+      const titulo = ALARMAS_TITULOS[i] || `Clase ${i}`;
+      html += `<button class="roc-clase-btn" id="ala-btn-${i}" onclick="cargarClaseAlarmas(${i})">
+        <span style="color:#c0392b;font-weight:bold;margin-right:8px;">${i}.</span>${titulo}
+      </button>`;
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-alarmas').classList.add('visible');
+}
+
+function cerrarAlarmas() {
+  const video = document.getElementById('ala-video');
+  video.pause();
+  video.src = '';
+  _alaClaseActual = null;
+  document.querySelectorAll('#ala-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ala-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('ala-placeholder').style.display = 'flex';
+  document.getElementById('ala-error').style.display = 'none';
+  document.getElementById('panel-alarmas').classList.remove('visible');
+}
+
+async function cargarClaseAlarmas(n) {
+  if (!_tieneAcceso('alarmas')) { mostrarPaywall('alarmas'); return; }
+  if (_alaClaseActual === n) return;
+  _alaClaseActual = n;
+
+  document.querySelectorAll('#ala-sidebar .roc-clase-btn').forEach(b => b.classList.remove('active'));
+  const btnActivo = document.getElementById(`ala-btn-${n}`);
+  if (btnActivo) { btnActivo.classList.add('active'); btnActivo.scrollIntoView({ block: 'nearest' }); }
+
+  const video       = document.getElementById('ala-video');
+  const placeholder = document.getElementById('ala-placeholder');
+  const loading     = document.getElementById('ala-loading');
+  const errorEl     = document.getElementById('ala-error');
+  const tituloEl    = document.getElementById('ala-video-titulo');
+
+  video.pause(); video.src = '';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = `Cargando Clase ${n}...`;
+
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión para ver este contenido.');
+    const idToken = await user.getIdToken();
+    const titulo = ALARMAS_TITULOS[n] || `Clase ${n}`;
+    tituloEl.textContent = `Clase ${n} — ${titulo}`;
+    video.src = `${API}/api/cursos/alarmas/clase/${n}/stream?token=${idToken}`;
+    video.load();
+    video.play().catch(() => {});
+  } catch (e) {
+    tituloEl.textContent = `Error al cargar Clase ${n}`;
+    errorEl.textContent  = `⚠ ${e.message}`;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirPDFAlarmas() {
+  if (!_tieneAcceso('alarmas')) { mostrarPaywall('alarmas'); return; }
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Debes iniciar sesión.');
+    const idToken = await user.getIdToken();
+    window.open(`${API}/api/cursos/alarmas/pdf/stream?token=${idToken}`, '_blank');
+  } catch(e) {
+    alert('Error al abrir el PDF: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PAYWALL — Control de acceso por curso
+// ══════════════════════════════════════════════════════════
+
+let _cursosActivos = {};  // { rociadores: "2026-06-27T00:00:00Z", ... }
+let _paywallCursoActual = null;
+
+const CURSOS_INFO = {
+  rociadores:  { nombre: "Diplomado de Rociadores Automáticos",             clases: 49 },
+  hidraulicos: { nombre: "Diplomado Especializado en Cálculos Hidráulicos",  clases: 35 },
+  bombas:      { nombre: "Diplomado de Bombas Contra Incendios",             clases: 51 },
+  mercancias:  { nombre: "Diplomado de Protección de Mercancías",            clases: 52 },
+  alarmas:     { nombre: "Diplomado de Detección y Alarmas de Incendios",    clases: 57 },
+};
+
+function _tieneAcceso(curso) {
+  if (!_cursosActivos[curso]) return false;
+  return new Date(_cursosActivos[curso]) > new Date();
+}
+
+function mostrarPaywall(curso) {
+  _paywallCursoActual = curso;
+  const info = CURSOS_INFO[curso] || { nombre: curso, clases: 0 };
+  document.getElementById('paywall-titulo').textContent = info.nombre;
+  document.getElementById('paywall-incluye').innerHTML = `
+    <div class="paywall-tagline">¿Listo para llevar tu carrera al siguiente nivel?</div>
+    <ul class="paywall-checks">
+      <li>${info.clases} clases grabadas en alta calidad por expertos ILFIS</li>
+      <li>PDF completo del material de estudio incluido</li>
+      <li>Acceso ilimitado durante 30 días</li>
+      <li>Tutoría permanente con un experto ILFIS — todas tus preguntas respondidas en menos de 12 h con un 90% de confianza (fines de semana puede demorar un poco más)</li>
+      <li>Renovación simple — cancela cuando quieras</li>
+    </ul>`;
+  document.getElementById('paywall-overlay').classList.add('visible');
+}
+
+function cerrarPaywall() {
+  document.getElementById('paywall-overlay').classList.remove('visible');
+  _paywallCursoActual = null;
+}
+
+const BACKEND = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+
+function _fmtCard(input) {
+  // Conserva solo dígitos, máximo 16
+  var digits = input.value.replace(/\D/g, '').slice(0, 16);
+  // Inserta espacio cada 4 dígitos
+  var out = '';
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && i % 4 === 0) out += ' ';
+    out += digits[i];
+  }
+  input.value = out;
+}
+
+function iniciarPagoPayPal() {
+  // Oculta la vista comercial, muestra el formulario de tarjeta
+  document.querySelector('.paywall-lock').style.display    = 'none';
+  document.querySelector('.paywall-label').style.display   = 'none';
+  document.querySelector('.paywall-titulo').style.display  = 'none';
+  document.querySelector('.paywall-precio').style.display  = 'none';
+  document.querySelector('.paywall-incluye').style.display = 'none';
+  document.querySelector('.btn-paypal').style.display      = 'none';
+  document.querySelector('.paywall-seguro').style.display  = 'none';
+  document.querySelector('.btn-paywall-cerrar').style.display = 'none';
+  document.getElementById('paywall-form').style.display   = 'block';
+  // Limpiar campos y errores
+  ['pf-numero','pf-nombre','pf-vence','pf-cvv'].forEach(id => document.getElementById(id).value = '');
+  const errEl = document.getElementById('pf-error');
+  errEl.style.display = 'none'; errEl.textContent = '';
+  document.getElementById('btn-pagar').disabled = false;
+  document.getElementById('btn-pagar').textContent = 'Pagar $000';
+}
+
+function _volverPaywall() {
+  // Restaura la vista comercial
+  document.querySelector('.paywall-lock').style.display    = '';
+  document.querySelector('.paywall-label').style.display   = '';
+  document.querySelector('.paywall-titulo').style.display  = '';
+  document.querySelector('.paywall-precio').style.display  = '';
+  document.querySelector('.paywall-incluye').style.display = '';
+  document.querySelector('.btn-paypal').style.display      = '';
+  document.querySelector('.paywall-seguro').style.display  = '';
+  document.querySelector('.btn-paywall-cerrar').style.display = '';
+  document.getElementById('paywall-form').style.display   = 'none';
+}
+
+async function _submitPago() {
+  const numero = document.getElementById('pf-numero').value.replace(/\s/g, '');
+  const nombre = document.getElementById('pf-nombre').value.trim();
+  const vence  = document.getElementById('pf-vence').value.trim();
+  const cvv    = document.getElementById('pf-cvv').value.trim();
+  const errEl  = document.getElementById('pf-error');
+  const btnEl  = document.getElementById('btn-pagar');
+
+  // Solo el número de tarjeta es obligatorio (los demás son decorativos hasta integrar PayPal real)
+  if (!numero) {
+    errEl.textContent = 'Ingresa el número de tarjeta para continuar.';
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  btnEl.disabled = true;
+  btnEl.textContent = 'Procesando…';
+
+  try {
+    // Obtener ID token fresco del usuario actual
+    const user = firebase.auth().currentUser;
+    if (!user) throw new Error('Sesión expirada. Recarga la página.');
+    const idToken = await user.getIdToken(false);
+
+    // Llamar al backend — en modo test el backend valida si el número es el código de prueba
+    const resp = await fetch(`${BACKEND}/api/pagos/activar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_token: idToken,
+        curso:    _paywallCursoActual,
+        codigo:   numero   // en producción: order_id de PayPal
+      })
+    });
+
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data.detail || `Error ${resp.status}`);
+    }
+
+    // ¡Pago aceptado! Forzar refresh del token para que el navegador vea los nuevos claims
+    btnEl.textContent = '✓ Activando acceso…';
+    await user.getIdToken(true);   // fuerza al SDK a buscar el token nuevo con los claims actualizados
+    const tokenResult = await user.getIdTokenResult();
+    _cursosActivos = tokenResult.claims.cursos_activos || {};
+    renderMiCuenta();
+
+    // Cerrar paywall y mostrar mensaje de éxito breve
+    cerrarPaywall();
+    _volverPaywall();   // reinicia la vista para la próxima vez
+    alert('✅ ¡Acceso activado! Ya puedes ver todas las clases de este diplomado durante 30 días.');
+
+  } catch(err) {
+    errEl.textContent = err.message || 'Error procesando el pago. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    btnEl.disabled = false;
+    btnEl.textContent = 'Pagar $000';
+  }
+}
+
+function categorizar(t) {
+  const u = t.toUpperCase();
+  if (/MITO\s+\d+|MYTH\s+\d+|MITOS Y REALIDADES|MYTHS AND REALITIES|PRECALCULO|PRECÁLCULO/.test(u)) return 'Mitos y Realidades';
+  if (/CONVERSATORIO|CONVERSARTORIO/.test(u)) return 'Conversatorios';
+  if (/DIPLOMADO|CLASE SINC|VIDEO DEMO DE CLASES|CLASE CALC/.test(u)) return 'Diplomados y Clases';
+  if (/ROCIADOR|SPRINKLER|ESFR|CMSA|PRE.ACCI|RTI/.test(u)) return 'Rociadores';
+  if (/BOMB[AO]S?|BOMBEO|CENTRIF|NPSH|CAVIT|MOTORES DIESEL|CURVAS DE DESEMPE/.test(u)) return 'Bombas';
+  if (/DETECCI[OÓ]N|ALARMA|ALARM|DETECTION/.test(u)) return 'Detección y Alarma';
+  if (/HID[RÁA]UL|HIDRAUL|C[AÁ]LCULO|CALCULO|FRICCI[OÓ]N|P[EÉ]RDIDA|CAUDAL|LONGITUD EQUIV/.test(u)) return 'Cálculo Hidráulico';
+  if (/MANGUERA|MONTANTE|HOSE CONN|STANDPIPE/.test(u)) return 'Mangueras y Montantes';
+  if (/ALMAC[EÉ]N|MERCANC|WAREHOUSE|BODEGA|STORAGE/.test(u)) return 'Almacenes';
+  if (/SEGURIDAD HUMANA|EVACUACI[OÓ]N|NFPA 101|VES[TÍI]BULO|COMPORTAMIENTO HUMANO/.test(u)) return 'Seguridad Humana';
+  if (/REVIT|BIM|LEAN CONSTRUCTION/.test(u)) return 'BIM / Revit';
+  if (/TRAGEDIA|INVESTIGACI[OÓ]N.*INCENDIO|INCENDIOS HIST|YCUA|QARAQOSH|VILLA EL SALVADOR/.test(u)) return 'Análisis de Incendios';
+  if (/NORMATIVA|IT-\d|LISTADO Y APROBADO|NFPA 22|NFPA 770/.test(u)) return 'Normativa';
+  return 'Otros';
+}
+
+const CATEGORIAS = ['Todas','Rociadores','Bombas','Detección y Alarma','Cálculo Hidráulico',
+  'Mangueras y Montantes','Almacenes','Seguridad Humana','BIM / Revit',
+  'Diplomados y Clases','Mitos y Realidades','Conversatorios','Análisis de Incendios','Normativa','Otros'];
+
+let _expInit = false, _catActual = 'Todas';
+
+// ── PANEL ADMIN ────────────────────────────────────────────
+const ADMIN_PWD   = "999";
+const ADMIN_NAMES = {
+  rociadores:  "Rociadores Automáticos",
+  hidraulicos: "Cálculos Hidráulicos",
+  bombas:      "Bombas Contra Incendios",
+  mercancias:  "Protección de Mercancías",
+  alarmas:     "Detección y Alarmas",
+};
+let _adminAlumnos    = [];
+let _adminModalUid   = null;
+let _adminModalEmail = null;
+
+function adminEntrar() {
+  const pwd = document.getElementById('admin-pwd').value.trim();
+  const err = document.getElementById('admin-err');
+  if (pwd !== ADMIN_PWD) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  sessionStorage.setItem('ilfis_admin', '1');
+  document.getElementById('admin-gate-view').style.display  = 'none';
+  document.getElementById('admin-panel-view').style.display = 'block';
+  adminCargar();
+}
+
+function adminShowTab(name, btn) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('admin-sec-' + name).classList.add('active');
+}
+
+async function adminCargar() {
+  document.getElementById('admin-recaud-content').innerHTML  = '<div class="admin-loading">Cargando...</div>';
+  document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': ADMIN_PWD } });
+    if (!r.ok) { throw new Error('Error ' + r.status); }
+    const data = await r.json();
+    _adminAlumnos = data.alumnos || [];
+    adminRenderRecaud();
+    adminRenderAlumnos();
+  } catch(e) {
+    document.getElementById('admin-recaud-content').innerHTML  = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
+    document.getElementById('admin-alumnos-content').innerHTML = '';
+  }
+}
+
+function adminRenderRecaud() {
+  const ahora  = new Date();
+  const conteo = { rociadores:0, hidraulicos:0, bombas:0, mercancias:0, alarmas:0 };
+  for (const u of _adminAlumnos) {
+    for (const [curso, exp] of Object.entries(u.cursos_activos || {})) {
+      if (new Date(exp) > ahora && conteo[curso] !== undefined) conteo[curso]++;
+    }
+  }
+  const PRECIO = 000;
+  const cursos = Object.entries(conteo);
+  const total  = cursos.reduce((s, [,n]) => s + n, 0);
+  const html   = cursos.map(([k, n]) => `
+    <div class="rc-card">
+      <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
+      <div class="rc-num">${n}</div>
+      <div class="rc-sub">alumnos activos</div>
+      <div class="rc-monto">$${n * PRECIO}</div>
+    </div>`).join('') + `
+    <div class="rc-card" style="border-color:#2a7a4a;">
+      <div class="rc-nombre" style="color:#5dcc85;font-weight:700;">TOTAL</div>
+      <div class="rc-num">${total}</div>
+      <div class="rc-sub">alumnos activos</div>
+      <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
+    </div>`;
+  document.getElementById('admin-recaud-content').innerHTML = `<div class="recaud-grid">${html}</div>`;
+}
+
+function adminRenderAlumnos() {
+  const ahora = new Date();
+  if (!_adminAlumnos.length) {
+    document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">No hay alumnos registrados.</div>';
+    return;
+  }
+  const filas = _adminAlumnos.map(u => {
+    const cursos  = u.cursos_activos || {};
+    const keys    = Object.keys(cursos);
+    const badgesHtml = keys.length === 0
+      ? '<span class="cbadge cb-none">Sin suscripción</span>'
+      : keys.map(k => {
+          const exp  = new Date(cursos[k]);
+          const dias = Math.ceil((exp - ahora) / 86400000);
+          const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
+          const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
+          return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
+        }).join('');
+    const acciones = keys.map(k => {
+      const exp  = new Date(cursos[k]);
+      const dias = Math.ceil((exp - ahora) / 86400000);
+      return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
+              ${dias > 0 ? `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Revocar ${ADMIN_NAMES[k]||k}</button>` : ''}`;
+    }).join(' ');
+    return `<tr>
+      <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+      <td>${badgesHtml}</td>
+      <td style="white-space:nowrap;min-width:200px;">
+        ${acciones}
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}')">Dar acceso</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-alumnos-content').innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Alumno</th><th>Suscripciones</th><th>Acciones</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+async function adminExtender(uid, curso) {
+  if (!confirm(`¿Extender 30 días de acceso a ${ADMIN_NAMES[curso]||curso}?`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/extender', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid, curso, dias: 30 })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function adminRevocar(uid, curso, email) {
+  if (!confirm(`¿Revocar acceso de ${email} a ${ADMIN_NAMES[curso]||curso}?`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/revocar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid, curso })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function adminAbrirDar(uid, email, nombre) {
+  _adminModalUid   = uid;
+  _adminModalEmail = email;
+  document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
+  document.getElementById('admin-modal-dar').classList.add('visible');
+}
+
+function adminCerrarModal() {
+  document.getElementById('admin-modal-dar').classList.remove('visible');
+  _adminModalUid = null;
+}
+
+async function adminConfirmarDar() {
+  const curso = document.getElementById('admin-modal-dar-curso').value;
+  try {
+    const r = await fetch(BACKEND + '/admin/dar-acceso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_PWD },
+      body: JSON.stringify({ uid: _adminModalUid, curso })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    adminCerrarModal();
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// Restaurar sesión admin si ya estaba autenticado
+function _adminRestaurarSesion() {
+  if (sessionStorage.getItem('ilfis_admin') === '1') {
+    document.getElementById('admin-gate-view').style.display  = 'none';
+    document.getElementById('admin-panel-view').style.display = 'block';
+  }
+}
+
+// ── PANEL MI CUENTA ────────────────────────────────────────
+function renderMiCuenta() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  // Perfil
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('cuenta-nombre-crm').textContent = name;
+  document.getElementById('cuenta-email-crm').textContent  = user.email;
+  const av = document.getElementById('cuenta-avatar-crm');
+  if (user.photoURL) {
+    av.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    av.textContent = name.charAt(0).toUpperCase();
+  }
+
+  // Cursos activos
+  const lista = document.getElementById('cuenta-cursos-lista');
+  const keys  = Object.keys(_cursosActivos);
+
+  if (keys.length === 0) {
+    lista.innerHTML = `<div class="cuenta-empty">
+      No tienes suscripciones activas en este momento.<br><br>
+      <span style="font-size:0.8rem;">Ve al tab <strong style="color:#ccc;">Clases Premium</strong> para adquirir acceso a cualquier diplomado.</span>
+    </div>`;
+    return;
+  }
+
+  lista.innerHTML = keys.map(curso => {
+    const info    = CURSOS_INFO[curso] || { nombre: curso, clases: 0 };
+    const expDate = new Date(_cursosActivos[curso]);
+    const ahora   = new Date();
+    const dias    = Math.ceil((expDate - ahora) / 86400000);
+    const activo  = dias > 0;
+
+    let diasClass = 'dias-ok';
+    let diasLabel = activo ? `${dias} días restantes` : 'Vencido';
+    if (!activo)      diasClass = 'dias-crit';
+    else if (dias <= 10) diasClass = 'dias-crit';
+    else if (dias <= 30) diasClass = 'dias-warn';
+
+    const expStr = expDate.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    return `<div class="curso-crm-card">
+      <div class="curso-crm-nombre">${info.nombre}</div>
+      <span class="curso-crm-expiry">Vence: ${expStr}</span>
+      <span class="curso-crm-dias ${diasClass}">${diasLabel}</span>
+      <button class="btn-renovar" onclick="mostrarPaywall('${curso}')">Renovar</button>
+    </div>`;
+  }).join('');
+}
+
+async function actualizarCuenta() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const btn = document.querySelector('.btn-refresh-cuenta');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 0.8s linear infinite;"></i> Actualizando…'; }
+  try {
+    await user.getIdToken(true);
+    const tok = await user.getIdTokenResult();
+    _cursosActivos = tok.claims.cursos_activos || {};
+    renderMiCuenta();
+  } catch(e) { console.error('actualizarCuenta:', e); }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Actualizar'; }
+}
+
+function initExplorador() {
+  _expInit = true;
+  const conteos = {};
+  CATEGORIAS.forEach(c => conteos[c] = 0);
+  VIDEOS.forEach(v => { const c = categorizar(v[1]); if(conteos[c]!==undefined) conteos[c]++; });
+  conteos['Todas'] = VIDEOS.length;
+  document.getElementById('cat-chips').innerHTML = CATEGORIAS.map(c =>
+    `<button class="cat-btn${c==='Todas'?' active':''}" onclick="filtrarCat('${c.replace(/'/g,"\\'")}')">${c} <span style="opacity:0.6;font-size:0.7em;">${conteos[c]}</span></button>`
+  ).join('');
+  renderExplorador();
+}
+
+function filtrarCat(cat) {
+  _catActual = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim().startsWith(cat));
+  });
+  renderExplorador();
+}
+
+function renderExplorador() {
+  const q = (document.getElementById('exp-search').value||'').toLowerCase().trim();
+  const filtrados = VIDEOS.filter(v => {
+    const pasaCat = _catActual === 'Todas' || categorizar(v[1]) === _catActual;
+    return pasaCat && (!q || v[1].toLowerCase().includes(q));
+  });
+  document.getElementById('exp-count').textContent = filtrados.length + ' videos' + (filtrados.length !== VIDEOS.length ? ' (filtrado)' : '');
+  if (!filtrados.length) {
+    document.getElementById('video-grid').innerHTML = '<div class="no-results">No se encontraron videos con ese criterio.</div>';
+    return;
+  }
+  document.getElementById('video-grid').innerHTML = filtrados.map(v => {
+    const cat = categorizar(v[1]);
+    const titulo = v[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="vcard">
+      <img class="vcard-thumb" src="https://img.youtube.com/vi/${v[0]}/mqdefault.jpg" alt="${titulo}" loading="lazy">
+      <div class="vcard-body">
+        <div class="vcard-cat">${cat}</div>
+        <div class="vcard-title" title="${titulo}">${titulo}</div>
+        <a class="vcard-link" href="https://www.youtube.com/watch?v=${v[0]}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-youtube" style="font-size:13px;"></i> Ver video
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
