@@ -2709,16 +2709,27 @@ let _adminAlumnos    = [];
 let _adminModalUid   = null;
 let _adminModalEmail = null;
 
-function adminEntrar() {
+async function adminEntrar() {
   const pwd = document.getElementById('admin-pwd').value.trim();
   const err = document.getElementById('admin-err');
-  if (!pwd) { const e = document.getElementById('admin-err'); if (e) { e.textContent = 'Escribe la contraseña'; e.style.display = 'block'; } return; }
-  _setAdminKey(pwd);
-  err.style.display = 'none';
-  sessionStorage.setItem('ilfis_admin', '1');
-  document.getElementById('admin-gate-view').style.display  = 'none';
-  document.getElementById('admin-panel-view').style.display = 'block';
-  adminCargar();
+  const btn = document.querySelector('.btn-admin-enter');
+  if (!pwd) { err.textContent = 'Escribe la contraseña'; err.style.display = 'block'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+  try {
+    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': pwd } });
+    if (r.status === 401) { err.textContent = 'Contraseña incorrecta'; err.style.display = 'block'; if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; } return; }
+    if (!r.ok) { err.textContent = 'Error: ' + r.status; err.style.display = 'block'; if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; } return; }
+    _setAdminKey(pwd);
+    err.style.display = 'none';
+    sessionStorage.setItem('ilfis_admin', '1');
+    document.getElementById('admin-gate-view').style.display  = 'none';
+    document.getElementById('admin-panel-view').style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; }
+    adminCargar();
+  } catch(e) {
+    err.textContent = 'Error de conexión'; err.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; }
+  }
 }
 
 function adminShowTab(name, btn) {
@@ -2864,11 +2875,16 @@ async function adminConfirmarDar() {
 }
 
 // Restaurar sesión admin si ya estaba autenticado
-function _adminRestaurarSesion() {
-  if (_getAdminKey() !== '') {
+async function _adminRestaurarSesion() {
+  if (_getAdminKey() === '') return;
+  try {
+    const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) return;
     document.getElementById('admin-gate-view').style.display  = 'none';
     document.getElementById('admin-panel-view').style.display = 'block';
-  }
+    adminCargar();
+  } catch(e) {}
 }
 
 // ── PANEL MI CUENTA ────────────────────────────────────────
