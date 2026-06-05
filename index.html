@@ -3000,5 +3000,189 @@ function renderExplorador() {
   }).join('');
 }
 </script>
+<!-- ════════════════════════════════════════════════════════════════
+     FEEDBACK DE USUARIOS — ILFIS UBUNTU (fase gratuita 2026, calibración)
+     Pegar este bloque COMPLETO justo antes de </body> en index.html.
+     Es 100% aditivo: se engancha a consultar(), preguntarExperto() y
+     buscarVideo() sin modificarlas. Reusa _authFetch + API existentes.
+     Para revertir: borrar este bloque. La web queda igual que antes.
+     ════════════════════════════════════════════════════════════════ -->
+
+<style>
+.ilfis-fb{margin-top:16px;padding-top:14px;border-top:1px solid #2a2a5a;font-size:0.9rem;color:#aab;}
+.ilfis-fb .fb-q{margin-right:10px;}
+.ilfis-fb button{background:#0f3460;color:#dde;border:1px solid #2a2a5a;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:0.95rem;margin-right:8px;margin-top:6px;}
+.ilfis-fb button:hover{background:#16498a;}
+.ilfis-fb button.sel{background:#c0392b;border-color:#c0392b;color:#fff;}
+.ilfis-fb textarea{width:100%;margin-top:10px;background:#0f1830;color:#dde;border:1px solid #2a2a5a;border-radius:8px;padding:8px;font-family:inherit;font-size:0.9rem;resize:vertical;min-height:60px;display:none;}
+.ilfis-fb .fb-send{display:none;background:#c0392b;border-color:#c0392b;color:#fff;}
+.ilfis-fb .fb-ok{color:#5dcc85;}
+#fb-report-btn{position:fixed;right:16px;bottom:16px;z-index:9999;background:#16213e;color:#aab;border:1px solid #2a2a5a;border-radius:20px;padding:8px 14px;font-size:0.85rem;cursor:pointer;opacity:0.85;}
+#fb-report-btn:hover{opacity:1;color:#fff;}
+#fb-report-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:none;align-items:center;justify-content:center;}
+#fb-report-modal .fb-card{background:#16213e;border:1px solid #2a2a5a;border-radius:12px;padding:24px;max-width:480px;width:90%;}
+#fb-report-modal h3{color:#fff;margin:0 0 6px;}
+#fb-report-modal p{color:#aab;font-size:0.9rem;margin:0 0 12px;}
+#fb-report-modal textarea{width:100%;min-height:110px;background:#0f1830;color:#dde;border:1px solid #2a2a5a;border-radius:8px;padding:10px;font-family:inherit;resize:vertical;}
+#fb-report-modal .fb-row{margin-top:14px;display:flex;gap:10px;justify-content:flex-end;}
+#fb-report-modal button{border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid #2a2a5a;}
+#fb-report-modal .fb-cancel{background:#0f3460;color:#dde;}
+#fb-report-modal .fb-ok-btn{background:#c0392b;color:#fff;border-color:#c0392b;}
+</style>
+
+<script>
+/* Feedback aislado. Si el entorno no está listo, no hace nada. */
+(function(){
+  if (typeof _authFetch !== 'function' || typeof API === 'undefined') {
+    console.warn('[feedback] entorno no listo — módulo inactivo'); return;
+  }
+
+  async function enviarFeedback(payload){
+    try{
+      await _authFetch(API + '/feedback', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      return true;
+    }catch(e){ console.warn('[feedback] envío falló', e); return false; }
+  }
+
+  function montarFeedback(contenedorId, zona, datos){
+    const cont = document.getElementById(contenedorId);
+    if (!cont) return;
+    const previo = cont.querySelector('.ilfis-fb');
+    if (previo) previo.remove();
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ilfis-fb';
+    const titulo = (zona === 'videos')
+      ? '¿Te sirvieron estos momentos?'
+      : '¿Te sirvió esta respuesta?';
+    wrap.innerHTML =
+      '<span class="fb-q">' + titulo + '</span>' +
+      '<button type="button" class="fb-up">👍 Sí</button>' +
+      '<button type="button" class="fb-down">👎 No</button>' +
+      '<textarea placeholder="Cuéntame qué faltó (opcional)"></textarea>' +
+      '<div><button type="button" class="fb-send">Enviar</button></div>';
+    cont.appendChild(wrap);
+
+    const up   = wrap.querySelector('.fb-up');
+    const down = wrap.querySelector('.fb-down');
+    const ta   = wrap.querySelector('textarea');
+    const send = wrap.querySelector('.fb-send');
+
+    function base(){
+      return { tipo:'respuesta', zona:zona,
+               pregunta:(datos.pregunta||'').slice(0,2000),
+               respuesta:(datos.respuesta||'').slice(0,8000),
+               question_id: datos.question_id || null };
+    }
+    function gracias(){
+      wrap.innerHTML = '<span class="fb-ok">¡Gracias! Tu opinión ayuda a mejorar ILFIS.</span>';
+    }
+
+    up.addEventListener('click', async function(){
+      up.classList.add('sel'); down.classList.remove('sel');
+      const p = base(); p.util = true;
+      await enviarFeedback(p); gracias();
+    });
+    down.addEventListener('click', function(){
+      down.classList.add('sel'); up.classList.remove('sel');
+      ta.style.display = 'block'; send.style.display = 'inline-block'; ta.focus();
+    });
+    send.addEventListener('click', async function(){
+      const p = base(); p.util = false; p.comentario = (ta.value||'').slice(0,2000);
+      send.disabled = true; await enviarFeedback(p); gracias();
+    });
+  }
+
+  function envolver(nombre, antes, despues){
+    const orig = window[nombre];
+    if (typeof orig !== 'function') return;
+    window[nombre] = async function(){
+      const ctx = {};
+      try{ antes(ctx); }catch(e){}
+      const r = await orig.apply(this, arguments);
+      try{ despues(ctx); }catch(e){ console.warn('[feedback]', e); }
+      return r;
+    };
+  }
+
+  envolver('consultar',
+    function(ctx){ ctx.pregunta = (document.getElementById('pregunta')||{}).value || ''; },
+    function(ctx){
+      const box = document.getElementById('respuesta-box');
+      if (!box || box.style.display === 'none') return;
+      const resp = (document.getElementById('respuesta-texto')||{}).innerText || '';
+      montarFeedback('respuesta-box','corpus',{pregunta:ctx.pregunta, respuesta:resp});
+    });
+
+  envolver('preguntarExperto',
+    function(ctx){ ctx.pregunta = (document.getElementById('exp-pregunta')||{}).value || ''; },
+    function(ctx){
+      const box = document.getElementById('respuesta-experto-box');
+      if (!box || box.style.display === 'none') return;
+      const resp = (document.getElementById('experto-thread')||{}).innerText || '';
+      const qid = (typeof _expertoQid !== 'undefined') ? _expertoQid : null;
+      montarFeedback('respuesta-experto-box','experto',
+        {pregunta:ctx.pregunta, respuesta:resp, question_id:qid});
+    });
+
+  envolver('buscarVideo',
+    function(ctx){ ctx.pregunta = (document.getElementById('pregunta-video')||{}).value || ''; },
+    function(ctx){
+      const box = document.getElementById('respuesta-video-box');
+      if (!box || box.style.display === 'none') return;
+      const resp = (document.getElementById('resultados-video')||{}).innerText || '';
+      montarFeedback('respuesta-video-box','videos',
+        {pregunta:ctx.pregunta, respuesta:resp.slice(0,2000)});
+    });
+
+  function montarReporte(){
+    if (document.getElementById('fb-report-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'fb-report-btn'; btn.type = 'button';
+    btn.textContent = '🛠️ Reportar un problema';
+    document.body.appendChild(btn);
+
+    const modal = document.createElement('div');
+    modal.id = 'fb-report-modal';
+    modal.innerHTML =
+      '<div class="fb-card">' +
+      '<h3>Reportar un problema</h3>' +
+      '<p>Cuéntame qué pasó o qué se puede mejorar. Tu reporte llega directo al equipo ILFIS.</p>' +
+      '<textarea id="fb-report-text" placeholder="Escribe aquí..."></textarea>' +
+      '<div class="fb-row">' +
+      '<button type="button" class="fb-cancel">Cancelar</button>' +
+      '<button type="button" class="fb-ok-btn">Enviar</button>' +
+      '</div></div>';
+    document.body.appendChild(modal);
+
+    const ta     = modal.querySelector('#fb-report-text');
+    const okBtn  = modal.querySelector('.fb-ok-btn');
+    const cancel = modal.querySelector('.fb-cancel');
+    function abrir(){ modal.style.display='flex'; ta.value=''; ta.focus(); }
+    function cerrar(){ modal.style.display='none'; }
+    btn.addEventListener('click', abrir);
+    cancel.addEventListener('click', cerrar);
+    modal.addEventListener('click', function(e){ if(e.target===modal) cerrar(); });
+    okBtn.addEventListener('click', async function(){
+      const txt = (ta.value||'').trim();
+      if (!txt){ cerrar(); return; }
+      okBtn.disabled = true; okBtn.textContent = 'Enviando...';
+      await enviarFeedback({tipo:'reporte_general', zona:'general', util:null, comentario:txt.slice(0,2000)});
+      okBtn.disabled = false; okBtn.textContent = 'Enviar';
+      modal.querySelector('.fb-card').innerHTML =
+        '<h3>¡Gracias!</h3><p class="fb-ok">Tu reporte llegó al equipo ILFIS.</p>';
+      setTimeout(cerrar, 1600);
+    });
+  }
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', montarReporte);
+  else montarReporte();
+})();
+</script>
+
 </body>
 </html>
