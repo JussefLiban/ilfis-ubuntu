@@ -253,8 +253,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-sec:hover { background: rgba(255,255,255,0.07) !important; border-color: #fff !important; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas, #panel-hidraulicabasica { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible, #panel-hidraulicabasica.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas, #panel-hidraulicabasica, #panel-montantes { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible, #panel-hidraulicabasica.visible, #panel-montantes.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -267,7 +267,7 @@ textarea::placeholder { color: #5a7a9a; }
 .roc-player-area { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 14px; }
 .roc-video-titulo { color: #fff; font-size: 1rem; font-weight: bold; }
 .roc-video-wrap { position: relative; width: 100%; max-width: 960px; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; }
-#roc-video, #hid-video, #mer-video, #bom-video, #ala-video, #hbas-video { width: 100%; height: 100%; display: block; background: #000; }
+#roc-video, #hid-video, #mer-video, #bom-video, #ala-video, #hbas-video, #smm-video { width: 100%; height: 100%; display: block; background: #000; }
 .roc-video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a6a7a; gap: 10px; font-size: 0.88rem; }
 .roc-video-placeholder i { font-size: 3rem; }
 .roc-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
@@ -615,6 +615,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <option value="bombas">Diplomado de Bombas Contra Incendios</option>
       <option value="mercancias">Diplomado de Protección de Mercancías</option>
       <option value="alarmas">Diplomado de Detección y Alarmas de Incendios</option>
+        <option value="montantes">Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras</option>
         <option value="hidraulicabasica">Curso de Hidráulica Básica</option>
     </select>
     <div class="admin-modal-btns">
@@ -841,8 +842,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="curso-body">
           <div class="curso-tipo">Curso</div>
           <div class="curso-nombre">Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 10 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirMontantes()">▶ Ver clases sin tutoría, ni evaluaciones</button>
           <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/curso-sistemas-de-montantes-y-mangueras/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
         </div>
       </div>
@@ -1175,6 +1176,38 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="roc-error" id="hbas-error"></div>
       <div style="margin-top:4px;">
         <button onclick="abrirPDFHidraulicaBasica()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ── PANEL MONTANTES Y MANGUERAS (overlay) ──────────────── -->
+<div id="panel-montantes">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarMontantes()">← Volver</button>
+    <div class="roc-title">🎓 Sistemas de Montantes y Mangueras</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="smm-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="smm-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="smm-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="smm-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="smm-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="smm-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFMontantes()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
           📄 Material de Estudio (PDF completo)
         </button>
       </div>
@@ -2502,6 +2535,82 @@ async function cargarClaseHidraulicaBasica(n){
 }
 
 
+
+// ─── MONTANTES Y MANGUERAS — Video Player Tier ───
+const MONTANTES_TITULOS = {1:'Módulo 1',2:'Módulo 2',3:'Módulo 3',4:'Módulo 4 - Parte I',5:'Módulo 4 - Parte II',6:'Módulo 5',7:'Módulo 6 - Parte I',8:'Módulo 6 - Parte II',9:'Módulo 7 - Parte I',10:'Módulo 7 - Parte II'};
+const TOTAL_CLASES_MONTANTES = 10;
+let smmClaseActual = null;
+
+function abrirMontantes(){
+  const sidebar = document.getElementById('smm-sidebar');
+  if(!sidebar.children.length){
+    let html = '';
+    for(let i=1;i<=TOTAL_CLASES_MONTANTES;i++){
+      const titulo = MONTANTES_TITULOS[i] || ('Clase '+i);
+      html += '<button class="roc-clase-btn" id="smm-btn-'+i+'" onclick="cargarClaseMontantes('+i+')"><span style="color:#c0392b;font-weight:bold;margin-right:8px;">'+i+'</span>'+titulo+'</button>';
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-montantes').classList.add('visible');
+}
+
+function cerrarMontantes(){
+  const video = document.getElementById('smm-video');
+  video.pause(); video.src='';
+  smmClaseActual = null;
+  document.querySelectorAll('#smm-sidebar .roc-clase-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('smm-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('smm-placeholder').style.display = 'flex';
+  document.getElementById('smm-error').style.display = 'none';
+  document.getElementById('panel-montantes').classList.remove('visible');
+}
+
+async function abrirPDFMontantes(){
+  if(!_tieneAcceso('montantes')){ mostrarPaywall('montantes'); return; }
+  try{
+    const user = auth.currentUser;
+    if(!user) throw new Error('Debes iniciar sesión');
+    const idToken = await user.getIdToken();
+    window.open(API+'/api/cursos/montantes/pdf/stream?token='+idToken,'_blank');
+  }catch(e){ alert('Error al abrir el PDF: '+e.message); }
+}
+
+async function cargarClaseMontantes(n){
+  if(!_tieneAcceso('montantes')){ mostrarPaywall('montantes'); return; }
+  if(smmClaseActual===n) return;
+  smmClaseActual = n;
+  document.querySelectorAll('#smm-sidebar .roc-clase-btn').forEach(b=>b.classList.remove('active'));
+  const btnActivo = document.getElementById('smm-btn-'+n);
+  if(btnActivo){ btnActivo.classList.add('active'); btnActivo.scrollIntoView({block:'nearest'}); }
+  const video = document.getElementById('smm-video');
+  const placeholder = document.getElementById('smm-placeholder');
+  const loading = document.getElementById('smm-loading');
+  const errorEl = document.getElementById('smm-error');
+  const tituloEl = document.getElementById('smm-video-titulo');
+  video.pause(); video.src='';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = 'Cargando '+(MONTANTES_TITULOS[n]||('Clase '+n))+'...';
+  try{
+    const user = auth.currentUser;
+    if(!user) throw new Error('Debes iniciar sesión para ver este contenido');
+    const idToken = await user.getIdToken();
+    tituloEl.textContent = MONTANTES_TITULOS[n] || ('Clase '+n);
+    video.src = API+'/api/cursos/montantes/clase/'+n+'/stream?token='+idToken;
+    video.load();
+    video.play().catch(()=>{});
+  }catch(e){
+    tituloEl.textContent = 'Error al cargar '+(MONTANTES_TITULOS[n]||('Clase '+n));
+    errorEl.textContent = e.message;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  }finally{
+    loading.style.display = 'none';
+  }
+}
+
+
 const MERCANCIAS_TITULOS = {
   1:  "Sistemas de Rociadores y Requisitos (Clase 1)",
   2:  "Sistemas de Rociadores y Requisitos (Clase 2)",
@@ -2799,6 +2908,7 @@ const CURSOS_INFO = {
   mercancias:  { nombre: "Diplomado de Protección de Mercancías",            clases: 52 },
   alarmas:     { nombre: "Diplomado de Detección y Alarmas de Incendios",    clases: 57 },
   hidraulicabasica: { nombre: "Curso de Hidráulica Básica", clases: 13 },
+  montantes: { nombre: "Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras", clases: 10 },
 };
 
 function _tieneAcceso(curso) {
