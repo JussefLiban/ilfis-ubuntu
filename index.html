@@ -253,8 +253,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-sec:hover { background: rgba(255,255,255,0.07) !important; border-color: #fff !important; }
 
 /* ─── PANEL VIDEO PLAYER (overlay fullscreen) ───────────────── */
-#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
-#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible { display: flex; }
+#panel-rociadores, #panel-hidraulicos, #panel-mercancias, #panel-bombas, #panel-alarmas, #panel-hidraulicabasica { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: none; flex-direction: column; }
+#panel-rociadores.visible, #panel-hidraulicos.visible, #panel-mercancias.visible, #panel-bombas.visible, #panel-alarmas.visible, #panel-hidraulicabasica.visible { display: flex; }
 .roc-header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 .roc-back { background: none; border: 1px solid #3a3a6a; color: #aaa; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; white-space: nowrap; }
 .roc-back:hover { border-color: #c0392b; color: #e87272; }
@@ -615,6 +615,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <option value="bombas">Diplomado de Bombas Contra Incendios</option>
       <option value="mercancias">Diplomado de Protección de Mercancías</option>
       <option value="alarmas">Diplomado de Detección y Alarmas de Incendios</option>
+        <option value="hidraulicabasica">Curso de Hidráulica Básica</option>
     </select>
     <div class="admin-modal-btns">
       <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
@@ -798,8 +799,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="curso-body">
           <div class="curso-tipo">Curso</div>
           <div class="curso-nombre">Curso de Hidráulica Básica</div>
-          <div class="curso-estado"><strong>Próximamente</strong> · Online autodidacta</div>
-          <button class="btn-ver-clases btn-nodisponible" disabled>▶ No disponible sin tutoría, ni evaluaciones</button>
+          <div class="curso-estado" style="color:#5dcc85;"><strong>● Disponible</strong> · 13 clases · Online autodidacta</div>
+          <button class="btn-ver-clases" onclick="abrirHidraulicaBasica()">▶ Ver clases sin tutoría, ni evaluaciones</button>
           <a class="btn-ver-clases btn-sec" href="https://ilfislatinoamerica.com/producto/curso-de-hidraulica-basica/" target="_blank">▶ Ver descripción con tutoría y evaluaciones</a>
         </div>
       </div>
@@ -1149,6 +1150,38 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
   </div>
 </div>
+
+
+<!-- ── PANEL HIDRÁULICA BÁSICA (overlay) ──────────────────── -->
+<div id="panel-hidraulicabasica">
+  <div class="roc-header">
+    <button class="roc-back" onclick="cerrarHidraulicaBasica()">← Volver</button>
+    <div class="roc-title">🎓 Curso de Hidráulica Básica</div>
+  </div>
+  <div class="roc-body">
+    <div class="roc-sidebar" id="hbas-sidebar"></div>
+    <div class="roc-player-area">
+      <div class="roc-video-titulo" id="hbas-video-titulo">Selecciona una clase para comenzar</div>
+      <div class="roc-video-wrap">
+        <video id="hbas-video" controls controlsList="nodownload" oncontextmenu="return false;"></video>
+        <div class="roc-video-placeholder" id="hbas-placeholder">
+          <i class="ti ti-player-play"></i>
+          <span>Selecciona una clase en el panel izquierdo</span>
+        </div>
+        <div class="roc-loading" id="hbas-loading">
+          <div class="loading-spin"></div>
+        </div>
+      </div>
+      <div class="roc-error" id="hbas-error"></div>
+      <div style="margin-top:4px;">
+        <button onclick="abrirPDFHidraulicaBasica()" style="background:#1a3a5a;color:#7ac;border:1px solid #2a5a8a;border-radius:6px;padding:8px 16px;font-size:0.82rem;cursor:pointer;">
+          📄 Material de Estudio (PDF completo)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 </div><!-- fin #app -->
 
@@ -2392,6 +2425,83 @@ async function cargarClaseBombas(n) {
 // MERCANCÍAS — Video Player Tier 2
 // ══════════════════════════════════════════════════════════
 
+
+// ─── HIDRÁULICA BÁSICA — Video Player Tier ───
+const HIDRAULICABASICA_TITULOS = [];
+const TOTAL_CLASES_HIDRAULICABASICA = 13;
+let hbasClaseActual = null;
+
+function abrirHidraulicaBasica(){
+  const sidebar = document.getElementById('hbas-sidebar');
+  if(!sidebar.children.length){
+    let html = '';
+    for(let i=1;i<=TOTAL_CLASES_HIDRAULICABASICA;i++){
+      const titulo = HIDRAULICABASICA_TITULOS[i] || ('Clase '+i);
+      html += '<button class="roc-clase-btn" id="hbas-btn-'+i+'" onclick="cargarClaseHidraulicaBasica('+i+')"><span style="color:#c0392b;font-weight:bold;margin-right:8px;">'+i+'</span>'+titulo+'</button>';
+    }
+    sidebar.innerHTML = html;
+  }
+  document.getElementById('panel-hidraulicabasica').classList.add('visible');
+}
+
+function cerrarHidraulicaBasica(){
+  const video = document.getElementById('hbas-video');
+  video.pause(); video.src='';
+  hbasClaseActual = null;
+  document.querySelectorAll('#hbas-sidebar .roc-clase-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('hbas-video-titulo').textContent = 'Selecciona una clase para comenzar';
+  document.getElementById('hbas-placeholder').style.display = 'flex';
+  document.getElementById('hbas-error').style.display = 'none';
+  document.getElementById('panel-hidraulicabasica').classList.remove('visible');
+}
+
+async function abrirPDFHidraulicaBasica(){
+  if(!_tieneAcceso('hidraulicabasica')){ mostrarPaywall('hidraulicabasica'); return; }
+  try{
+    const user = auth.currentUser;
+    if(!user) throw new Error('Debes iniciar sesión');
+    const idToken = await user.getIdToken();
+    window.open(API+'/api/cursos/hidraulicabasica/pdf/stream?token='+idToken,'_blank');
+  }catch(e){ alert('Error al abrir el PDF: '+e.message); }
+}
+
+async function cargarClaseHidraulicaBasica(n){
+  if(!_tieneAcceso('hidraulicabasica')){ mostrarPaywall('hidraulicabasica'); return; }
+  if(hbasClaseActual===n) return;
+  hbasClaseActual = n;
+  document.querySelectorAll('#hbas-sidebar .roc-clase-btn').forEach(b=>b.classList.remove('active'));
+  const btnActivo = document.getElementById('hbas-btn-'+n);
+  if(btnActivo){ btnActivo.classList.add('active'); btnActivo.scrollIntoView({block:'nearest'}); }
+  const video = document.getElementById('hbas-video');
+  const placeholder = document.getElementById('hbas-placeholder');
+  const loading = document.getElementById('hbas-loading');
+  const errorEl = document.getElementById('hbas-error');
+  const tituloEl = document.getElementById('hbas-video-titulo');
+  video.pause(); video.src='';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  tituloEl.textContent = 'Cargando Clase '+n+'...';
+  try{
+    const user = auth.currentUser;
+    if(!user) throw new Error('Debes iniciar sesión para ver este contenido');
+    const idToken = await user.getIdToken();
+    const titulo = HIDRAULICABASICA_TITULOS[n] || ('Clase '+n);
+    tituloEl.textContent = 'Clase '+n+': '+titulo;
+    video.src = API+'/api/cursos/hidraulicabasica/clase/'+n+'/stream?token='+idToken;
+    video.load();
+    video.play().catch(()=>{});
+  }catch(e){
+    tituloEl.textContent = 'Error al cargar Clase '+n;
+    errorEl.textContent = e.message;
+    errorEl.style.display = 'block';
+    placeholder.style.display = 'none';
+  }finally{
+    loading.style.display = 'none';
+  }
+}
+
+
 const MERCANCIAS_TITULOS = {
   1:  "Sistemas de Rociadores y Requisitos (Clase 1)",
   2:  "Sistemas de Rociadores y Requisitos (Clase 2)",
@@ -2688,6 +2798,7 @@ const CURSOS_INFO = {
   bombas:      { nombre: "Diplomado de Bombas Contra Incendios",             clases: 51 },
   mercancias:  { nombre: "Diplomado de Protección de Mercancías",            clases: 52 },
   alarmas:     { nombre: "Diplomado de Detección y Alarmas de Incendios",    clases: 57 },
+  hidraulicabasica: { nombre: "Curso de Hidráulica Básica", clases: 13 },
 };
 
 function _tieneAcceso(curso) {
