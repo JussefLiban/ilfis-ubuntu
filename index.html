@@ -457,6 +457,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
   </button>
+  <button class="tab-btn" onclick="showTab('nfpa', this)">
+    <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">NFPA</span></span>
+  </button>
     <button class="tab-btn" onclick="showTab('calcula', this)">
     <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
@@ -512,6 +516,25 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     </div>
     <div class="hist-titulo">📋 Mis preguntas anteriores</div>
     <div id="experto-historial"></div>
+  </div>
+</div>
+
+<!-- Panel ILFIS interpreta NFPA -->
+<div class="panel" id="panel-nfpa">
+  <div class="consultar-inner">
+    <p class="subtitle">Consulta una norma NFPA y recibe la interpretación de un instructor especializado de ILFIS.<br>Las normas NFPA tienen derechos de autor: un instructor la interpreta y te responde.</p>
+    <div class="consulta-box">
+      <label>Tu consulta NFPA</label>
+      <textarea id="nfpa-pregunta" placeholder="Ej: ¿cada cuánto debe inspeccionarse un sistema de rociadores según NFPA 25?"></textarea>
+      <button class="btn-consultar" id="btn-nfpa" onclick="preguntarNFPA()">Enviar al instructor</button>
+    </div>
+    <div class="estado" id="estado-nfpa"></div>
+    <div class="respuesta-box" id="respuesta-nfpa-box" style="display:none;">
+      <div class="respuesta-label" id="nfpa-label">Estado de tu consulta</div>
+      <div class="chat-thread" id="nfpa-thread"></div>
+    </div>
+    <div class="hist-titulo">📋 Mis preguntas anteriores</div>
+    <div id="nfpa-historial"></div>
   </div>
 </div>
 
@@ -1179,6 +1202,8 @@ auth.onAuthStateChanged(async function(user) {
     _restaurarTab();
     _renderHistorial(user.uid);
     _verificarRespuestasPendientes(user.uid);
+    _renderHistNfpa(user.uid);
+    _verificarPendientesNfpa(user.uid);
     renderMiCuenta();
     _adminRestaurarSesion();
   } else {
@@ -1534,6 +1559,143 @@ document.addEventListener('DOMContentLoaded', () => {
   const ta = document.getElementById('exp-pregunta');
   if (ta) ta.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntarExperto(); }
+  });
+});
+
+// ── MÓDULO ILFIS INTERPRETA NFPA ──────────────────────────
+let _nfpaQid = null, _nfpaPoller = null, _nfpaMsgCount = 0;
+function _claveHistNfpa(uid) { return `ilfis_hist_nfpa_${uid}`; }
+
+function _guardarPreguntaNfpa(uid, qid, pregunta) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistNfpa(uid)) || '[]');
+  hist.unshift({ id: qid, pregunta, messages: [], fecha: new Date().toISOString() });
+  if (hist.length > 50) hist.pop();
+  localStorage.setItem(_claveHistNfpa(uid), JSON.stringify(hist));
+  _renderHistNfpa(uid);
+}
+
+function _actualizarRespuestaNfpa(uid, qid, texto_prof, nombre_prof) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistNfpa(uid)) || '[]');
+  const entry = hist.find(h => h.id === qid);
+  if (entry) {
+    const yaExiste = entry.messages.some(m => m.texto === texto_prof && m.nombre_profesor === nombre_prof);
+    if (!yaExiste) entry.messages.push({ texto: texto_prof, nombre_profesor: nombre_prof, ts: new Date().toISOString() });
+    localStorage.setItem(_claveHistNfpa(uid), JSON.stringify(hist));
+    _renderHistNfpa(uid);
+  }
+}
+
+function _renderHistNfpa(uid) {
+  const el = document.getElementById('nfpa-historial');
+  if (!el) return;
+  const hist = JSON.parse(localStorage.getItem(_claveHistNfpa(uid)) || '[]');
+  if (hist.length === 0) {
+    el.innerHTML = '<p style="color:#666;font-size:0.88rem;">Aún no has hecho consultas.</p>';
+    return;
+  }
+  el.innerHTML = hist.map(h => {
+    const fecha = new Date(h.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+    const msgs = h.messages || [];
+    const expertHtml = msgs.map(m => `
+      <div class="hist-msg hist-msg-exp">
+        <span class="hist-msg-autor">💬 ${m.nombre_profesor || 'Instructor ILFIS'}</span>
+        <span class="hist-msg-texto">${m.texto}</span>
+      </div>`).join('');
+    const badge = msgs.length > 0
+      ? `<span class="hist-badge-small">✅ ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del instructor</span>`
+      : `<span class="hist-badge-small" style="background:#252540;color:#5a6a7a;border:1px solid #2a2a5a;">⏳ En revisión por un instructor</span>`;
+    return `<div class="hist-item">
+      <div class="hist-fecha">${fecha} · Ticket <code style="font-size:0.7rem;color:#5daaff;">${h.id}</code></div>
+      <div class="hist-pregunta">❓ ${h.pregunta}</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">${expertHtml}</div>
+      <div style="margin-top:8px;">${badge}</div>
+    </div>`;
+  }).join('');
+}
+
+async function preguntarNFPA() {
+  const pregunta = document.getElementById('nfpa-pregunta').value.trim();
+  if (!pregunta) return;
+  const btn    = document.getElementById('btn-nfpa');
+  const estado = document.getElementById('estado-nfpa');
+  const box    = document.getElementById('respuesta-nfpa-box');
+  btn.disabled = true;
+  estado.innerHTML = '<span class="spinner"></span>Enviando tu consulta al instructor...';
+  box.style.display = 'none';
+  if (_nfpaPoller) clearInterval(_nfpaPoller);
+  try {
+    const _u = auth.currentUser;
+    const _nombre = _u ? (_u.displayName || _u.email || 'Alumno anónimo') : 'Alumno anónimo';
+    const res = await _authFetch(API + '/preguntar_nfpa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: pregunta, nombre: _nombre })
+    });
+    if (!res.ok) throw new Error('Error ' + res.status);
+    const data = await res.json();
+    _nfpaQid = data.question_id;
+    const thread = document.getElementById('nfpa-thread');
+    thread.innerHTML = `
+      <div class="chat-burbuja chat-ia">
+        <div class="chat-autor">✅ Consulta enviada a un instructor especializado en NFPA</div>
+        ${data.respuesta.replace(/\n/g,'<br>')}
+      </div>`;
+    box.style.display = 'block';
+    estado.innerHTML = '⏳ Un instructor revisará tu consulta y te responderá pronto.';
+    const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+    _guardarPreguntaNfpa(_uid, data.question_id, pregunta);
+    document.getElementById('nfpa-pregunta').value = '';
+    _iniciarPollingNfpa();
+  } catch (e) {
+    estado.innerHTML = '❌ Error al conectar: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function _iniciarPollingNfpa() {
+  if (_nfpaPoller) clearInterval(_nfpaPoller);
+  _nfpaMsgCount = 0;
+  let intentos = 0;
+  const MAX = 360;
+  _nfpaPoller = setInterval(async () => {
+    intentos++;
+    if (intentos > MAX || !_nfpaQid) { clearInterval(_nfpaPoller); return; }
+    try {
+      const res = await _authFetch(API + '/respuesta/' + _nfpaQid);
+      if (!res.ok) return;
+      const data = await res.json();
+      const msgs = data.messages || [];
+      if (msgs.length > _nfpaMsgCount) {
+        _nfpaMsgCount = msgs.length;
+        const _uid = auth.currentUser ? auth.currentUser.uid : 'anonimo';
+        for (const msg of msgs) _actualizarRespuestaNfpa(_uid, _nfpaQid, msg.texto, msg.nombre_profesor);
+        document.getElementById('estado-nfpa').innerHTML =
+          `💬 ${msgs.length} respuesta${msgs.length > 1 ? 's' : ''} del instructor`;
+      }
+    } catch (e) { /* ignorar errores de polling */ }
+  }, 5000);
+}
+
+async function _verificarPendientesNfpa(uid) {
+  const hist = JSON.parse(localStorage.getItem(_claveHistNfpa(uid)) || '[]');
+  for (const entry of hist) {
+    const localCount = (entry.messages || []).length;
+    try {
+      const r = await _authFetch(API + '/respuesta/' + entry.id);
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (data.messages && data.messages.length > localCount) {
+        for (const msg of data.messages) _actualizarRespuestaNfpa(uid, entry.id, msg.texto, msg.nombre_profesor);
+      }
+    } catch (e) {}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('nfpa-pregunta');
+  if (ta) ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntarNFPA(); }
   });
 });
 
