@@ -1155,7 +1155,7 @@ auth.onAuthStateChanged(async function(user) {
   document.getElementById('loading-screen').style.display = 'none';
   if (user) {
     // Verificar premium via custom claims
-    const token = await user.getIdTokenResult();
+    const token = await user.getIdTokenResult(true);
     const isPremium = token.claims.premium === true;
     _cursosActivos = token.claims.cursos_activos || {};
     // Mostrar app
