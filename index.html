@@ -170,7 +170,11 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .admin-modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ─── BOTÓN E INSTRUCTIVO "¿CÓMO FUNCIONA?" ───────────────── */
-#help-fab { position: fixed; left: 18px; bottom: 18px; z-index: 400; background: #c0392b; color: #fff; border: none; border-radius: 24px; padding: 11px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 7px; }
+.help-fab-group { position: fixed; left: 18px; bottom: 18px; z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+#help-fab { background: #c0392b; color: #fff; border: none; border-radius: 24px; padding: 11px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 7px; }
+.help-tutorial-fab { background: #16213e; color: #e0e0e0; border: 1px solid #2a2a5a; border-radius: 20px; padding: 7px 13px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 3px 10px rgba(0,0,0,0.35); }
+.help-tutorial-fab:hover { background: #1d2b4d; }
+.help-tutorial-fab i { color: #ff0000; font-size: 1rem; }
 #help-fab:hover { background: #a93224; }
 #help-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2500; display: none; align-items: center; justify-content: center; padding: 20px; }
 #help-modal-bg.visible { display: flex; }
@@ -638,7 +642,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 </div>
 
 <!-- Botón flotante e instructivo "¿Cómo funciona?" -->
-<button id="help-fab" onclick="abrirAyuda()"><i class="ti ti-help"></i> ¿Cómo funciona?</button>
+<div class="help-fab-group">
+  <a class="help-tutorial-fab" href="https://www.youtube.com/watch?v=lHKfxenb8yw" target="_blank" rel="noopener"><i class="ti ti-brand-youtube"></i> Ver tutorial en YouTube</a>
+  <button id="help-fab" onclick="abrirAyuda()"><i class="ti ti-help"></i> ¿Cómo funciona?</button>
+</div>
 <div id="help-modal-bg" onclick="if(event.target===this)cerrarAyuda()">
   <div class="help-modal">
     <button class="help-close" onclick="cerrarAyuda()" aria-label="Cerrar">&times;</button>
