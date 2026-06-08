@@ -1,1 +1,464 @@
-placeholder - se reemplaza por el archivo real
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculo de Tanque Elevado PCI - ILFIS Ubuntu</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{--bg:#0e1117;--sf:#161b26;--sf2:#1e2433;--bd:#2a3144;--tx:#e2e8f4;--tx2:#8b95b0;--tx3:#5a6380;--ac:#6b93c0;--r:10px;
+  --navy:#16213e;--rojo:#c0392b;--t1:#c0392b;--t2:#7d8896;--agua:#6fb6d6;--ok:#34d399;--warn:#fbbf24;--bad:#ef7a6b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+input,select{font-family:'DM Sans',system-ui,sans-serif;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;outline:none;width:100%;}
+select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238b95b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.6 L6 6.4 L11 1.6'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
+input:focus,select:focus{border-color:var(--ac);}
+label{font-size:11px;color:var(--tx2);display:block;margin:9px 0 3px;font-weight:600;}
+a{color:inherit;}
+.wrap{max-width:1140px;margin:0 auto;padding:20px;}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px;}
+.card h2{font-size:14px;font-weight:600;color:#fff;border-bottom:1px solid var(--bd);padding-bottom:9px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fila3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:560px){.fila3{grid-template-columns:1fr;}}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+.seg button{background:var(--sf2);color:var(--tx2);border:none;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.seg button.on{background:#1d4ed8;color:#fff;}
+.sub{font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 2px;border-top:1px solid var(--bd);padding-top:11px;}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;}
+.kpi .lab{font-size:11px;color:var(--tx2);font-weight:600;}
+.kpi .val{font-size:20px;font-weight:700;margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.kpi .u{font-size:12px;color:var(--tx2);font-weight:600;}
+.destacado{border-color:#3a3050;background:#221a2e;} .destacado .val{color:#e8c8a0;}
+.nota{font-size:11.5px;color:var(--tx3);margin-top:8px;}
+.vbad{color:var(--bad);} .vwarn{color:var(--warn);} .vok{color:var(--ok);}
+.tabla{margin-top:14px;}
+.tabla table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.tabla th,.tabla td{border:1px solid var(--bd);padding:7px 9px;text-align:center;}
+.tabla th{background:var(--sf2);color:var(--tx2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+.tabla td.eti{text-align:left;font-weight:600;}
+.tabla td.num{font-family:'JetBrains Mono',monospace;}
+.tabla tr.sel td{background:#221a2e;color:#f0e0cc;}
+.tabla tr.sel td.eti{color:#e8c8a0;}
+.chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.chip.ok{background:rgba(52,211,153,.15);color:#34d399;} .chip.no{background:rgba(239,122,107,.15);color:#ef7a6b;}
+details{margin-top:12px;font-size:13px;}
+summary{cursor:pointer;color:var(--ac);font-weight:600;}
+.formula{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:8px 0;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);}
+svg{width:100%;height:auto;display:block;background:#0b0f16;border-radius:8px;}
+@keyframes dash{to{stroke-dashoffset:-180;}}
+.acciones{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
+.btn{border:none;border-radius:8px;padding:12px 18px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;}
+.btn.pdf{background:#065f46;} .btn.pdf:hover{background:#047857;}
+.pie{font-size:11px;color:var(--tx3);text-align:center;margin:18px 0 6px;}
+#printArea{display:none;}
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{background:#fff!important;}
+  .wrap,body>header{display:none!important;}
+  #printArea{display:block!important;}
+}
+</style>
+</head>
+<body>
+<div id="printArea"></div>
+
+<header style="background:#16213e;border-bottom:2px solid #c0392b;padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+  <div style="background:#fff;padding:5px 12px;border-radius:7px;display:flex;align-items:center;flex-shrink:0;">
+    <img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:1px;">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:1.35rem;color:#fff;letter-spacing:1.5px;font-weight:700;">UBUNTU</span>
+      <span style="font-size:0.68rem;color:#aac;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Plataforma Interactiva Asistida por IA</span>
+    </div>
+    <h1 style="font-size:1.05rem;color:#fff;margin-top:6px;font-weight:600;">Cálculo de Tanque Elevado PCI</h1>
+    <p style="font-size:0.78rem;color:#8b95b0;margin-top:1px;">Caudal por gravedad, presión residual y velocidad para sistemas abastecidos por tanque elevado</p>
+  </div>
+  <div style="margin-left:auto;">
+    <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" style="color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);">← Volver a UBUNTU</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card" style="margin-bottom:18px">
+    <h2>Datos del proyecto
+      <span class="seg"><button id="btUS" class="on" onclick="setSistema('US')">Americano</button><button id="btSI" onclick="setSistema('SI')">Internacional</button></span>
+    </h2>
+    <div class="fila3">
+      <div><label>Nombre del proyecto</label><input id="pj" type="text" placeholder="Ej. Campamento minero andino"></div>
+      <div><label>Ubicación</label><input id="ub" type="text" placeholder="Ej. Cusco, Perú"></div>
+      <div><label>Ingeniero a cargo</label><input id="ing" type="text" placeholder="Nombre del responsable"></div>
+    </div>
+    <p class="nota">El botón de arriba a la derecha cambia el sistema de unidades de toda la calculadora (Americano: gpm, psi, pulg, pies · Internacional: m³/h, m.c.a., mm, m).</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Datos del tanque elevado</h2>
+      <div class="fila">
+        <div><label id="lblH">Altura ganada por gravedad H (pies)</label><input id="h" type="number" value="" placeholder="0" min="0" step="any"></div>
+        <div><label id="lblL">Longitud equivalente L (pies)</label><input id="l" type="number" value="" placeholder="0" min="0" step="any"></div>
+      </div>
+      <label id="lblPM">Presión mínima a mantener PM (psi)</label><input id="pm" type="number" value="" placeholder="0" min="0" step="any">
+      <p class="nota">Déjala vacía (o en 0) para obtener el caudal máximo, con presión residual cero. Si el sistema exige una presión residual, ponla aquí.</p>
+
+      <div class="sub">Tubería</div>
+      <div class="fila">
+        <div><label>Material</label><select id="mat"></select></div>
+        <div><label>Diámetro nominal</label><select id="dn"></select></div>
+      </div>
+      <label>Factor C (Hazen-Williams)</label><input id="c" type="number" value="120" min="1" step="any">
+      <p class="nota">El diámetro nominal se elige en pulgadas (estándar de fábrica NPS) en ambos sistemas; el interior se muestra en mm en Internacional. El factor C se ajusta solo según el material (acero 120, plástico 150).</p>
+
+      <div class="sub">Demanda a verificar (opcional)</div>
+      <label id="lblQd">Caudal demandado por el sistema Qd (gpm)</label><input id="qd" type="number" value="" placeholder="0" min="0" step="any">
+      <p class="nota">Si lo indicas, se calcula la presión residual que el tanque entregaría a ese caudal y el margen de seguridad contra la presión mínima PM.</p>
+
+      <details>
+        <summary>Ver las fórmulas que usa (idénticas a la hoja de cálculo)</summary>
+        <div class="formula">Presión por gravedad:  Pe = 0.433 · H        [psi ; H en pies]</div>
+        <div class="formula">Caudal máximo (PM=0):  Q = 0.28 · C · H^0.54 · d^2.63 / L^0.54</div>
+        <div class="formula">Caudal a presión PM:   Q = C · d^2.63 · (0.433·H − PM)^0.54 / (2.26 · L^0.54)</div>
+        <div class="formula">Pérdida por fricción:  Pf = (2.26 · Q · L^0.54 / (C · d^2.63))^(1/0.54)</div>
+        <div class="formula">Presión residual:      Pres = 0.433·H − Pf</div>
+        <div class="formula">Velocidad:  V = Q / (2.448 · d²)   ·   El cálculo corre en unidades americanas y se convierte para mostrar.</div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>El sistema en movimiento</h2>
+      <svg id="dib" viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema del tanque elevado"></svg>
+      <p class="nota" id="dibnota"></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2 style="display:block">Resultados — <span id="rsel" style="color:#e8c8a0">—</span></h2>
+    <div class="res">
+      <div class="kpi"><div class="lab">Presión por gravedad (Pe)</div><div><span class="val" id="rpe">—</span> <span class="u" id="upe">psi</span></div></div>
+      <div class="kpi"><div class="lab">Diámetro interior</div><div><span class="val" id="rdi">—</span> <span class="u" id="udi">pulg</span></div></div>
+      <div class="kpi destacado"><div class="lab">Caudal máximo (residual 0)</div><div><span class="val" id="rqmax">—</span> <span class="u" id="uqmax">gpm</span></div></div>
+      <div class="kpi destacado"><div class="lab" id="lqpm">Caudal a PM psi residual</div><div><span class="val" id="rqpm">—</span> <span class="u" id="uqpm">gpm</span></div></div>
+      <div class="kpi"><div class="lab">Velocidad al caudal máximo</div><div><span class="val" id="rvel">—</span> <span class="u" id="uvel">pies/seg</span></div></div>
+      <div class="kpi"><div class="lab">Factor C usado</div><div><span class="val" id="rc">—</span> <span class="u">—</span></div></div>
+    </div>
+
+    <div id="bloqueDemanda" style="display:none;margin-top:12px">
+      <div class="res">
+        <div class="kpi"><div class="lab">Presión residual al caudal demandado Qd</div><div><span class="val" id="rresd">—</span> <span class="u" id="uresd">psi</span></div></div>
+        <div class="kpi destacado"><div class="lab">Margen de seguridad (residual − PM)</div><div><span class="val" id="rmarg">—</span> <span class="u" id="umarg">psi</span></div></div>
+      </div>
+    </div>
+
+    <div class="tabla">
+      <h2 style="font-size:13.5px;margin:14px 0 8px;display:block">Comparativo de materiales — diámetro nominal <span id="cnom">—</span>"</h2>
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Material</th><th>Ø interior (<span id="thdi">pulg</span>)</th><th>C</th>
+          <th>Caudal máx (<span id="thq">gpm</span>)</th><th>Velocidad (<span id="thv">p/s</span>)</th>
+          <th id="thqpm">Caudal @ PM (<span id="thqpm2">gpm</span>)</th><th id="thver">Veredicto</th>
+        </tr></thead>
+        <tbody id="tbComp"></tbody>
+      </table>
+      <p class="nota">Velocidad en rojo supera 20 pies/seg (6.1 m/s), valor alto a revisar; en ámbar, sobre 15 pies/seg (4.6 m/s). El "Veredicto" compara el caudal disponible contra el caudal demandado Qd.</p>
+    </div>
+
+    <div class="tabla">
+      <h2 style="font-size:13.5px;margin:18px 0 8px;display:block">Curva del sistema — Caudal vs. Presión residual</h2>
+      <svg id="curva" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" aria-label="Curva del sistema"></svg>
+      <p class="nota">A caudal cero la presión vale Pe (presión estática por altura) y disminuye al aumentar el caudal por la pérdida por fricción. La línea roja es la tubería seleccionada; las grises, los demás materiales en el mismo diámetro.</p>
+    </div>
+
+    <div class="acciones">
+      <button class="btn pdf" id="btnpdf">Reporte PDF profesional</button>
+    </div>
+  </div>
+
+  <p class="pie">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar siempre los criterios normativos del proyecto (NFPA, FM Global, AHJ local).<br>Instituto Latinoamericano de Formación en Incendios y Seguridad — ILFIS UBUNTU</p>
+</div>
+
+<script>
+const DIAM={
+  '1':{SCH40:1.049,SCH10:1.097},'1 1/4':{SCH40:1.380,SCH10:1.442},'1 1/2':{SCH40:1.610,SCH10:1.682},
+  '2':{SCH40:2.067,SCH10:2.157,HDPE200:1.917,HDPE250:1.816},'2 1/2':{SCH40:2.469,SCH10:2.635},
+  '3':{SCH40:3.068,SCH10:3.260,HDPE200:2.825,HDPE250:2.676},
+  '4':{SCH40:4.026,SCH10:4.260,HDPE200:3.633,HDPE250:3.440,PVC165:4.416,PVC235:4.266,PVC305:4.144},
+  '6':{SCH40:6.065,SCH10:6.357,HDPE200:5.348,HDPE250:5.064,PVC165:6.348,PVC235:6.134,PVC305:5.914},
+  '8':{SCH40:7.981,SCH10:8.249,HDPE200:6.963,HDPE250:6.593,PVC165:8.326,PVC235:8.044,PVC305:7.758},
+  '10':{SCH40:10.020,SCH10:10.370,HDPE200:8.678,HDPE250:8.218,PVC165:10.212,PVC235:9.866,PVC305:9.514},
+  '12':{HDPE200:10.293,HDPE250:9.747,PVC165:12.144,PVC235:11.734,PVC305:11.314},
+  '14':{HDPE200:11.302,HDPE250:10.702,PVC165:14.076,PVC235:13.600,PVC305:13.114},
+  '16':{HDPE200:12.916,HDPE250:12.231,PVC165:16.008,PVC235:15.466,PVC305:14.914},
+  '18':{HDPE200:14.531,HDPE250:13.760,PVC165:17.940,PVC235:17.334},
+  '20':{HDPE200:16.145,HDPE250:15.289,PVC165:19.872,PVC235:19.200},
+  '22':{HDPE200:17.760,HDPE250:16.818},'24':{HDPE200:19.375,HDPE250:18.347,PVC165:23.736,PVC235:22.934}
+};
+const ORDEN_NOM=['1','1 1/4','1 1/2','2','2 1/2','3','4','6','8','10','12','14','16','18','20','22','24'];
+const MATERIALES=[
+  {key:'SCH40',label:'Acero Cédula 40',C:120},{key:'SCH10',label:'Acero Cédula 10',C:120},
+  {key:'HDPE200',label:'HDPE PN200',C:150},{key:'HDPE250',label:'HDPE PN250',C:150},
+  {key:'PVC165',label:'PVC C-165',C:150},{key:'PVC235',label:'PVC C-235',C:150},{key:'PVC305',label:'PVC C-305',C:150}
+];
+const PE=0.433, KMAX=0.28, KPM=2.26, E263=2.63, E054=0.54, INV=1/0.54, VELDIV=2.448;
+const $=id=>document.getElementById(id);
+const matLabel=k=>MATERIALES.find(m=>m.key===k).label;
+const cParaMaterial=k=>MATERIALES.find(m=>m.key===k).C;
+const LOGO_URL='https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png';
+
+/* ---------- sistema de unidades (interno = americano) ---------- */
+const U={
+  US:{q:'gpm', p:'psi', d:'pulg', l:'pies', v:'pies/seg', qf:1, pf:1, df:1, lf:1, vf:1},
+  SI:{q:'m³/h', p:'m.c.a.', d:'mm', l:'m', v:'m/s', qf:0.227124707, pf:0.703069, df:25.4, lf:0.3048, vf:0.3048}
+};
+let SIST='US';
+const u=()=>U[SIST];
+const f2=x=>(isFinite(x)?(+x).toFixed(2):'—');
+const f0=x=>(isFinite(x)?Math.round(x).toLocaleString('es-PE'):'—');
+const sQ=g=>f0(g*u().qf), sQ2=g=>f2(g*u().qf), sP=p=>f2(p*u().pf), sD=i=>f2(i*u().df), sV=v=>f2(v*u().vf), sL=ft=>f2(ft*u().lf);
+
+/* ---------- motor de cálculo (fórmulas exactas de la hoja "CH TANQUE ELEVADO", en americano) ---------- */
+const peGrav=H=>PE*H;
+const qMax=(C,H,D,L)=>KMAX*C*Math.pow(H,E054)*Math.pow(D,E263)/Math.pow(L,E054);
+const qPM=(C,D,H,PM,L)=>{const A=PE*H-PM; return A<=0?0:C*Math.pow(D,E263)*Math.pow(A,E054)/(KPM*Math.pow(L,E054));};
+const pfDeQ=(Q,C,D,L)=>Q<=0?0:Math.pow(KPM*Q*Math.pow(L,E054)/(C*Math.pow(D,E263)),INV);
+const residualDeQ=(Q,C,D,H,L)=>peGrav(H)-pfDeQ(Q,C,D,L);
+const vel=(Q,D)=>Q/(VELDIV*D*D);
+const claseVel=v=>v>20?'vbad':(v>15?'vwarn':'vok');
+
+function llenarMateriales(sel){sel.innerHTML=MATERIALES.map(m=>`<option value="${m.key}">${m.label}</option>`).join('');}
+function llenarDiametros(selD,matKey){
+  const prev=selD.value, opts=ORDEN_NOM.filter(n=>DIAM[n][matKey]!==undefined);
+  selD.innerHTML=opts.map(n=>`<option value="${n}">${n}"</option>`).join('');
+  if(opts.includes(prev))selD.value=prev; else if(opts.includes('6'))selD.value='6';
+}
+
+const IDS_RES=['rpe','rdi','rqmax','rqpm','rvel','rc','rresd','rmarg'];
+function limpiar(msg){
+  $('dib').innerHTML='';
+  $('dibnota').textContent=msg;
+  IDS_RES.forEach(id=>$(id).textContent='—');
+  $('tbComp').innerHTML=''; $('curva').innerHTML='';
+  $('bloqueDemanda').style.display='none';
+  ESTADO=null;
+}
+
+let ESTADO=null;
+function calcular(){
+  const H=(parseFloat($('h').value)||0)/u().lf;       // -> pies
+  const L=(parseFloat($('l').value)||0)/u().lf;       // -> pies
+  const PM=(parseFloat($('pm').value)||0)/u().pf;     // -> psi
+  const Qd=(parseFloat($('qd').value)||0)/u().qf;     // -> gpm
+  const mat=$('mat').value, nom=$('dn').value;
+  const D=DIAM[nom]?.[mat], C=parseFloat($('c').value)||cParaMaterial(mat);
+  if(!D||H<=0||L<=0){
+    limpiar('Completa la altura H y la longitud equivalente L para ver el cálculo. (El material y el diámetro ya vienen puestos; puedes cambiarlos.)');
+    return;
+  }
+  const Pe=peGrav(H);
+  const Qmax=qMax(C,H,D,L);
+  const Qpm=PM>0?qPM(C,D,H,PM,L):NaN;
+  const Vmax=vel(Qmax,D);
+  const resd=Qd>0?residualDeQ(Qd,C,D,H,L):NaN;
+  const marg=Qd>0?resd-PM:NaN;
+
+  $('rsel').textContent=matLabel(mat)+' · '+nom+'"';
+  $('rpe').textContent=sP(Pe);
+  $('rdi').textContent=sD(D);
+  $('rqmax').textContent=sQ(Qmax);
+  $('lqpm').textContent='Caudal a '+sP(PM)+' '+u().p+' residual';
+  $('rqpm').textContent=PM>0?sQ(Qpm):'—';
+  $('rvel').textContent=sV(Vmax);$('rvel').className='val '+claseVel(Vmax);
+  $('rc').textContent=C;
+
+  if(Qd>0){
+    $('bloqueDemanda').style.display='block';
+    $('rresd').textContent=sP(resd);
+    $('rmarg').textContent=sP(marg);
+    $('rmarg').className='val '+(marg>=0?'vok':'vbad');
+  } else $('bloqueDemanda').style.display='none';
+
+  // tabla comparativa
+  $('cnom').textContent=nom;
+  $('thqpm').style.display=PM>0?'':'none';
+  const mostrarVer=Qd>0; $('thver').style.display=mostrarVer?'':'none';
+  const comp=MATERIALES.filter(m=>DIAM[nom][m.key]!==undefined).map(m=>{
+    const d=DIAM[nom][m.key], c=m.C;
+    const qm=qMax(c,H,d,L), v=vel(qm,d), qp=PM>0?qPM(c,d,H,PM,L):NaN;
+    const disp=PM>0?qp:qm, cumple=Qd>0?disp>=Qd:null;
+    return {key:m.key,label:m.label,d,c,qm,v,qp,cumple};
+  });
+  $('tbComp').innerHTML=comp.map(r=>`<tr class="${r.key===mat?'sel':''}">
+    <td class="eti">${r.label}</td>
+    <td class="num">${sD(r.d)}</td>
+    <td class="num">${r.c}</td>
+    <td class="num">${sQ(r.qm)}</td>
+    <td class="num"><span class="${claseVel(r.v)}">${sV(r.v)}</span></td>
+    <td class="num" style="${PM>0?'':'display:none'}">${PM>0?sQ(r.qp):'—'}</td>
+    <td style="${mostrarVer?'':'display:none'}">${r.cumple===null?'—':(r.cumple?'<span class="chip ok">CUMPLE</span>':'<span class="chip no">NO</span>')}</td>
+  </tr>`).join('');
+
+  ESTADO={H,L,PM,Qd,mat,nom,D,C,Pe,Qmax,Qpm,Vmax,resd,marg,matLab:matLabel(mat),comp,
+    hIn:$('h').value,lIn:$('l').value};
+  $('dib').innerHTML=svgTanque(ESTADO,false);
+  $('curva').innerHTML=svgCurva(ESTADO,false);
+  $('dibnota').textContent='El agua cae por gravedad desde el tanque. La altura H genera la presión Pe = '+sP(Pe)+' '+u().p+'. El grosor del tubo es proporcional al diámetro y la rapidez de la animación a la velocidad del agua.';
+}
+
+/* ---------- cambio de sistema ---------- */
+function setSistema(s){
+  if(s===SIST)return;
+  const from=U[SIST], to=U[s];
+  const conv=(id,ff,tf)=>{const v=parseFloat($(id).value); if(isFinite(v)) $(id).value=+(v/ff*tf).toFixed(3);};
+  conv('h',from.lf,to.lf); conv('l',from.lf,to.lf); conv('pm',from.pf,to.pf); conv('qd',from.qf,to.qf);
+  SIST=s;
+  $('btUS').className=s==='US'?'on':''; $('btSI').className=s==='SI'?'on':'';
+  $('lblH').textContent='Altura ganada por gravedad H ('+to.l+')';
+  $('lblL').textContent='Longitud equivalente L ('+to.l+')';
+  $('lblPM').textContent='Presión mínima a mantener PM ('+to.p+')';
+  $('lblQd').textContent='Caudal demandado por el sistema Qd ('+to.q+')';
+  $('upe').textContent=to.p; $('udi').textContent=to.d; $('uqmax').textContent=to.q; $('uqpm').textContent=to.q;
+  $('uvel').textContent=to.v; $('uresd').textContent=to.p; $('umarg').textContent=to.p;
+  $('thdi').textContent=to.d; $('thq').textContent=to.q; $('thv').textContent=to.v; $('thqpm2').textContent=to.q;
+  calcular();
+}
+
+/* ---------- esquema animado del tanque ---------- */
+const grosor=D=>Math.max(8,Math.min(34,5+D*1.4));
+const durAnim=V=>Math.max(0.45,30/Math.max(V,0.5));
+function svgTanque(d,light){
+  const cBase=light?'#16213e':'#566073', cPipe='#c0392b', cTx=light?'#16213e':'#e2e8f4', cTx2=light?'#5b6675':'#8b95b0';
+  const cWall=light?'#16213e':'#46506a', cWater=light?'#9cc7de':'#2b5f78', cNode=light?'#fff':'#0b0f16';
+  const w=grosor(d.D), fw=Math.max(3,w*0.4), uq=u().q, ul=u().l, uv=u().v, up=u().p;
+  const tx=120,ty=46,tw=210,th=86, wl=ty+24, cx=tx+tw/2, outY=320, outX=706;
+  const pVert=`M ${cx} ${ty+th} L ${cx} ${outY}`, pHor=`M ${cx} ${outY} L ${outX-16} ${outY}`;
+  const flow=light?'':`
+    <path d="${pVert}" fill="none" stroke="#38d4f8" stroke-linecap="round" stroke-dasharray="2 16" style="animation:dash ${durAnim(d.Vmax)}s linear infinite;stroke-width:${fw}"/>
+    <path d="${pHor}" fill="none" stroke="#38d4f8" stroke-linecap="round" stroke-dasharray="2 16" style="animation:dash ${durAnim(d.Vmax)}s linear infinite;stroke-width:${fw}"/>`;
+  return `
+    <rect x="${tx}" y="${ty}" width="${tw}" height="${th}" fill="none" stroke="${cWall}" stroke-width="3"/>
+    <rect x="${tx+3}" y="${wl}" width="${tw-6}" height="${ty+th-wl-2}" fill="${cWater}" opacity="${light?'0.5':'0.65'}"/>
+    <text x="${cx}" y="${ty-9}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="12" fill="${cTx}">TANQUE ELEVADO</text>
+    <text x="${cx}" y="${wl-6}" text-anchor="middle" font-family="DM Sans" font-size="10.5" fill="${light?'#16213e':'#bcd6e4'}">nivel de agua</text>
+    <path d="${pVert}" fill="none" stroke="${cBase}" stroke-width="${w}" stroke-linecap="round"/>
+    <path d="${pHor}" fill="none" stroke="${cPipe}" stroke-width="${w}" stroke-linecap="round"/>
+    ${flow}
+    <path d="M ${outX-20} ${outY-11} L ${outX} ${outY} L ${outX-20} ${outY+11} Z" fill="${cPipe}"/>
+    <circle cx="${cx}" cy="${outY}" r="7" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    <line x1="70" y1="${wl}" x2="70" y2="${outY}" stroke="${cTx2}" stroke-width="1.2"/>
+    <line x1="64" y1="${wl}" x2="76" y2="${wl}" stroke="${cTx2}" stroke-width="1.2"/>
+    <line x1="64" y1="${outY}" x2="76" y2="${outY}" stroke="${cTx2}" stroke-width="1.2"/>
+    <text x="58" y="${(wl+outY)/2-4}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="12" fill="${cTx}" transform="rotate(-90 58 ${(wl+outY)/2})">H = ${sL(d.H)} ${ul}</text>
+    <text x="92" y="${wl+22}" font-family="DM Sans" font-size="11" fill="${cTx2}">Pe = ${sP(d.Pe)} ${up}</text>
+    <text x="${cx+18}" y="${(ty+th+outY)/2}" font-family="DM Sans" font-weight="700" font-size="12" fill="${cPipe}">${d.matLab}</text>
+    <text x="${cx+18}" y="${(ty+th+outY)/2+16}" font-family="DM Sans" font-size="11" fill="${cTx2}">${d.nom}" · Ø int ${sD(d.D)} ${u().d} · ${sV(d.Vmax)} ${uv}</text>
+    <text x="${outX-26}" y="${outY-16}" text-anchor="end" font-family="JetBrains Mono" font-weight="600" font-size="13" fill="${cTx}">Q = ${sQ(d.Qmax)} ${uq}</text>
+    <text x="${outX-26}" y="${outY+26}" text-anchor="end" font-family="DM Sans" font-size="10.5" fill="${cTx2}">salida (residual 0)</text>`;
+}
+
+/* ---------- curva del sistema: Caudal (x) vs Presión residual (y) ---------- */
+function svgCurva(d,light){
+  const L0=70,R0=724,T0=24,B0=312;
+  const cAx=light?'#16213e':'#46506a', cTx=light?'#16213e':'#cdd6e6', cTx2=light?'#5b6675':'#8b95b0';
+  const cGrid=light?'#d8dee7':'#222838', cSel='#c0392b', cOtros=light?'#aeb6c2':'#586275';
+  const xmax=Math.max(...d.comp.map(c=>c.qm))*1.06, ymax=d.Pe*1.04;
+  const sx=q=>L0+(R0-L0)*q/xmax, sy=p=>B0-(B0-T0)*p/ymax;
+  let g='';
+  for(let i=0;i<=5;i++){const p=ymax*i/5; g+=`<line x1="${L0}" y1="${sy(p)}" x2="${R0}" y2="${sy(p)}" stroke="${cGrid}" stroke-width="1"/><text x="${L0-8}" y="${sy(p)+4}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${cTx2}">${Math.round(p*u().pf)}</text>`;}
+  for(let i=0;i<=6;i++){const q=xmax*i/6; g+=`<line x1="${sx(q)}" y1="${T0}" x2="${sx(q)}" y2="${B0}" stroke="${cGrid}" stroke-width="1"/><text x="${sx(q)}" y="${B0+16}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="${cTx2}">${Math.round(q*u().qf)}</text>`;}
+  const lineMat=(c)=>{let pts=[];const NN=46;for(let i=0;i<=NN;i++){const q=c.qm*i/NN; let p=residualDeQ(q,c.c,c.d,d.H,d.L); if(p<0)p=0; pts.push(`${sx(q).toFixed(1)},${sy(p).toFixed(1)}`);}return pts.join(' ');};
+  let otras=d.comp.filter(c=>c.key!==d.mat).map(c=>`<polyline points="${lineMat(c)}" fill="none" stroke="${cOtros}" stroke-width="1.4" opacity="0.55"/>`).join('');
+  const selC=d.comp.find(c=>c.key===d.mat);
+  let sel=`<polyline points="${lineMat(selC)}" fill="none" stroke="${cSel}" stroke-width="2.6"/>`;
+  let marks=`<circle cx="${sx(0)}" cy="${sy(d.Pe)}" r="4" fill="${cSel}"/><text x="${sx(0)+8}" y="${sy(d.Pe)-6}" font-family="JetBrains Mono" font-size="10.5" fill="${cTx}">Pe ${sP(d.Pe)}</text>`;
+  if(d.PM>0){marks+=`<line x1="${L0}" y1="${sy(d.PM)}" x2="${R0}" y2="${sy(d.PM)}" stroke="${cTx2}" stroke-width="1.3" stroke-dasharray="6 5"/><text x="${R0-4}" y="${sy(d.PM)-5}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${cTx2}">PM ${sP(d.PM)} ${u().p}</text>`;}
+  if(d.Qd>0){let pr=d.resd<0?0:d.resd; marks+=`<line x1="${sx(d.Qd)}" y1="${B0}" x2="${sx(d.Qd)}" y2="${sy(pr)}" stroke="${cTx2}" stroke-width="1.2" stroke-dasharray="4 4"/><circle cx="${sx(d.Qd)}" cy="${sy(pr)}" r="4.5" fill="${light?'#16213e':'#e8c8a0'}"/><text x="${sx(d.Qd)}" y="${sy(pr)-9}" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" fill="${cTx}">Qd ${sQ(d.Qd)} → ${sP(d.resd)} ${u().p}</text>`;}
+  return `${g}
+    <line x1="${L0}" y1="${T0}" x2="${L0}" y2="${B0}" stroke="${cAx}" stroke-width="1.6"/>
+    <line x1="${L0}" y1="${B0}" x2="${R0}" y2="${B0}" stroke="${cAx}" stroke-width="1.6"/>
+    ${otras}${sel}${marks}
+    <text x="${(L0+R0)/2}" y="${B0+34}" text-anchor="middle" font-family="DM Sans" font-weight="600" font-size="11" fill="${cTx2}">Caudal (${u().q})</text>
+    <text x="16" y="${(T0+B0)/2}" text-anchor="middle" font-family="DM Sans" font-weight="600" font-size="11" fill="${cTx2}" transform="rotate(-90 16 ${(T0+B0)/2})">Presión residual (${u().p})</text>`;
+}
+
+/* ---------- reporte PDF (A4) ---------- */
+function tablaHTML(cols,filas,aligns){
+  const th=cols.map((c,i)=>`<th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:7px 11px;text-align:${aligns[i]};">${c}</th>`).join('');
+  const tr=filas.map(f=>`<tr>${f.map((cell,i)=>`<td style="padding:6px 11px;font-size:11px;color:#0f172a;text-align:${aligns[i]};border-bottom:1px solid #c8d2dd;${i===0?"font-family:'DM Sans',sans-serif;font-weight:500;":"font-family:'JetBrains Mono',monospace;font-weight:500;"}">${cell}</td>`).join('')}</tr>`).join('');
+  return `<table style="width:100%;border-collapse:collapse;margin:0 0 4px;border-top:2px solid #16213e;background:#fff;"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
+}
+function kpiHTML(items){
+  const cells=items.map((it,i)=>`<div style="flex:1;padding:7px 14px;${i>0?'border-left:1px solid #c8d2dd;':''}"><div style="font-size:8.5px;color:#5b6675;font-weight:600;text-transform:uppercase;letter-spacing:.4px;font-family:'DM Sans',sans-serif;">${it.lab}</div><div style="font-size:16px;font-weight:600;color:#16213e;font-family:'JetBrains Mono',monospace;margin-top:3px;">${it.val}</div></div>`).join('');
+  return `<div style="display:flex;border-top:2px solid #16213e;border-bottom:1px solid #c8d2dd;background:#fff;margin:0 0 6px;">${cells}</div>`;
+}
+function bandHTML(t){return `<div style="font-family:'DM Sans',sans-serif;font-size:10.5px;font-weight:700;color:#16213e;text-transform:uppercase;letter-spacing:.7px;padding:0 0 4px;margin:8px 0 6px;border-bottom:2px solid #16213e;">${t}</div>`;}
+
+function buildReport(d){
+  const fecha=new Date().toLocaleDateString('es-PE');
+  const uq=u().q,up=u().p,ud=u().d,ul=u().l,uv=u().v;
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:13px 18px;">
+      <div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="${LOGO_URL}" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+      <div style="color:#fff;line-height:1.25;">
+        <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
+        <div style="font-size:15px;font-weight:600;margin-top:2px;">Cálculo de Tanque Elevado PCI</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}<br><span style="font-size:9px;">Unidades: ${SIST==='US'?'Americano':'Internacional'}</span></div>
+    </div>`;
+  const campos=[];
+  if($('pj').value)campos.push(`<span><b>Proyecto:</b> ${$('pj').value}</span>`);
+  if($('ub').value)campos.push(`<span><b>Ubicación:</b> ${$('ub').value}</span>`);
+  if($('ing').value)campos.push(`<span><b>Ingeniero:</b> ${$('ing').value}</span>`);
+  const proy=campos.length?`<div style="display:flex;gap:30px;flex-wrap:wrap;font-size:11px;color:#0f172a;padding:10px 2px;border-bottom:1px solid #c8d2dd;font-family:'DM Sans',sans-serif;">${campos.join('')}</div>`:'';
+  const datos=bandHTML('Datos del tanque elevado')+tablaHTML(['Parámetro','Valor','Unidad'],[
+    ['Altura ganada por gravedad H',sL(d.H),ul],
+    ['Longitud equivalente L',sL(d.L),ul],
+    ['Presión por gravedad Pe',sP(d.Pe),up],
+    ['Presión mínima a mantener PM',sP(d.PM),up],
+    ['Tubería',d.matLab+' · '+d.nom+'"',''],
+    ['Diámetro interior',sD(d.D),ud],
+    ['Factor C (Hazen-Williams)',d.C,'—']
+  ],['left','right','left']);
+  const kpis=[{lab:'Caudal máximo (residual 0)',val:sQ(d.Qmax)+' '+uq}];
+  if(d.PM>0)kpis.push({lab:'Caudal a '+sP(d.PM)+' '+up,val:sQ(d.Qpm)+' '+uq});
+  kpis.push({lab:'Velocidad',val:sV(d.Vmax)+' '+uv});
+  if(d.Qd>0)kpis.push({lab:'Margen de seg. @ Qd',val:sP(d.marg)+' '+up});
+  const result=bandHTML('Resultados — '+d.matLab+' · '+d.nom+'"')+kpiHTML(kpis);
+  const demanda=d.Qd>0?tablaHTML(['Verificación de demanda','Valor','Unidad'],[
+    ['Caudal demandado Qd',sQ(d.Qd),uq],
+    ['Presión residual a Qd',sP(d.resd),up],
+    ['Margen de seguridad (residual − PM)',sP(d.marg),up]
+  ],['left','right','left']):'';
+  const colsC=['Material','Ø int ('+ud+')','C','Caudal máx ('+uq+')'];const alC=['left','right','right','right'];
+  if(d.PM>0){colsC.push('Q @ PM ('+uq+')');alC.push('right');}
+  if(d.Qd>0){colsC.push('Veredicto');alC.push('center');}
+  const filasC=d.comp.map(r=>{const row=[r.label,sD(r.d),r.c,sQ(r.qm)];
+    if(d.PM>0)row.push(sQ(r.qp));
+    if(d.Qd>0)row.push(r.cumple?'CUMPLE':'NO');return row;});
+  const comp=bandHTML('Comparativo de materiales — Ø '+d.nom+'"')+tablaHTML(colsC,filasC,alC);
+  const esquema=`<div style="page-break-inside:avoid;break-inside:avoid;margin-top:2px;">${bandHTML('Esquema y curva del sistema')}
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;border:1px solid #16213e;display:flex;align-items:center;justify-content:center;padding:5px;"><svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" style="display:block;height:185px;max-width:100%;width:auto;background:#fff;">${svgTanque(d,true)}</svg></div>
+      <div style="flex:1;border:1px solid #16213e;display:flex;align-items:center;justify-content:center;padding:5px;"><svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="display:block;height:185px;max-width:100%;width:auto;background:#fff;">${svgCurva(d,true)}</svg></div>
+    </div></div>`;
+  const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:9px;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar los criterios normativos del proyecto (NFPA, FM Global, AHJ local). Generado con ILFIS UBUNTU.</div>`;
+  return `<div style="box-sizing:border-box;padding:10mm 11mm 8mm;font-family:'DM Sans',sans-serif;">${head}${proy}${datos}${result}${demanda}${comp}${esquema}${pie}</div>`;
+}
+function reportePDF(){ if(!ESTADO)calcular(); if(!ESTADO)return; $('printArea').innerHTML=buildReport(ESTADO); setTimeout(()=>window.print(),300); }
+
+function init(){
+  llenarMateriales($('mat')); $('mat').value='SCH40';
+  llenarDiametros($('dn'),'SCH40'); $('dn').value='6';
+  $('c').value=cParaMaterial('SCH40');
+  $('mat').addEventListener('change',()=>{llenarDiametros($('dn'),$('mat').value);$('c').value=cParaMaterial($('mat').value);calcular();});
+  ['h','l','pm','dn','c','qd'].forEach(id=>{$(id).addEventListener('input',calcular);$(id).addEventListener('change',calcular);});
+  $('btnpdf').addEventListener('click',reportePDF);
+  calcular();
+}
+init();
+</script>
+</body>
+</html>
