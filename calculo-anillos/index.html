@@ -368,7 +368,7 @@ function buildReport(d){
   const esquema=`<div style="page-break-inside:avoid;break-inside:avoid;margin-top:2px;">
     ${bandHTML('Esquema del anillo')}
     <div style="border:1px solid #16213e;display:flex;align-items:center;justify-content:center;padding:8px;">
-      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" style="display:block;height:308px;max-width:100%;width:auto;background:#fff;">${svgAnillo(d,true)}</svg>
+      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" style="display:block;height:255px;max-width:100%;width:auto;background:#fff;">${svgAnillo(d,true)}</svg>
     </div></div>`;
   const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:10px;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar los criterios normativos del proyecto (NFPA, FM Global, AHJ local). Generado con ILFIS UBUNTU.</div>`;
   return `<div style="box-sizing:border-box;padding:10mm 11mm 8mm;font-family:'DM Sans',sans-serif;">${head}${proy}${datos}${entrada}${result}${redu}${esquema}${pie}</div>`;
