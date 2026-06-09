@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plantilla de Precálculo - ILFIS Ubuntu</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{--bg:#0e1117;--sf:#161b26;--sf2:#1e2433;--bd:#2a3144;--tx:#e2e8f4;--tx2:#8b95b0;--tx3:#5a6380;--ac:#6b93c0;--r:10px;
+  --navy:#16213e;--rojo:#c0392b;--acero:#7d8896;--agua:#6fb6d6;--ok:#34d399;--warn:#fbbf24;--bad:#ef7a6b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+input,select{font-family:'DM Sans',system-ui,sans-serif;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;outline:none;width:100%;}
+select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238b95b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.6 L6 6.4 L11 1.6'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
+input:focus,select:focus{border-color:var(--ac);}
+input:disabled,select:disabled{opacity:.6;cursor:not-allowed;}
+label{font-size:11px;color:var(--tx2);display:block;margin:9px 0 3px;font-weight:600;}
+a{color:inherit;}
+.wrap{max-width:1180px;margin:0 auto;padding:20px;}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:18px;}
+.card h2{font-size:14px;font-weight:600;color:#fff;border-bottom:1px solid var(--bd);padding-bottom:9px;margin-bottom:12px;}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fila3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:560px){.fila3,.fila{grid-template-columns:1fr;}}
+.unidad{display:grid;grid-template-columns:1fr 90px;gap:6px;align-items:end;}
+.nota{font-size:11.5px;color:var(--tx3);margin-top:8px;}
+.res{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+@media(max-width:720px){.res{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;}
+.kpi.destacado{border-color:#3a3050;background:#221a2e;}
+.kpi .lab{font-size:11px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.kpi .val{font-size:24px;font-weight:700;margin-top:3px;font-family:'JetBrains Mono',monospace;color:#fff;}
+.kpi.destacado .val{color:#e8c8a0;}
+.kpi .u{font-size:12px;color:var(--tx2);font-weight:600;}
+table.mem{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+table.mem th,table.mem td{border:1px solid var(--bd);padding:6px 9px;}
+table.mem th{background:var(--sf2);color:var(--tx2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;text-align:left;}
+table.mem td.eti{color:var(--tx);font-weight:500;}
+table.mem td.num{font-family:'JetBrains Mono',monospace;text-align:right;color:#fff;}
+table.mem td.u{color:var(--tx2);font-size:11.5px;}
+table.mem tr.sec td{background:var(--navy);color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+.vbad{color:var(--bad);} .vwarn{color:var(--warn);} .vok{color:var(--ok);}
+details{margin-top:12px;font-size:13px;}
+summary{cursor:pointer;color:var(--ac);font-weight:600;}
+.formula{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:8px 0;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--tx);}
+.acciones{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;}
+.btn{border:none;border-radius:8px;padding:12px 18px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;}
+.btn.pdf{background:#065f46;} .btn.pdf:hover{background:#047857;}
+.pie{font-size:11px;color:var(--tx3);text-align:center;margin:18px 0 6px;}
+
+/* ===== reporte para imprimir ===== */
+#printArea{display:none;}
+@media print{
+  @page{size:letter portrait;margin:0;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{background:#fff!important;}
+  .wrap,body>header{display:none!important;}
+  #printArea{display:block!important;}
+}
+</style>
+</head>
+<body>
+<div id="printArea"></div>
+
+<header style="background:#16213e;border-bottom:2px solid #c0392b;padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+  <div style="background:#fff;padding:5px 12px;border-radius:7px;display:flex;align-items:center;flex-shrink:0;">
+    <img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:1px;">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:1.35rem;color:#fff;letter-spacing:1.5px;font-weight:700;">UBUNTU</span>
+      <span style="font-size:0.68rem;color:#aac;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Plataforma Interactiva Asistida por IA</span>
+    </div>
+    <h1 style="font-size:1.05rem;color:#fff;margin-top:6px;font-weight:600;">Plantilla de Precálculo</h1>
+    <p style="font-size:0.78rem;color:#8b95b0;margin-top:1px;">Cálculo preliminar de un sistema de rociadores: demanda de caudal, presión, potencia de bomba y reserva de agua</p>
+  </div>
+  <div style="margin-left:auto;">
+    <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" style="color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);">← Volver a UBUNTU</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>Datos del proyecto</h2>
+    <div class="fila3">
+      <div><label>Cálculo N.°</label><input id="pcalc" type="text" placeholder="Ej. 1"></div>
+      <div><label>Área a proteger</label><input id="parea" type="text" placeholder="Ej. Panificadora solo fabricación"></div>
+      <div><label>Ubicación del área remota</label><input id="pubic" type="text" placeholder="Ej. XX"></div>
+    </div>
+    <div class="fila3">
+      <div><label>Simulación</label><input id="psim" type="text" placeholder="Ej. Incendio en XX"></div>
+      <div><label>Ingeniero a cargo</label><input id="ping" type="text" placeholder="Nombre del responsable"></div>
+      <div></div>
+    </div>
+    <p class="nota">Estos datos aparecen en el encabezado del reporte. Son opcionales.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Parámetros de diseño</h2>
+      <div class="fila">
+        <div><label>Clasificación del riesgo</label><select id="riesgo"></select></div>
+        <div><label>Tipo de tendido</label><select id="tendido"></select></div>
+      </div>
+      <div class="fila">
+        <div><label>Tipo de cobertura</label><select id="cobertura"><option>Estándar</option><option>Extendida</option></select></div>
+        <div><label>Tipo de respuesta</label><select id="respuesta"><option>Estándar</option><option>Rápida</option></select></div>
+      </div>
+      <div><label>Datos de área de cobertura</label><select id="modoarea"><option value="real">De acuerdo a datos reales</option><option value="max">Máxima para el tipo de riesgo</option></select></div>
+      <div class="fila">
+        <div class="unidad"><div><label>Distancia entre rociadores</label><input id="distroc" type="number" value="0" step="0.01"></div><div><label>UM</label><select id="udistroc"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+        <div class="unidad"><div><label>Distancia entre ramales</label><input id="distram" type="number" value="0" step="0.01"></div><div><label>UM</label><select id="udistram"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+      </div>
+      <div class="fila">
+        <div class="unidad"><div><label>Altura del rociador sobre el piso</label><input id="haltroc" type="number" value="0" step="0.01"></div><div><label>UM</label><select id="uhaltroc"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+        <div><label>Ajuste de área por altura (auto · resp. rápida)</label><input id="ajuste" type="text" value="0.00 %" readonly></div>
+      </div>
+      <div class="fila3">
+        <div><label>Factor K (gpm/psi^0.5)</label><input id="kfac" type="number" value="0" step="0.01"></div>
+        <div><label>N.° mangueras interiores</label><select id="manint"></select></div>
+        <div><label>Tipo de hidrante</label><select id="hidrante"><option>Público</option><option>Privado</option></select></div>
+      </div>
+      <div class="fila3">
+        <div><label>Presión residual requerida en el rociador (psi)</label><input id="presrocreq" type="number" value="0" step="1"></div>
+        <div class="unidad"><div><label>Altura bomba / rociador</label><input id="halt" type="number" value="0" step="0.1"></div><div><label>UM</label><select id="uhalt"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+        <div><label>Rociadores monitoreados</label><select id="monit"><option>SÍ</option><option>NO</option></select></div>
+      </div>
+      <div class="fila">
+        <div><label>Eficiencia de la bomba (%)</label><input id="efic" type="number" value="0" step="1"></div>
+        <div></div>
+      </div>
+      <p class="nota">La densidad, el área de diseño, la demanda de mangueras y el tiempo de descarga se toman de la tabla del riesgo seleccionado (NFPA 13). El factor de pérdida de caudal lo fija el tipo de tendido.</p>
+    </div>
+
+    <div class="card">
+      <h2>Resultados principales</h2>
+      <div class="res">
+        <div class="kpi destacado"><div class="lab">Caudal</div><div><span class="val" id="rCaudal">—</span> <span class="u">gpm</span></div></div>
+        <div class="kpi destacado"><div class="lab">Presión</div><div><span class="val" id="rPresion">—</span> <span class="u">psi</span></div></div>
+        <div class="kpi destacado"><div class="lab">Potencia</div><div><span class="val" id="rPot">—</span> <span class="u">HP</span></div></div>
+        <div class="kpi destacado"><div class="lab">Volumen</div><div><span class="val" id="rVol">—</span> <span class="u">m³</span></div></div>
+      </div>
+      <h2 style="margin-top:16px;">Memoria de cálculo</h2>
+      <table class="mem">
+        <thead><tr><th style="width:48%">Parámetro</th><th style="width:20%;text-align:right;">Valor</th><th style="width:10%">UM</th><th style="width:14%;text-align:right;">Conversión</th><th style="width:8%">UM</th></tr></thead>
+        <tbody id="memBody"></tbody>
+      </table>
+      <details>
+        <summary>Ver las fórmulas que usa</summary>
+        <div class="formula">Área de cobertura por rociador = dist. rociadores × dist. ramales (en pies)</div>
+        <div class="formula">N.° rociadores abiertos = ⌈ Área de diseño / Área de cobertura ⌉</div>
+        <div class="formula">N.° rociadores por ramal = ⌈ 1.2 · √(Área de diseño) / dist. rociadores ⌉</div>
+        <div class="formula">Caudal mínimo por rociador = Densidad × Área de cobertura</div>
+        <div class="formula">Presión mínima del rociador = (Q mínimo / K)²</div>
+        <div class="formula">Demanda de rociadores = Q mín · N.° rociadores · (1 + factor pérdida caudal)</div>
+        <div class="formula">Caudal total = Demanda rociadores + mangueras interiores</div>
+        <div class="formula">Presión requerida = (altura en metros ÷ 0.7) + presión residual del rociador</div>
+        <div class="formula">Volumen de reserva = Caudal total × tiempo de descarga</div>
+        <div class="formula">Potencia teórica (HP) = (Q·3.785/60) · (Presión·0.7) / (eficiencia%·75/100)</div>
+      </details>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn pdf" id="btnpdf">Reporte PDF profesional</button>
+  </div>
+
+  <p class="pie">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar siempre los criterios normativos del proyecto (NFPA, FM Global, AHJ local).<br>Instituto Latinoamericano de Formación en Incendios y Seguridad — ILFIS UBUNTU</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const LOGO_URL='https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png';
+
+/* ===== Tablas de referencia (NFPA 13) ===== */
+// dens (gpm/p2), areaDis (p2), areaCob (p2), mangExt (gpm), tCon (min), tSin (min), distRoc (ft), distRam (ft)
+const RIESGOS={
+  'Leve':{dens:0.10,areaDis:1500,areaCob:225,mangExt:100,tCon:30,tSin:30,distRoc:15,distRam:15},
+  'Ordinario Grupo 1':{dens:0.15,areaDis:1500,areaCob:130,mangExt:250,tCon:60,tSin:90,distRoc:11.40,distRam:11.40},
+  'Ordinario Grupo 2':{dens:0.20,areaDis:1500,areaCob:130,mangExt:250,tCon:60,tSin:90,distRoc:11.40,distRam:11.40},
+  'Alto Grupo 1':{dens:0.30,areaDis:2500,areaCob:100,mangExt:500,tCon:90,tSin:120,distRoc:10,distRam:10},
+  'Alto Grupo 2':{dens:0.40,areaDis:2500,areaCob:100,mangExt:500,tCon:90,tSin:120,distRoc:10,distRam:10}
+};
+const TENDIDOS={'Ramal lateral':0.35,'Ramal central':0.30,'Anillo':0.20,'Parrilla':0.10};
+const MANG_INT={'Única':50,'Múltiple':100};
+
+/* ===== Conversiones ===== */
+const FT=3.280839895, GAL=264.1720524, LPM=3.785411784, BAR=0.06894757, M2=0.09290304, KW=0.745699872, PSI_M=1.4223343;
+const f=(x,d=2)=>isFinite(x)?Number(x).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+
+let ESTADO=null;
+
+/* ===== Cálculo principal ===== */
+function calcular(){
+  const R=RIESGOS[$('riesgo').value];
+  const respuesta=$('respuesta').value;            // Estándar / Rápida
+  const cobertura=$('cobertura').value;            // Estándar / Extendida
+  const dens=R.dens;
+  const factorTend=TENDIDOS[$('tendido').value];
+  const K=parseFloat($('kfac').value)||0;
+  const manInt=MANG_INT[$('manint').value];
+  const presRoc=parseFloat($('presrocreq').value)||0;
+  const Hm=$('uhalt').value==='m'?(parseFloat($('halt').value)||0):(parseFloat($('halt').value)||0)*0.3048;
+  const eficPct=parseFloat($('efic').value)||0;
+  const monit=$('monit').value;
+  const hidrante=$('hidrante').value;
+
+  // Altura del rociador en pies (la usa el ajuste por respuesta rápida)
+  const haltRocFt = $('uhaltroc').value==='m' ? (parseFloat($('haltroc').value)||0)/0.3048 : (parseFloat($('haltroc').value)||0);
+  // C26: Ajuste de área de diseño por altura. Solo con rociadores de respuesta RÁPIDA.
+  const ajuste = respuesta==='Rápida' ? (haltRocFt<10 ? 0.40 : ((-3*haltRocFt)/2+55)/100) : 0;
+  $('ajuste').value = (ajuste*100).toFixed(2)+' %';
+  const areaDis = R.areaDis*(1-ajuste);            // C28: área tabla × (1 − ajuste)
+
+  // distancias rociadores/ramales en pies (el Excel usa el factor 0.305)
+  const habilita = $('modoarea').value!=='max';
+  ['distroc','udistroc','distram','udistram'].forEach(id=>$(id).disabled=!habilita);
+  const toFtD=(v,u)=>u==='m'?v/0.305:v;
+  const distRocFt = $('modoarea').value==='max' ? R.distRoc : toFtD(parseFloat($('distroc').value)||0,$('udistroc').value);
+  const distRamFt = $('modoarea').value==='max' ? R.distRam : toFtD(parseFloat($('distram').value)||0,$('udistram').value);
+  const even=x=>2*Math.ceil(x/2);
+
+  const areaCob = $('modoarea').value==='max' ? R.areaCob : (distRocFt*distRamFt);
+  const nRoc = Math.max(Math.ceil(areaDis/areaCob),5);                       // C33: MAX(...,5)
+  const nRocRamal = Math.ceil(1.2*Math.sqrt(areaDis)/(distRocFt||1));
+  const qMin = cobertura==='Estándar' ? dens*areaCob : dens*even(distRocFt)*even(distRamFt);  // C35
+  const presMin = Math.pow(qMin/K,2);
+  const demRoc = qMin*nRoc*(1+factorTend);
+  const demExt = Math.max(0,R.mangExt-manInt);
+  const caudalTot = hidrante==='Público' ? (demRoc+manInt) : (demRoc+manInt+demExt);          // C45
+  const presReq = Hm/0.7 + presRoc;                                          // C48: altura/0.7 + residual
+  const tiempo = monit==='SÍ'?R.tCon:R.tSin;
+  const volGal = caudalTot*tiempo;
+  const volM3 = caudalTot*tiempo*3.785/1000;                                 // C51
+  const potTeo = (caudalTot*3.785/60)*(presReq*0.7)/(eficPct*75/100);        // C53
+  const potCom = potComercial(potTeo);
+
+  // KPIs (el Excel usa ROUNDUP)
+  $('rCaudal').textContent=f(Math.ceil(caudalTot),0);
+  $('rPresion').textContent=f(Math.ceil(presReq),0);
+  $('rPot').textContent=f(potCom,0);
+  $('rVol').textContent=f(Math.ceil(volM3),0);
+
+  // memoria
+  const M=[];
+  M.push(['sec','Datos de diseño','','','','']);
+  M.push(['Densidad de descarga',f(dens,2),'gpm/p²',f(dens*40.746,2),'lpm/m²']);
+  M.push(['Ajuste de área por altura (resp. rápida)',f(ajuste*100,2),'%','','']);
+  M.push(['Área de diseño',f(areaDis,2),'p²',f(areaDis*M2,2),'m²']);
+  M.push(['Área de cobertura por rociador',f(areaCob,2),'p²',f(areaCob*M2,2),'m²']);
+  M.push(['Distancia entre rociadores',f(distRocFt,2),'pies',f(distRocFt/FT,2),'m']);
+  M.push(['Distancia entre ramales',f(distRamFt,2),'pies',f(distRamFt/FT,2),'m']);
+  M.push(['N.° de rociadores abiertos',f(nRoc,0),'roc.','','']);
+  M.push(['N.° de rociadores por ramal',f(nRocRamal,0),'roc.','','']);
+  M.push(['Caudal mínimo por rociador',f(qMin,2),'gpm',f(qMin*LPM,2),'lpm']);
+  M.push(['Factor K',f(K,2),'gpm/psi^0.5',f(Math.round(K*14.3),0),'K métr.']);
+  M.push(['Presión mínima del rociador',f(presMin,2),'psi',f(presMin*BAR,2),'bar']);
+  M.push(['Factor de pérdida estimada de caudal',f(factorTend*100,2),'%','','']);
+  M.push(['sec','Demanda del sistema','','','']);
+  M.push(['Demanda estimada de rociadores',f(demRoc,2),'gpm',f(demRoc*LPM,2),'lpm']);
+  M.push(['Demanda de mangueras interiores',f(manInt,2),'gpm',f(manInt*LPM,2),'lpm']);
+  M.push(['Demanda de mangueras exteriores',f(demExt,2),'gpm',f(demExt*LPM,2),'lpm']);
+  M.push(['Caudal total',f(caudalTot,2),'gpm',f(caudalTot*LPM,2),'lpm']);
+  M.push(['Presión residual requerida en rociador',f(presRoc,2),'psi',f(presRoc*BAR,2),'bar']);
+  M.push(['Altura bomba / rociador',f(Hm,2),'m',f(Hm*FT,2),'pies']);
+  M.push(['Presión requerida',f(presReq,2),'psi',f(presReq*BAR,2),'bar']);
+  M.push(['sec','Reserva y potencia','','','']);
+  M.push(['Tiempo de descarga',f(tiempo,0),'min','','']);
+  M.push(['Volumen de reserva ACI',f(volM3,2),'m³',f(volGal,2),'gal']);
+  M.push(['Eficiencia de la bomba',f(eficPct,2),'%','','']);
+  M.push(['Potencia teórica',f(potTeo,2),'HP',f(potTeo*KW,2),'kW']);
+  M.push(['Potencia comercial',f(potCom,2),'HP',f(potCom*KW,2),'kW']);
+  $('memBody').innerHTML=M.map(r=>r[0]==='sec'
+    ?`<tr class="sec"><td colspan="5">${r[1]}</td></tr>`
+    :`<tr><td class="eti">${r[0]}</td><td class="num">${r[1]}</td><td class="u">${r[2]}</td><td class="num">${r[3]}</td><td class="u">${r[4]}</td></tr>`).join('');
+
+  ESTADO={riesgo:$('riesgo').value,tendido:$('tendido').value,cobertura:$('cobertura').value,respuesta:$('respuesta').value,
+    dens,areaDis,areaCob,distRocFt,distRamFt,nRoc,nRocRamal,qMin,K,presMin,factorTend,
+    demRoc,manInt,demExt,caudalTot,presRoc,Hm,presReq,tiempo,volM3,volGal,efic:eficPct,potTeo,potCom,
+    hidrante:$('hidrante').value,monit,
+    mem:M};
+}
+function potComercial(hp){
+  const std=[1,1.5,2,3,5,7.5,10,15,20,25,30,40,50,60,75,100,125,150,200,250,300,350,400,450,500];
+  for(const s of std){if(s>=hp)return s;}
+  return Math.ceil(hp);
+}
+
+/* ===== Reporte para imprimir (estándar técnico: blanco, navy, líneas finas, monoespaciada) ===== */
+function bandHTML(t){return `<div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;color:#16213e;text-transform:uppercase;letter-spacing:.7px;padding:0 0 4px;margin:11px 0 6px;border-bottom:2px solid #16213e;">${t}</div>`;}
+function kpiHTML(items){
+  const cells=items.map((it,i)=>`<div style="flex:1;padding:9px 16px;${i>0?'border-left:1px solid #c8d2dd;':''}">
+    <div style="font-size:9px;color:#5b6675;font-weight:600;text-transform:uppercase;letter-spacing:.4px;font-family:'DM Sans',sans-serif;">${it.lab}</div>
+    <div style="font-size:18px;font-weight:600;color:#16213e;font-family:'JetBrains Mono',monospace;margin-top:3px;">${it.val}</div></div>`).join('');
+  return `<div style="display:flex;border-top:2px solid #16213e;border-bottom:1px solid #c8d2dd;background:#fff;margin:0 0 6px;">${cells}</div>`;
+}
+function memTablaHTML(M){
+  const rows=M.map(r=>{
+    if(r[0]==='sec')return `<tr><td colspan="5" style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 10px;">${r[1]}</td></tr>`;
+    return `<tr>
+      <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[0]}</td>
+      <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'JetBrains Mono',monospace;text-align:right;border-bottom:1px solid #d8e0e8;">${r[1]}</td>
+      <td style="padding:4px 6px;font-size:9.5px;color:#5b6675;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[2]}</td>
+      <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'JetBrains Mono',monospace;text-align:right;border-bottom:1px solid #d8e0e8;">${r[3]}</td>
+      <td style="padding:4px 6px;font-size:9.5px;color:#5b6675;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[4]}</td></tr>`;
+  }).join('');
+  return `<table style="width:100%;border-collapse:collapse;border-top:2px solid #16213e;background:#fff;">
+    <thead><tr>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:6px 10px;text-align:left;">Parámetro</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 10px;text-align:right;">Valor</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 6px;text-align:left;">UM</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 10px;text-align:right;">Conv.</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 6px;text-align:left;">UM</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function buildReport(d){
+  const fecha=new Date().toLocaleDateString('es-PE');
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:13px 18px;">
+    <div style="background:#fff;padding:6px 14px;display:inline-flex;"><img src="${LOGO_URL}" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+    <div style="color:#fff;line-height:1.25;">
+      <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
+      <div style="font-size:14px;font-weight:600;margin-top:2px;">Precálculo — Sistema de Rociadores</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}</div>
+  </div>`;
+  const campos=[];
+  const add=(l,id)=>{if($(id).value)campos.push(`<span><b>${l}:</b> ${$(id).value}</span>`);};
+  add('Cálculo N.°','pcalc');add('Área a proteger','parea');add('Ubicación','pubic');add('Simulación','psim');add('Ingeniero','ping');
+  campos.push(`<span><b>Riesgo:</b> ${d.riesgo}</span>`);campos.push(`<span><b>Tendido:</b> ${d.tendido}</span>`);campos.push(`<span><b>Hidrante:</b> ${d.hidrante}</span>`);
+  const proy=`<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:10.5px;color:#0f172a;padding:9px 2px;border-bottom:1px solid #c8d2dd;font-family:'DM Sans',sans-serif;">${campos.join('')}</div>`;
+  const kpis=kpiHTML([
+    {lab:'Caudal',val:f(d.caudalTot,0)+' gpm'},{lab:'Presión',val:f(d.presReq,0)+' psi'},
+    {lab:'Potencia',val:f(d.potCom,0)+' HP'},{lab:'Volumen',val:f(d.volM3,0)+' m³'}
+  ]);
+  const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:auto;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar los criterios normativos del proyecto (NFPA, FM Global, AHJ local). Generado con ILFIS UBUNTU.</div>`;
+  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:0 0 9mm;font-family:'DM Sans',sans-serif;">
+    ${head}
+    <div style="padding:0 12mm;display:flex;flex-direction:column;flex:1;">
+      ${proy}
+      ${bandHTML('Resultados principales')}${kpis}
+      ${bandHTML('Memoria de cálculo')}${memTablaHTML(d.mem)}
+      ${pie}
+    </div></div>`;
+}
+function reportePDF(){
+  if(!ESTADO)calcular(); if(!ESTADO)return;
+  $('printArea').innerHTML=buildReport(ESTADO);
+  setTimeout(()=>window.print(),250);
+}
+
+/* ===== Init ===== */
+function init(){
+  $('riesgo').innerHTML=Object.keys(RIESGOS).map(k=>`<option>${k}</option>`).join('');$('riesgo').value='Leve';
+  $('tendido').innerHTML=Object.keys(TENDIDOS).map(k=>`<option>${k}</option>`).join('');$('tendido').value='Ramal lateral';
+  $('manint').innerHTML=Object.keys(MANG_INT).map(k=>`<option>${k}</option>`).join('');$('manint').value='Única';
+  const ids=['pcalc','parea','pubic','psim','ping','riesgo','tendido','cobertura','respuesta','modoarea','distroc','udistroc','distram','udistram','haltroc','uhaltroc','kfac','manint','hidrante','presrocreq','halt','uhalt','monit','efic'];
+  ids.forEach(id=>{$(id).addEventListener('input',calcular);$(id).addEventListener('change',calcular);});
+  $('btnpdf').addEventListener('click',reportePDF);
+  calcular();
+}
+init();
+</script>
+</body>
+</html>
