@@ -318,13 +318,13 @@ function memTablaHTML(M){
 }
 function buildReport(d){
   const fecha=new Date().toLocaleDateString('es-PE');
-  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:13px 18px;">
-    <div style="background:#fff;padding:6px 14px;display:inline-flex;"><img src="${LOGO_URL}" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:14px 18px;">
+    <div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="${LOGO_URL}" alt="ILFIS" style="height:38px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
     <div style="color:#fff;line-height:1.25;">
       <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
-      <div style="font-size:14px;font-weight:600;margin-top:2px;">Precálculo — Sistema de Rociadores</div>
+      <div style="font-size:15px;font-weight:600;margin-top:2px;">Precálculo — Sistema de Rociadores</div>
     </div>
-    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}</div>
+    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}<br><span style="font-size:9px;">Unidades: Americano e Internacional</span></div>
   </div>`;
   const campos=[];
   const add=(l,id)=>{if($(id).value)campos.push(`<span><b>${l}:</b> ${$(id).value}</span>`);};
