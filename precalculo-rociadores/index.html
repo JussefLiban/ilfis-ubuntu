@@ -336,9 +336,9 @@ function buildReport(d){
     {lab:'Potencia',val:f(d.potCom,0)+' HP'},{lab:'Volumen',val:f(d.volM3,0)+' m³'}
   ]);
   const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:auto;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar los criterios normativos del proyecto (NFPA, FM Global, AHJ local). Generado con ILFIS UBUNTU.</div>`;
-  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:0 0 9mm;font-family:'DM Sans',sans-serif;">
+  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:10mm 11mm 9mm;font-family:'DM Sans',sans-serif;">
     ${head}
-    <div style="padding:0 12mm;display:flex;flex-direction:column;flex:1;">
+    <div style="padding:0;display:flex;flex-direction:column;flex:1;">
       ${proy}
       ${bandHTML('Resultados principales')}${kpis}
       ${bandHTML('Memoria de cálculo')}${memTablaHTML(d.mem)}
