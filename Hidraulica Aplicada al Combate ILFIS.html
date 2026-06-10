@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hidráulica aplicada al combate de incendios - ILFIS Ubuntu</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{--bg:#0e1117;--sf:#161b26;--sf2:#1e2433;--bd:#2a3144;--tx:#e2e8f4;--tx2:#8b95b0;--tx3:#5a6380;--ac:#6b93c0;--r:10px;
+  --navy:#16213e;--rojo:#c0392b;--acero:#7d8896;--agua:#38d4f8;--ok:#34d399;--warn:#fbbf24;--bad:#ef7a6b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
+input,select{font-family:'DM Sans',system-ui,sans-serif;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;outline:none;width:100%;}
+select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238b95b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.6 L6 6.4 L11 1.6'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
+input:focus,select:focus{border-color:var(--ac);}
+input:disabled,select:disabled{opacity:.6;cursor:not-allowed;}
+label{font-size:11px;color:var(--tx2);display:block;margin:9px 0 3px;font-weight:600;}
+a{color:inherit;}
+.wrap{max-width:1180px;margin:0 auto;padding:20px;}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:18px;}
+.card h2{font-size:14px;font-weight:600;color:#fff;border-bottom:1px solid var(--bd);padding-bottom:9px;margin-bottom:12px;}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fila3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:560px){.fila3,.fila{grid-template-columns:1fr;}}
+.unidad{display:grid;grid-template-columns:1fr 92px;gap:6px;align-items:end;}
+.nota{font-size:11.5px;color:var(--tx3);margin-top:8px;}
+.aviso{font-size:12px;color:var(--warn);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:9px 11px;margin-top:10px;}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:720px){.res{grid-template-columns:1fr;}}
+.kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;}
+.kpi.destacado{border-color:#1d4e63;background:#0f2730;}
+.kpi .lab{font-size:11px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.kpi .val{font-size:24px;font-weight:700;margin-top:3px;font-family:'JetBrains Mono',monospace;color:#fff;}
+.kpi.destacado .val{color:var(--agua);}
+.kpi .u{font-size:12px;color:var(--tx2);font-weight:600;}
+table.mem{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+table.mem th,table.mem td{border:1px solid var(--bd);padding:6px 9px;}
+table.mem th{background:var(--sf2);color:var(--tx2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;text-align:left;}
+table.mem td.eti{color:var(--tx);font-weight:500;}
+table.mem td.num{font-family:'JetBrains Mono',monospace;text-align:right;color:#fff;}
+table.mem td.u{color:var(--tx2);font-size:11.5px;}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--sf2);margin-bottom:4px;}
+.seg button{background:transparent;border:none;color:var(--tx2);font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;cursor:pointer;}
+.seg button.on{background:var(--navy);color:#fff;}
+details{margin-top:12px;font-size:13px;}
+summary{cursor:pointer;color:var(--ac);font-weight:600;}
+.formula{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:8px 0;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--tx);}
+.acciones{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;}
+.btn{border:none;border-radius:8px;padding:12px 18px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;}
+.btn.pdf{background:#065f46;} .btn.pdf:hover{background:#047857;}
+.pie{font-size:11px;color:var(--tx3);text-align:center;margin:18px 0 6px;}
+.tabbar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--bd);}
+.tabbar button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--tx2);font-family:inherit;font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;margin-bottom:-1px;}
+.tabbar button.on{color:#fff;border-bottom-color:var(--agua);}
+.amsub{background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:11px 12px;margin-top:10px;}
+.amsub h3{font-size:11.5px;color:var(--agua);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;}
+.hidden{display:none!important;}
+svg.dib{width:100%;height:auto;display:block;background:#0b0f16;border-radius:8px;margin-top:4px;}
+@keyframes dash{to{stroke-dashoffset:-180;}}
+#printArea{display:none;}
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{background:#fff!important;}
+  .wrap,body>header{display:none!important;}
+  #printArea{display:block!important;}
+}
+</style>
+</head>
+<body>
+<div id="printArea"></div>
+
+<header style="background:#16213e;border-bottom:2px solid #c0392b;padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+  <div style="background:#fff;padding:5px 12px;border-radius:7px;display:flex;align-items:center;flex-shrink:0;">
+    <img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:1px;">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:1.35rem;color:#fff;letter-spacing:1.5px;font-weight:700;">UBUNTU</span>
+      <span style="font-size:0.68rem;color:#aac;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Plataforma Interactiva Asistida por IA</span>
+    </div>
+    <h1 style="font-size:1.05rem;color:#fff;margin-top:6px;font-weight:600;">Hidráulica aplicada al combate de incendios</h1>
+    <p style="font-size:0.78rem;color:#8b95b0;margin-top:1px;">Caudal y presión de pitones, pérdida por fricción, presión por altura, fuerza de reacción y montantes</p>
+  </div>
+  <div style="margin-left:auto;">
+    <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" style="color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);">← Volver a UBUNTU</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>Datos del cálculo</h2>
+    <div class="fila3">
+      <div><label>Cálculo N.°</label><input id="pcalc" type="text" placeholder="Ej. 1"></div>
+      <div><label>Proyecto / ejercicio</label><input id="pproy" type="text" placeholder="Ej. Maniobra de ataque piso 9"></div>
+      <div><label>Responsable</label><input id="presp" type="text" placeholder="Nombre"></div>
+    </div>
+    <p class="nota">Estos datos solo aparecen en el reporte PDF. Son opcionales.</p>
+  </div>
+
+  <div class="tabbar">
+    <button data-tab="puntual" class="on">Cálculo puntual</button>
+    <button data-tab="armar">Armar maniobra</button>
+    <button data-tab="libre">Armar libre por bloques</button>
+  </div>
+
+  <div id="tab-puntual">
+  <div class="grid2">
+    <div class="card">
+      <h2>¿Qué quieres calcular?</h2>
+      <div><select id="modo">
+        <option value="caudal">Caudal de descarga de un pitón</option>
+        <option value="presion">Presión requerida en un pitón</option>
+        <option value="diametro">Diámetro de orificio de un pitón</option>
+        <option value="linea">Presión de descarga de una línea</option>
+        <option value="friccion">Pérdida de presión por fricción</option>
+        <option value="altura">Presión por altura (columna de agua)</option>
+        <option value="reaccion">Fuerza de reacción</option>
+        <option value="montante">Montantes y tanques (presión ↔ altura)</option>
+        <option value="conversor">Conversor de unidades</option>
+      </select></div>
+
+      <!-- CAUDAL -->
+      <div class="grp" data-grp="caudal">
+        <label>Tipo de pitón</label>
+        <div class="seg" data-radio="c_tipo">
+          <button data-v="liso" class="on">Orificio liso</button>
+          <button data-v="rateado">Rateado (gpm @ psi)</button>
+        </div>
+        <div class="sub" data-sub="c_tipo=liso">
+          <div class="fila">
+            <div class="unidad"><div><label>Diámetro de orificio</label><input id="c_D" type="number" step="0.01" placeholder="Ej. 1"></div><div><label>UM</label><select id="c_Du"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+            <div class="unidad"><div><label>Presión en punta</label><input id="c_P" type="number" step="0.1" placeholder="Ej. 100"></div><div><label>UM</label><select id="c_Pu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+          <p class="nota">Para chorro directo / orificio liso. Q = 29.84 · D² · √P</p>
+        </div>
+        <div class="sub hidden" data-sub="c_tipo=rateado">
+          <div class="fila3">
+            <div class="unidad"><div><label>Caudal nominal Q₁</label><input id="c_Q1" type="number" step="0.1" placeholder="Ej. 75"></div><div><label>UM</label><select id="c_Q1u"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Presión nominal P₁</label><input id="c_P1" type="number" step="0.1" value="100"></div><div><label>UM</label><select id="c_P1u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+            <div class="unidad"><div><label>Presión de trabajo P₂</label><input id="c_P2" type="number" step="0.1" placeholder="Ej. 64"></div><div><label>UM</label><select id="c_P2u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+          <p class="nota">Para pitón de neblina / policarbonato dado como "gpm @ psi". Q₂ = Q₁ · √(P₂/P₁)</p>
+        </div>
+      </div>
+
+      <!-- PRESION -->
+      <div class="grp hidden" data-grp="presion">
+        <label>Tipo de pitón</label>
+        <div class="seg" data-radio="p_tipo">
+          <button data-v="liso" class="on">Orificio liso</button>
+          <button data-v="rateado">Rateado (gpm @ psi)</button>
+        </div>
+        <div class="sub" data-sub="p_tipo=liso">
+          <div class="fila">
+            <div class="unidad"><div><label>Caudal deseado Q</label><input id="p_Q" type="number" step="0.1" placeholder="Ej. 125"></div><div><label>UM</label><select id="p_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Diámetro de orificio</label><input id="p_D" type="number" step="0.01" placeholder="Ej. 0.75"></div><div><label>UM</label><select id="p_Du"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+          </div>
+          <p class="nota">P = ( Q / (29.84 · D²) )²</p>
+        </div>
+        <div class="sub hidden" data-sub="p_tipo=rateado">
+          <div class="fila3">
+            <div class="unidad"><div><label>Caudal nominal Q₁</label><input id="p_Q1" type="number" step="0.1" placeholder="Ej. 30"></div><div><label>UM</label><select id="p_Q1u"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Presión nominal P₁</label><input id="p_P1" type="number" step="0.1" value="100"></div><div><label>UM</label><select id="p_P1u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+            <div class="unidad"><div><label>Caudal deseado Q₂</label><input id="p_Q2" type="number" step="0.1" placeholder="Ej. 45"></div><div><label>UM</label><select id="p_Q2u"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+          </div>
+          <p class="nota">P₂ = P₁ · (Q₂/Q₁)²</p>
+        </div>
+      </div>
+
+      <!-- DIAMETRO DE ORIFICIO -->
+      <div class="grp hidden" data-grp="diametro">
+        <div class="fila">
+          <div class="unidad"><div><label>Caudal Q</label><input id="di_Q" type="number" step="0.1" placeholder="Ej. 500"></div><div><label>UM</label><select id="di_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+          <div class="unidad"><div><label>Presión P</label><input id="di_P" type="number" step="0.1" placeholder="Ej. 100"></div><div><label>UM</label><select id="di_Pu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+        </div>
+        <p class="nota">Halla el diámetro de orificio liso que da ese caudal a esa presión, y de paso la fuerza de reacción. d = √( Q / (29.84 · √P) )</p>
+      </div>
+
+      <!-- LINEA SIMPLE -->
+      <div class="grp hidden" data-grp="linea">
+        <label>Tipo de pitón</label>
+        <div class="seg" data-radio="l_tipo">
+          <button data-v="liso" class="on">Orificio liso</button>
+          <button data-v="rateado">Rateado (gpm @ psi)</button>
+          <button data-v="directo">Caudal y presión</button>
+        </div>
+        <div class="sub" data-sub="l_tipo=liso">
+          <div class="fila">
+            <div class="unidad"><div><label>Diámetro de orificio</label><input id="l_D" type="number" step="0.01" placeholder="Ej. 1"></div><div><label>UM</label><select id="l_Du"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+            <div class="unidad"><div><label>Presión en punta</label><input id="l_Pp" type="number" step="0.1" placeholder="Ej. 100"></div><div><label>UM</label><select id="l_Ppu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+        </div>
+        <div class="sub hidden" data-sub="l_tipo=rateado">
+          <div class="fila3">
+            <div class="unidad"><div><label>Caudal nominal Q₁</label><input id="l_Q1" type="number" step="0.1" placeholder="Ej. 125"></div><div><label>UM</label><select id="l_Q1u"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Presión nominal P₁</label><input id="l_P1" type="number" step="0.1" value="100"></div><div><label>UM</label><select id="l_P1u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+            <div class="unidad"><div><label>Presión de trabajo (punta)</label><input id="l_Pp2" type="number" step="0.1" placeholder="Ej. 150"></div><div><label>UM</label><select id="l_Pp2u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+        </div>
+        <div class="sub hidden" data-sub="l_tipo=directo">
+          <div class="fila">
+            <div class="unidad"><div><label>Caudal de trabajo Q</label><input id="l_Q" type="number" step="0.1" placeholder="Ej. 150"></div><div><label>UM</label><select id="l_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Presión en punta</label><input id="l_Ppd" type="number" step="0.1" placeholder="Ej. 100"></div><div><label>UM</label><select id="l_Ppdu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+        </div>
+        <div class="fila3">
+          <div><label>Manguera</label><select id="l_hose"></select></div>
+          <div><label>Factor C</label><input id="l_C" type="number" step="0.001"></div>
+          <div class="unidad"><div><label>Longitud total</label><input id="l_L" type="number" step="1" placeholder="Ej. 500"></div><div><label>UM</label><select id="l_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+        </div>
+        <div class="fila">
+          <div class="unidad"><div><label>Altura del pitón respecto a la bomba (opcional)</label><input id="l_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="l_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          <div><label>El pitón está</label><select id="l_dir"><option value="encima">por encima de la bomba (+)</option><option value="debajo">por debajo de la bomba (−)</option></select></div>
+        </div>
+        <p class="nota">Presión de bomba = presión en punta + pérdida por fricción + presión por altura. Para una sola línea recta (un pitón, una manguera).</p>
+      </div>
+
+      <!-- FRICCION -->
+      <div class="grp hidden" data-grp="friccion">
+        <div><label>Tipo y diámetro de manguera / montante</label><select id="f_hose"></select></div>
+        <div class="fila3">
+          <div><label>Factor de fricción C</label><input id="f_C" type="number" step="0.001"></div>
+          <div class="unidad"><div><label>Caudal Q</label><input id="f_Q" type="number" step="0.1" placeholder="Ej. 300"></div><div><label>UM</label><select id="f_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+          <div class="unidad"><div><label>Longitud total</label><input id="f_L" type="number" step="1" placeholder="Ej. 500"></div><div><label>UM</label><select id="f_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+        </div>
+        <p class="nota">El factor C se carga de la tabla al elegir la manguera; puedes editarlo. Pf = C · (Q/100)² · (L/100)</p>
+      </div>
+
+      <!-- ALTURA -->
+      <div class="grp hidden" data-grp="altura">
+        <label>¿Cómo defines la altura?</label>
+        <div class="seg" data-radio="a_modo">
+          <button data-v="altura" class="on">Por altura</button>
+          <button data-v="pisos">Por número de pisos</button>
+        </div>
+        <div class="sub" data-sub="a_modo=altura">
+          <div class="unidad" style="max-width:340px"><div><label>Altura</label><input id="a_h" type="number" step="0.1" placeholder="Ej. 50"></div><div><label>UM</label><select id="a_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+        </div>
+        <div class="sub hidden" data-sub="a_modo=pisos">
+          <div class="fila">
+            <div><label>Número de pisos</label><input id="a_npisos" type="number" step="1" placeholder="Ej. 10"></div>
+            <div class="unidad"><div><label>Altura por piso</label><input id="a_hpiso" type="number" step="0.1" placeholder="Ej. 3"></div><div><label>UM</label><select id="a_hpisou"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+          </div>
+        </div>
+        <p class="nota">Presión que gana (bajando) o pierde (subiendo) el agua por desnivel. Ph = 0.4335 psi por cada pie de columna de agua.</p>
+      </div>
+
+      <!-- REACCION -->
+      <div class="grp hidden" data-grp="reaccion">
+        <label>¿Con qué datos?</label>
+        <div class="seg" data-radio="r_tipo">
+          <button data-v="qp" class="on">Caudal y presión</button>
+          <button data-v="liso">Orificio liso y presión</button>
+        </div>
+        <div class="sub" data-sub="r_tipo=qp">
+          <div class="fila">
+            <div class="unidad"><div><label>Caudal Q (real de trabajo)</label><input id="r_Q" type="number" step="0.1" placeholder="Ej. 109.5"></div><div><label>UM</label><select id="r_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+            <div class="unidad"><div><label>Presión P (real de trabajo)</label><input id="r_P" type="number" step="0.1" placeholder="Ej. 120"></div><div><label>UM</label><select id="r_Pu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+          <p class="nota">FR = 0.0526 · Q · √P (libras) → × 0.454 = kilos</p>
+        </div>
+        <div class="sub hidden" data-sub="r_tipo=liso">
+          <div class="fila">
+            <div class="unidad"><div><label>Diámetro de orificio</label><input id="r_d" type="number" step="0.01" placeholder="Ej. 0.625"></div><div><label>UM</label><select id="r_du"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+            <div class="unidad"><div><label>Presión P</label><input id="r_P2" type="number" step="0.1" placeholder="Ej. 150"></div><div><label>UM</label><select id="r_P2u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          </div>
+          <p class="nota">FR = 1.57 · d² · P (libras) → × 0.454 = kilos. También calcula el caudal del orificio.</p>
+        </div>
+      </div>
+
+      <!-- MONTANTE -->
+      <div class="grp hidden" data-grp="montante">
+        <label>¿Qué quieres hallar?</label>
+        <div class="seg" data-radio="m_modo">
+          <button data-v="p2h" class="on">Altura a partir de presión</button>
+          <button data-v="h2p">Presión a partir de altura</button>
+        </div>
+        <div class="sub" data-sub="m_modo=p2h">
+          <div class="unidad" style="max-width:340px"><div><label>Presión (diferencial disponible)</label><input id="m_P" type="number" step="0.1" placeholder="Ej. 110"></div><div><label>UM</label><select id="m_Pu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+          <p class="nota">Altura de columna de agua que equivale a esa presión. h = P / 0.4335 (en pies).</p>
+        </div>
+        <div class="sub hidden" data-sub="m_modo=h2p">
+          <div class="unidad" style="max-width:340px"><div><label>Altura de columna de agua</label><input id="m_h" type="number" step="0.1" placeholder="Ej. 30"></div><div><label>UM</label><select id="m_hu"><option value="m">metros</option><option value="ft">pies</option></select></div></div>
+          <p class="nota">Presión estática que genera esa columna. P = 0.4335 · h (en pies).</p>
+        </div>
+      </div>
+
+      <!-- CONVERSOR -->
+      <div class="grp hidden" data-grp="conversor">
+        <div class="fila">
+          <div><label>Magnitud</label><select id="k_mag">
+            <option value="presion">Presión (psi ↔ bar)</option>
+            <option value="caudal">Caudal (gpm ↔ lpm)</option>
+            <option value="longitud">Longitud (pies ↔ metros)</option>
+            <option value="diametro">Diámetro (pulg ↔ mm)</option>
+            <option value="fuerza">Fuerza (libras ↔ kilos)</option>
+          </select></div>
+          <div><label>Valor</label><input id="k_val" type="number" step="0.01" placeholder="Ej. 100"></div>
+        </div>
+        <p class="nota">Escribe un valor y verás su equivalente en el otro sistema.</p>
+      </div>
+
+      <div id="avisoArea"></div>
+    </div>
+
+    <div class="card">
+      <h2>Resultado</h2>
+      <div class="res" id="kpiArea">
+        <div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>
+      </div>
+      <h2 style="margin-top:16px;">Paso a paso</h2>
+      <div id="pasoArea"><p class="nota">Completa los datos de la izquierda para ver el cálculo.</p></div>
+      <details open style="margin-top:6px;">
+        <summary>Memoria de cálculo</summary>
+        <table class="mem">
+          <thead><tr><th style="width:46%">Parámetro</th><th style="width:22%;text-align:right;">Valor</th><th style="width:10%">UM</th><th style="width:14%;text-align:right;">Conversión</th><th style="width:8%">UM</th></tr></thead>
+          <tbody id="memBody"></tbody>
+        </table>
+      </details>
+    </div>
+  </div>
+
+  <div class="card" id="dibCard" style="display:none;">
+    <h2 id="dibTitulo">La línea en movimiento</h2>
+    <svg id="dibSvg" class="dib" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema del cálculo"></svg>
+    <p class="nota" id="dibNota"></p>
+  </div>
+
+  <div class="acciones">
+    <button class="btn pdf" id="btnpdf">Reporte PDF profesional</button>
+  </div>
+  </div><!-- /tab-puntual -->
+
+  <div id="tab-armar" class="hidden">
+    <div class="grid2">
+      <div class="card">
+        <h2>¿Qué maniobra vas a calcular?</h2>
+        <div><select id="am_modo">
+          <option value="linea">Línea simple (un pitón)</option>
+          <option value="sueltas">Dos líneas sueltas (toma la más exigente)</option>
+          <option value="bifurcacion">Bifurcación (2 ramas)</option>
+          <option value="siamesa">Siamesa (2 líneas que se juntan en un pitón)</option>
+        </select></div>
+
+        <!-- LINEA SIMPLE -->
+        <div class="am-grp" data-grp="linea">
+          <div class="amsub"><h3>Pitón</h3><div class="piton-slot" data-piton="ln"></div></div>
+          <div class="amsub"><h3>Manguera</h3>
+            <div class="fila3">
+              <div><label>Tipo y diámetro</label><select class="am-hose" data-c="ln_C"></select></div>
+              <div><label>Factor C</label><input id="ln_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud total</label><input id="ln_L" type="number" step="1" placeholder="Ej. 200"></div><div><label>UM</label><select id="ln_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="fila">
+              <div class="unidad"><div><label>Altura del pitón (opcional)</label><input id="ln_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="ln_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+              <div><label>El pitón está</label><select id="ln_dir"><option value="encima">por encima de la bomba (+)</option><option value="debajo">por debajo de la bomba (−)</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOS LINEAS SUELTAS -->
+        <div class="am-grp hidden" data-grp="sueltas">
+          <div class="amsub"><h3>Línea A</h3>
+            <div class="piton-slot" data-piton="sa"></div>
+            <div class="fila3" style="margin-top:8px;">
+              <div><label>Manguera</label><select class="am-hose" data-c="sa_C"></select></div>
+              <div><label>Factor C</label><input id="sa_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="sa_L" type="number" step="1" placeholder="Ej. 500"></div><div><label>UM</label><select id="sa_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Altura del pitón (opcional)</label><input id="sa_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="sa_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          </div>
+          <div class="amsub"><h3>Línea B</h3>
+            <div class="piton-slot" data-piton="sb"></div>
+            <div class="fila3" style="margin-top:8px;">
+              <div><label>Manguera</label><select class="am-hose" data-c="sb_C"></select></div>
+              <div><label>Factor C</label><input id="sb_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="sb_L" type="number" step="1" placeholder="Ej. 200"></div><div><label>UM</label><select id="sb_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Altura del pitón (opcional)</label><input id="sb_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="sb_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          </div>
+        </div>
+
+        <!-- BIFURCACION -->
+        <div class="am-grp hidden" data-grp="bifurcacion">
+          <div class="amsub"><h3>Tronco (de la bomba a la bifurcación)</h3>
+            <div class="fila3">
+              <div><label>Manguera</label><select class="am-hose" data-c="bt_C"></select></div>
+              <div><label>Factor C</label><input id="bt_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="bt_L" type="number" step="1" placeholder="Ej. 100"></div><div><label>UM</label><select id="bt_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="fila">
+              <div class="unidad"><div><label>Altura (opcional)</label><input id="bt_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="bt_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+              <div class="unidad"><div><label>Pérdida en la bifurcación</label><input id="bt_acc" type="number" step="0.1" value="5"></div><div><label>UM</label><select disabled><option>psi</option></select></div></div>
+            </div>
+          </div>
+          <div class="amsub"><h3>Rama A</h3>
+            <div class="piton-slot" data-piton="ba"></div>
+            <div class="fila3" style="margin-top:8px;">
+              <div><label>Manguera</label><select class="am-hose" data-c="ba_C"></select></div>
+              <div><label>Factor C</label><input id="ba_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="ba_L" type="number" step="1" placeholder="Ej. 200"></div><div><label>UM</label><select id="ba_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Altura (opcional)</label><input id="ba_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="ba_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;"><input type="checkbox" id="b_iguales" checked style="width:auto;"> <span style="font-size:12.5px;color:var(--tx);">Las dos ramas son iguales (copiar Rama A en Rama B)</span></label>
+          <div class="amsub" id="ramaB_box"><h3>Rama B</h3>
+            <div class="piton-slot" data-piton="bb"></div>
+            <div class="fila3" style="margin-top:8px;">
+              <div><label>Manguera</label><select class="am-hose" data-c="bb_C"></select></div>
+              <div><label>Factor C</label><input id="bb_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="bb_L" type="number" step="1" placeholder="Ej. 200"></div><div><label>UM</label><select id="bb_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Altura (opcional)</label><input id="bb_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="bb_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          </div>
+        </div>
+
+        <!-- SIAMESA -->
+        <div class="am-grp hidden" data-grp="siamesa">
+          <div class="amsub"><h3>Pitón (al final de la maniobra)</h3><div class="piton-slot" data-piton="si"></div></div>
+          <div class="amsub"><h3>Tramo final — una sola línea (lleva todo el caudal)</h3>
+            <div class="fila3">
+              <div><label>Manguera</label><select class="am-hose" data-c="sn_C"></select></div>
+              <div><label>Factor C</label><input id="sn_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud</label><input id="sn_L" type="number" step="1" placeholder="Ej. 100"></div><div><label>UM</label><select id="sn_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Pérdida en la siamesa</label><input id="sn_acc" type="number" step="0.1" value="5"></div><div><label>UM</label><select disabled><option>psi</option></select></div></div>
+          </div>
+          <div class="amsub"><h3>Tramo en paralelo — dos líneas iguales (cada una lleva la mitad)</h3>
+            <div class="fila3">
+              <div><label>Manguera</label><select class="am-hose" data-c="sp_C"></select></div>
+              <div><label>Factor C</label><input id="sp_C" type="number" step="0.001"></div>
+              <div class="unidad"><div><label>Longitud de UNA línea</label><input id="sp_L" type="number" step="1" placeholder="Ej. 600"></div><div><label>UM</label><select id="sp_Lu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+            </div>
+            <p class="nota">Pon la longitud de una sola de las dos líneas paralelas (las dos son iguales).</p>
+            <div class="unidad" style="max-width:320px;margin-top:6px;"><div><label>Altura total (opcional)</label><input id="sp_h" type="number" step="0.1" placeholder="0"></div><div><label>UM</label><select id="sp_hu"><option value="ft">pies</option><option value="m">metros</option></select></div></div>
+          </div>
+        </div>
+
+        <div id="am_avisoArea"></div>
+      </div>
+
+      <div class="card">
+        <h2>Resultado</h2>
+        <div class="res" id="am_kpiArea">
+          <div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>
+        </div>
+        <h2 style="margin-top:16px;">Paso a paso</h2>
+        <div id="am_pasoArea"><p class="nota">Completa los datos de la maniobra para ver el cálculo.</p></div>
+        <details open style="margin-top:6px;">
+          <summary>Memoria de cálculo</summary>
+          <table class="mem">
+            <thead><tr><th style="width:46%">Parámetro</th><th style="width:22%;text-align:right;">Valor</th><th style="width:10%">UM</th><th style="width:14%;text-align:right;">Conversión</th><th style="width:8%">UM</th></tr></thead>
+            <tbody id="am_memBody"></tbody>
+          </table>
+        </details>
+      </div>
+    </div>
+
+    <div class="card" id="am_dibCard" style="display:none;">
+      <h2 id="am_dibTitulo">La maniobra en movimiento</h2>
+      <svg id="am_dibSvg" class="dib" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema de la maniobra"></svg>
+      <p class="nota" id="am_dibNota"></p>
+    </div>
+
+    <div class="acciones">
+      <button class="btn pdf" id="am_btnpdf">Reporte PDF profesional</button>
+    </div>
+  </div><!-- /tab-armar -->
+
+  <div id="tab-libre" class="hidden">
+    <div class="grid2">
+      <div class="card">
+        <h2>Arma tu maniobra</h2>
+        <p class="nota" style="margin-top:0;">Apila piezas con los botones. La bomba va siempre al inicio y el pitón al final. El cálculo y el dibujo se rehacen solos.</p>
+        <div class="acciones" style="margin:12px 0 4px;gap:8px;">
+          <button class="btn" id="lb_addMang" style="background:#16213e;">+ Manguera</button>
+          <button class="btn" id="lb_addSia" style="background:#16213e;">+ Siamesa</button>
+          <button class="btn" id="lb_addBif" style="background:#7a2520;">+ Bifurcación</button>
+          <button class="btn" id="lb_addPit" style="background:#0f3a48;">+ Pitón</button>
+        </div>
+        <div id="lb_stack"></div>
+        <div id="lb_avisoArea"></div>
+      </div>
+
+      <div class="card">
+        <h2>Resultado</h2>
+        <div class="res" id="lb_kpiArea">
+          <div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>
+        </div>
+        <h2 style="margin-top:16px;">Paso a paso</h2>
+        <div id="lb_pasoArea"><p class="nota">Arma la maniobra para ver el cálculo.</p></div>
+        <details open style="margin-top:6px;">
+          <summary>Memoria de cálculo</summary>
+          <table class="mem">
+            <thead><tr><th style="width:46%">Parámetro</th><th style="width:22%;text-align:right;">Valor</th><th style="width:10%">UM</th><th style="width:14%;text-align:right;">Conversión</th><th style="width:8%">UM</th></tr></thead>
+            <tbody id="lb_memBody"></tbody>
+          </table>
+        </details>
+      </div>
+    </div>
+
+    <div class="card" id="lb_dibCard" style="display:none;">
+      <h2 id="lb_dibTitulo">La maniobra en movimiento</h2>
+      <svg id="lb_dibSvg" class="dib" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" aria-label="Esquema de la maniobra"></svg>
+      <p class="nota" id="lb_dibNota"></p>
+    </div>
+
+    <div class="acciones">
+      <button class="btn pdf" id="lb_btnpdf">Reporte PDF profesional</button>
+    </div>
+  </div><!-- /tab-libre -->
+
+  <p class="pie">Herramienta de apoyo para el cálculo hidráulico en combate de incendios. Los resultados son responsabilidad del usuario; verifique siempre los criterios del proyecto.<br>Instituto Latinoamericano de Formación en Incendios y Seguridad — ILFIS UBUNTU</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const LOGO_URL='https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png';
+
+/* ===== Constantes (panel central) ===== */
+const K_CAUDAL=29.84;       // Q = 29.84 · D² · √P
+const K_REACCION=0.0526;    // FR(lb) = 0.0526 · Q · √P
+const K_REAC_LISO=1.57;     // FR(lb) = 1.57 · d² · P
+const PSI_FT=0.4335;        // psi por pie de columna de agua
+const LB_KG=0.454;          // 1 libra = 0.454 kg
+const VELDIV=2.448;         // V(pies/seg) = Q / (2.448 · d²)
+/* diámetro nominal aprox. de cada manguera/montante, para dibujo y velocidad */
+const DIAM_HOSE={'Caucho 1"':1,'Nitrilo 1½"':1.5,'Nitrilo 2½"':2.5,'Nitrilo 2" (acoples 1½")':2,'Nitrilo 3" (acoples 2½")':3,'Montante 4"':4,'Montante 6"':6};
+const grosorTubo=d=>Math.max(8,Math.min(30,5+d*4));
+const durAnim=v=>Math.max(0.45,30/Math.max(v,0.5));
+
+/* Tabla de factores de fricción C (ILFIS) — Pf = C·(Q/100)²·(L/100) */
+const FACTOR_C={
+  'Caucho 1"':150,
+  'Nitrilo 1½"':24,
+  'Nitrilo 2½"':2,
+  'Nitrilo 2" (acoples 1½")':8,
+  'Nitrilo 3" (acoples 2½")':0.80,
+  'Montante 4"':0.374,
+  'Montante 6"':0.052
+};
+
+/* ===== Conversiones ===== */
+const M_FT=3.280839895, GPM_LPM=3.785411784, PSI_BAR=14.5037738, IN_MM=25.4;
+const f=(x,d=2)=>isFinite(x)?Number(x).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:NaN;};
+// a unidades internas (US): pulgadas, psi, gpm, pies
+const toIn =(id,uid)=>{const v=num(id);return $(uid).value==='mm'?v/IN_MM:v;};
+const toPsi=(id,uid)=>{const v=num(id);return $(uid).value==='bar'?v*PSI_BAR:v;};
+const toGpm=(id,uid)=>{const v=num(id);return $(uid).value==='lpm'?v/GPM_LPM:v;};
+const toFt =(id,uid)=>{const v=num(id);return $(uid).value==='m'?v*M_FT:v;};
+
+let ESTADO=null, DIB=null;
+const DIB_TITULO={linea:'La línea en movimiento',reaccion:'La fuerza de reacción',friccion:'El tramo de manguera',columna:'La columna de agua'};
+const DIB_NOTA={
+  linea:'El agua sale de la bomba, recorre la manguera y descarga por el pitón. El grosor del tubo es proporcional al diámetro y la rapidez de la animación a la velocidad del agua.',
+  reaccion:'El chorro sale hacia adelante y el pitón recibe un empuje igual hacia atrás (la fuerza de reacción). La flecha roja es proporcional a esa fuerza.',
+  friccion:'El agua recorre la manguera dividida en tramos de 100 pies. La presión se va perdiendo por el roce; el grosor del tubo es proporcional al diámetro.',
+  columna:'La altura de la columna de agua genera presión por su propio peso. El agua cae y la animación va más rápido con más presión.'};
+
+/* ===== Estado de los selectores segmentados ===== */
+const SEG={c_tipo:'liso',p_tipo:'liso',l_tipo:'liso',a_modo:'altura',r_tipo:'qp',m_modo:'p2h'};
+
+function pintarGrupos(){
+  const m=$('modo').value;
+  document.querySelectorAll('.grp').forEach(g=>g.classList.toggle('hidden',g.dataset.grp!==m));
+  document.querySelectorAll('.sub').forEach(s=>{
+    const [k,v]=s.dataset.sub.split('=');
+    s.classList.toggle('hidden',SEG[k]!==v);
+  });
+}
+
+/* ===== Cálculo ===== */
+function calcular(){
+  const m=$('modo').value;
+  let kpis=[], pasos=[], mem=[], aviso='', titulo='';
+  const falta=()=>{aviso='Completa los datos para ver el resultado.';};
+
+  if(m==='caudal'){
+    if(SEG.c_tipo==='liso'){
+      titulo='Caudal de descarga — pitón de orificio liso';
+      const D=toIn('c_D','c_Du'), P=toPsi('c_P','c_Pu');
+      if(!isFinite(D)||!isFinite(P)||D<=0||P<0){falta();}
+      else{
+        const Q=K_CAUDAL*D*D*Math.sqrt(P);
+        kpis=[{lab:'Caudal',val:f(Q,1),u:'gpm',d:1}];
+        pasos=[`Q = 29.84 · D² · √P`,`Q = 29.84 · ${f(D,3)}² · √${f(P,1)}`,`Q = ${f(Q,1)} gpm`];
+        mem=[['Diámetro de orificio',f(D,3),'pulg',f(D*IN_MM,1),'mm'],
+             ['Presión en punta',f(P,1),'psi',f(P/PSI_BAR,2),'bar'],
+             ['Caudal de descarga',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm']];
+      }
+    }else{
+      titulo='Caudal de descarga — pitón rateado';
+      const Q1=toGpm('c_Q1','c_Q1u'), P1=toPsi('c_P1','c_P1u'), P2=toPsi('c_P2','c_P2u');
+      if(!isFinite(Q1)||!isFinite(P1)||!isFinite(P2)||P1<=0||P2<0){falta();}
+      else{
+        const Q2=Q1*Math.sqrt(P2/P1);
+        kpis=[{lab:'Caudal a P₂',val:f(Q2,1),u:'gpm',d:1}];
+        pasos=[`Q₂ = Q₁ · √(P₂/P₁)`,`Q₂ = ${f(Q1,1)} · √(${f(P2,1)}/${f(P1,1)})`,`Q₂ = ${f(Q2,1)} gpm`];
+        mem=[['Caudal nominal Q₁',f(Q1,1),'gpm',f(Q1*GPM_LPM,1),'lpm'],
+             ['Presión nominal P₁',f(P1,1),'psi',f(P1/PSI_BAR,2),'bar'],
+             ['Presión de trabajo P₂',f(P2,1),'psi',f(P2/PSI_BAR,2),'bar'],
+             ['Caudal a P₂',f(Q2,1),'gpm',f(Q2*GPM_LPM,1),'lpm']];
+      }
+    }
+  }
+
+  else if(m==='presion'){
+    if(SEG.p_tipo==='liso'){
+      titulo='Presión requerida — pitón de orificio liso';
+      const Q=toGpm('p_Q','p_Qu'), D=toIn('p_D','p_Du');
+      if(!isFinite(Q)||!isFinite(D)||D<=0||Q<0){falta();}
+      else{
+        const P=Math.pow(Q/(K_CAUDAL*D*D),2);
+        kpis=[{lab:'Presión en punta',val:f(P,2),u:'psi',d:2}];
+        pasos=[`P = ( Q / (29.84 · D²) )²`,`P = ( ${f(Q,1)} / (29.84 · ${f(D,3)}²) )²`,`P = ${f(P,2)} psi`];
+        mem=[['Caudal deseado',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+             ['Diámetro de orificio',f(D,3),'pulg',f(D*IN_MM,1),'mm'],
+             ['Presión en punta',f(P,2),'psi',f(P/PSI_BAR,2),'bar']];
+      }
+    }else{
+      titulo='Presión requerida — pitón rateado';
+      const Q1=toGpm('p_Q1','p_Q1u'), P1=toPsi('p_P1','p_P1u'), Q2=toGpm('p_Q2','p_Q2u');
+      if(!isFinite(Q1)||!isFinite(P1)||!isFinite(Q2)||Q1<=0){falta();}
+      else{
+        const P2=P1*Math.pow(Q2/Q1,2);
+        kpis=[{lab:'Presión a Q₂',val:f(P2,2),u:'psi',d:2}];
+        pasos=[`P₂ = P₁ · (Q₂/Q₁)²`,`P₂ = ${f(P1,1)} · (${f(Q2,1)}/${f(Q1,1)})²`,`P₂ = ${f(P2,2)} psi`];
+        mem=[['Caudal nominal Q₁',f(Q1,1),'gpm',f(Q1*GPM_LPM,1),'lpm'],
+             ['Presión nominal P₁',f(P1,1),'psi',f(P1/PSI_BAR,2),'bar'],
+             ['Caudal deseado Q₂',f(Q2,1),'gpm',f(Q2*GPM_LPM,1),'lpm'],
+             ['Presión a Q₂',f(P2,2),'psi',f(P2/PSI_BAR,2),'bar']];
+      }
+    }
+  }
+
+  else if(m==='linea'){
+    titulo='Presión de descarga de una línea';
+    let Q=NaN, Pp=NaN, pasoPiton=[];
+    if(SEG.l_tipo==='liso'){
+      const D=toIn('l_D','l_Du'); Pp=toPsi('l_Pp','l_Ppu');
+      if(isFinite(D)&&isFinite(Pp)&&D>0&&Pp>=0){Q=K_CAUDAL*D*D*Math.sqrt(Pp); pasoPiton=[`Caudal: Q = 29.84 · D² · √P = 29.84 · ${f(D,3)}² · √${f(Pp,1)} = ${f(Q,1)} gpm`];}
+    }else if(SEG.l_tipo==='rateado'){
+      const Q1=toGpm('l_Q1','l_Q1u'),P1=toPsi('l_P1','l_P1u'); Pp=toPsi('l_Pp2','l_Pp2u');
+      if(isFinite(Q1)&&isFinite(P1)&&isFinite(Pp)&&P1>0&&Pp>=0){Q=Q1*Math.sqrt(Pp/P1); pasoPiton=[`Caudal: Q₂ = Q₁ · √(P₂/P₁) = ${f(Q1,1)} · √(${f(Pp,1)}/${f(P1,1)}) = ${f(Q,1)} gpm`];}
+    }else{
+      Q=toGpm('l_Q','l_Qu'); Pp=toPsi('l_Ppd','l_Ppdu');
+      if(isFinite(Q)&&isFinite(Pp))pasoPiton=[`Caudal y presión en punta dados: Q = ${f(Q,1)} gpm · Pp = ${f(Pp,1)} psi`];
+    }
+    const C=num('l_C'), L=toFt('l_L','l_Lu');
+    const hraw=toFt('l_h','l_hu'); const h=isFinite(hraw)?hraw*($('l_dir').value==='debajo'?-1:1):0;
+    if(!isFinite(Q)||!isFinite(Pp)||!isFinite(C)||!isFinite(L)||L<0){falta();}
+    else{
+      const Pf=C*Math.pow(Q/100,2)*(L/100);
+      const Ph=PSI_FT*h;
+      const Pb=Pp+Pf+Ph;
+      const dnom=DIAM_HOSE[$('l_hose').value]||2;
+      const V=Q/(VELDIV*dnom*dnom);
+      kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi',d:2},{lab:'Caudal de la línea',val:f(Q,1),u:'gpm',d:1}];
+      pasos=[...pasoPiton,
+        `Fricción: Pf = C · (Q/100)² · (L/100) = ${f(C,3)} · (${f(Q,1)}/100)² · (${f(L,0)}/100) = ${f(Pf,2)} psi`,
+        `Altura: Ph = 0.4335 · ${f(h,1)} = ${f(Ph,2)} psi`,
+        `Bomba = Pp + Pf + Ph = ${f(Pp,1)} + ${f(Pf,2)} + ${f(Ph,2)} = ${f(Pb,2)} psi`];
+      mem=[['Presión en punta (Pp)',f(Pp,1),'psi',f(Pp/PSI_BAR,2),'bar'],
+           ['Caudal real de la línea',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+           ['Manguera',$('l_hose').value,'','',''],
+           ['Factor de fricción C',f(C,3),'','',''],
+           ['Longitud total',f(L,0),'pies',f(L/M_FT,1),'m'],
+           ['Pérdida por fricción (Pf)',f(Pf,2),'psi',f(Pf/PSI_BAR,3),'bar'],
+           ['Altura del pitón',f(h,1),'pies',f(h/M_FT,2),'m'],
+           ['Presión por altura (Ph)',f(Ph,2),'psi',f(Ph/PSI_BAR,3),'bar'],
+           ['Velocidad en la manguera',f(V,1),'pies/seg',f(V*0.3048,2),'m/s'],
+           ['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+      DIB={kind:'linea',Q,Pp,Pb,C,L,hose:$('l_hose').value,dnom,V,h,dir:$('l_dir').value};
+    }
+  }
+
+  else if(m==='diametro'){
+    titulo='Diámetro de orificio de un pitón';
+    const Q=toGpm('di_Q','di_Qu'), P=toPsi('di_P','di_Pu');
+    if(!isFinite(Q)||!isFinite(P)||P<=0||Q<=0){falta();}
+    else{
+      const d=Math.sqrt(Q/(K_CAUDAL*Math.sqrt(P)));
+      const FRlb=K_REACCION*Q*Math.sqrt(P), FRkg=FRlb*LB_KG;
+      kpis=[{lab:'Diámetro de orificio',val:f(d,3),u:'pulg',d:3},{lab:'Fuerza de reacción',val:f(FRkg,1),u:'kg',d:1}];
+      pasos=[`d = √( Q / (29.84 · √P) )`,`d = √( ${f(Q,1)} / (29.84 · √${f(P,1)}) )`,`d = ${f(d,3)} pulg`,`FR = 0.0526 · Q · √P = ${f(FRlb,1)} lb = ${f(FRkg,1)} kg`];
+      mem=[['Caudal',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+           ['Presión',f(P,1),'psi',f(P/PSI_BAR,2),'bar'],
+           ['Diámetro de orificio',f(d,3),'pulg',f(d*IN_MM,1),'mm'],
+           ['Fuerza de reacción',f(FRlb,1),'lb',f(FRkg,1),'kg']];
+      DIB={kind:'reaccion',Q,P,FRkg,FRlb,d};
+    }
+  }
+
+  else if(m==='friccion'){
+    titulo='Pérdida de presión por fricción';
+    const C=num('f_C'), Q=toGpm('f_Q','f_Qu'), L=toFt('f_L','f_Lu');
+    if(!isFinite(C)||!isFinite(Q)||!isFinite(L)||L<0){falta();}
+    else{
+      const Pf=C*Math.pow(Q/100,2)*(L/100);
+      kpis=[{lab:'Pérdida por fricción',val:f(Pf,2),u:'psi',d:2}];
+      pasos=[`Pf = C · (Q/100)² · (L/100)`,`Pf = ${f(C,3)} · (${f(Q,1)}/100)² · (${f(L,0)}/100)`,`Pf = ${f(Pf,2)} psi`];
+      mem=[['Manguera / montante',$('f_hose').value,'','',''],
+           ['Factor de fricción C',f(C,3),'','',''],
+           ['Caudal',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+           ['Longitud total',f(L,0),'pies',f(L/M_FT,1),'m'],
+           ['Pérdida por fricción',f(Pf,2),'psi',f(Pf/PSI_BAR,3),'bar']];
+      const dnom=DIAM_HOSE[$('f_hose').value]||2, V=Q/(VELDIV*dnom*dnom);
+      DIB={kind:'friccion',Q,Pf,C,L,hose:$('f_hose').value,dnom,V};
+    }
+  }
+
+  else if(m==='altura'){
+    titulo='Presión por altura (columna de agua)';
+    let hft=NaN, detalle='';
+    if(SEG.a_modo==='altura'){hft=toFt('a_h','a_hu');}
+    else{const n=num('a_npisos'),hp=toFt('a_hpiso','a_hpisou'); if(isFinite(n)&&isFinite(hp)){hft=n*hp; detalle=`${f(n,0)} pisos · ${f(hp,2)} pies/piso`;}}
+    if(!isFinite(hft)){falta();}
+    else{
+      const Ph=PSI_FT*hft;
+      kpis=[{lab:'Presión por altura',val:f(Ph,2),u:'psi',d:2}];
+      pasos=[`Ph = 0.4335 · altura (pies)`,`Ph = 0.4335 · ${f(hft,1)}`,`Ph = ${f(Ph,2)} psi`];
+      mem=[['Altura de columna',f(hft,1),'pies',f(hft/M_FT,2),'m'],
+           ['Presión por altura',f(Ph,2),'psi',f(Ph/PSI_BAR,3),'bar']];
+      if(detalle)mem.unshift(['Cálculo de la altura',detalle,'','','']);
+      DIB={kind:'columna',hft,Ph,etiqueta:'Ph'};
+    }
+  }
+
+  else if(m==='reaccion'){
+    if(SEG.r_tipo==='qp'){
+      titulo='Fuerza de reacción — por caudal y presión';
+      const Q=toGpm('r_Q','r_Qu'), P=toPsi('r_P','r_Pu');
+      if(!isFinite(Q)||!isFinite(P)||P<0){falta();}
+      else{
+        const FRlb=K_REACCION*Q*Math.sqrt(P), FRkg=FRlb*LB_KG;
+        kpis=[{lab:'Fuerza de reacción',val:f(FRkg,1),u:'kg',d:1},{lab:'Equivalente',val:f(FRlb,1),u:'lb',d:1}];
+        pasos=[`FR = 0.0526 · Q · √P  (libras)`,`FR = 0.0526 · ${f(Q,1)} · √${f(P,1)} = ${f(FRlb,1)} lb`,`FR = ${f(FRlb,1)} · 0.454 = ${f(FRkg,1)} kg`];
+        mem=[['Caudal de trabajo',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+             ['Presión de trabajo',f(P,1),'psi',f(P/PSI_BAR,2),'bar'],
+             ['Fuerza de reacción',f(FRlb,1),'lb',f(FRkg,1),'kg']];
+        DIB={kind:'reaccion',Q,P,FRkg,FRlb};
+      }
+    }else{
+      titulo='Fuerza de reacción — orificio liso';
+      const d=toIn('r_d','r_du'), P=toPsi('r_P2','r_P2u');
+      if(!isFinite(d)||!isFinite(P)||d<=0||P<0){falta();}
+      else{
+        const FRlb=K_REAC_LISO*d*d*P, FRkg=FRlb*LB_KG, Q=K_CAUDAL*d*d*Math.sqrt(P);
+        kpis=[{lab:'Fuerza de reacción',val:f(FRkg,1),u:'kg',d:1},{lab:'Caudal del orificio',val:f(Q,1),u:'gpm',d:1}];
+        pasos=[`FR = 1.57 · d² · P  (libras)`,`FR = 1.57 · ${f(d,3)}² · ${f(P,1)} = ${f(FRlb,1)} lb`,`FR = ${f(FRlb,1)} · 0.454 = ${f(FRkg,1)} kg`,`Caudal: Q = 29.84 · d² · √P = ${f(Q,1)} gpm`];
+        mem=[['Diámetro de orificio',f(d,3),'pulg',f(d*IN_MM,1),'mm'],
+             ['Presión de trabajo',f(P,1),'psi',f(P/PSI_BAR,2),'bar'],
+             ['Caudal del orificio',f(Q,1),'gpm',f(Q*GPM_LPM,1),'lpm'],
+             ['Fuerza de reacción',f(FRlb,1),'lb',f(FRkg,1),'kg']];
+        DIB={kind:'reaccion',Q,P,FRkg,FRlb,d};
+      }
+    }
+  }
+
+  else if(m==='montante'){
+    if(SEG.m_modo==='p2h'){
+      titulo='Altura de columna a partir de presión';
+      const P=toPsi('m_P','m_Pu');
+      if(!isFinite(P)||P<0){falta();}
+      else{
+        const hft=P/PSI_FT, hm=hft/M_FT;
+        kpis=[{lab:'Altura equivalente',val:f(hm,2),u:'m',d:2},{lab:'Equivalente',val:f(hft,1),u:'pies',d:1}];
+        pasos=[`h = P / 0.4335   (pies)`,`h = ${f(P,1)} / 0.4335 = ${f(hft,1)} pies`,`h = ${f(hm,2)} metros`];
+        mem=[['Presión',f(P,1),'psi',f(P/PSI_BAR,2),'bar'],
+             ['Altura de columna',f(hft,1),'pies',f(hm,2),'m']];
+        DIB={kind:'columna',hft,Ph:P,etiqueta:'P'};
+      }
+    }else{
+      titulo='Presión a partir de altura de columna';
+      const hft=toFt('m_h','m_hu');
+      if(!isFinite(hft)||hft<0){falta();}
+      else{
+        const P=PSI_FT*hft;
+        kpis=[{lab:'Presión estática',val:f(P,2),u:'psi',d:2}];
+        pasos=[`P = 0.4335 · altura (pies)`,`P = 0.4335 · ${f(hft,1)} = ${f(P,2)} psi`];
+        mem=[['Altura de columna',f(hft,1),'pies',f(hft/M_FT,2),'m'],
+             ['Presión estática',f(P,2),'psi',f(P/PSI_BAR,3),'bar']];
+        DIB={kind:'columna',hft,Ph:P,etiqueta:'P'};
+      }
+    }
+  }
+
+  else if(m==='conversor'){
+    titulo='Conversor de unidades';
+    const v=num('k_val'), mag=$('k_mag').value;
+    if(!isFinite(v)){falta();}
+    else{
+      if(mag==='presion'){kpis=[{lab:v+' psi',val:f(v/PSI_BAR,3),u:'bar',d:3},{lab:v+' bar',val:f(v*PSI_BAR,2),u:'psi',d:2}];mem=[['psi → bar',f(v/PSI_BAR,3),'bar','',''],['bar → psi',f(v*PSI_BAR,2),'psi','','']];}
+      else if(mag==='caudal'){kpis=[{lab:v+' gpm',val:f(v*GPM_LPM,1),u:'lpm',d:1},{lab:v+' lpm',val:f(v/GPM_LPM,1),u:'gpm',d:1}];mem=[['gpm → lpm',f(v*GPM_LPM,1),'lpm','',''],['lpm → gpm',f(v/GPM_LPM,1),'gpm','','']];}
+      else if(mag==='longitud'){kpis=[{lab:v+' pies',val:f(v/M_FT,2),u:'m',d:2},{lab:v+' m',val:f(v*M_FT,2),u:'pies',d:2}];mem=[['pies → m',f(v/M_FT,2),'m','',''],['m → pies',f(v*M_FT,2),'pies','','']];}
+      else if(mag==='diametro'){kpis=[{lab:v+' pulg',val:f(v*IN_MM,1),u:'mm',d:1},{lab:v+' mm',val:f(v/IN_MM,3),u:'pulg',d:3}];mem=[['pulg → mm',f(v*IN_MM,1),'mm','',''],['mm → pulg',f(v/IN_MM,3),'pulg','','']];}
+      else if(mag==='fuerza'){kpis=[{lab:v+' lb',val:f(v*LB_KG,2),u:'kg',d:2},{lab:v+' kg',val:f(v/LB_KG,2),u:'lb',d:2}];mem=[['libras → kilos',f(v*LB_KG,2),'kg','',''],['kilos → libras',f(v/LB_KG,2),'lb','','']];}
+      pasos=['Conversión directa entre sistemas.'];
+    }
+  }
+
+  // ---- render ----
+  if(aviso){
+    $('avisoArea').innerHTML=`<div class="aviso">${aviso}</div>`;
+    $('kpiArea').innerHTML=`<div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>`;
+    $('pasoArea').innerHTML=`<p class="nota">Completa los datos de la izquierda para ver el cálculo.</p>`;
+    $('memBody').innerHTML='';
+    $('dibCard').style.display='none';
+    ESTADO=null; DIB=null;
+    return;
+  }
+  $('avisoArea').innerHTML='';
+  $('kpiArea').innerHTML=kpis.map(k=>`<div class="kpi destacado"><div class="lab">${k.lab}</div><div><span class="val">${k.val}</span> <span class="u">${k.u}</span></div></div>`).join('');
+  $('pasoArea').innerHTML=pasos.map(p=>`<div class="formula">${p}</div>`).join('');
+  $('memBody').innerHTML=mem.map(r=>`<tr><td class="eti">${r[0]}</td><td class="num">${r[1]}</td><td class="u">${r[2]}</td><td class="num">${r[3]}</td><td class="u">${r[4]}</td></tr>`).join('');
+  ESTADO={titulo,kpis,pasos,mem};
+  if(DIB){
+    $('dibCard').style.display='block';
+    $('dibTitulo').textContent=DIB_TITULO[DIB.kind]||'El cálculo en movimiento';
+    $('dibSvg').innerHTML=svgDib(DIB,false);
+    $('dibNota').textContent=DIB_NOTA[DIB.kind]||'';
+  }else{$('dibCard').style.display='none';}
+}
+
+/* ===== Despachador de diagramas ===== */
+function svgDib(d,light){
+  if(!d)return '';
+  if(d.kind==='linea')return svgLinea(d,light);
+  if(d.kind==='reaccion')return svgReaccion(d,light);
+  if(d.kind==='friccion')return svgFriccion(d,light);
+  if(d.kind==='columna')return svgColumna(d,light);
+  return '';
+}
+
+/* ===== Diagrama animado de la línea ===== */
+function svgLinea(d,light){
+  const cPipe='#c0392b', cTx=light?'#16213e':'#e2e8f4', cTx2=light?'#5b6675':'#8b95b0', cNode=light?'#ffffff':'#0b0f16',
+    cWater=light?'#1f7fa0':'#38d4f8', cPb=light?'#16213e':'#38d4f8', cBox=light?'#eef2f7':'#1e2433', cBoxBd=light?'#16213e':'#46506a', cCoup=light?'#9aa6b5':'#cdd6e6';
+  const w=grosorTubo(d.dnom), fw=Math.max(3.5,w*0.42), dur=durAnim(d.V).toFixed(2), anim=light?'':`animation:dash ${dur}s linear infinite;`;
+  const gY=250, bx0=40, bx1=120, by0=224, by1=276;
+  const hasRiser=Math.abs(d.h)>0.01, up=d.dir!=='debajo';
+  let elbowX,pitX,pitY,riserPx=0;
+  if(hasRiser){riserPx=Math.max(46,Math.min(up?190:88,Math.abs(d.h)*1.7)); elbowX=556; pitX=556; pitY=up?gY-riserPx:gY+riserPx;}
+  else{elbowX=648; pitX=648; pitY=gY;}
+  const pHor=`M ${bx1} ${gY} L ${elbowX} ${gY}`;
+  const pVer=hasRiser?`M ${elbowX} ${gY} L ${pitX} ${pitY}`:'';
+  const flow=`<path d="${pHor}" fill="none" stroke="${cWater}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}stroke-width:${fw}"/>`+
+    (pVer?`<path d="${pVer}" fill="none" stroke="${cWater}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}stroke-width:${fw}"/>`:'');
+  let jet;
+  if(!hasRiser){jet=`<path d="M ${pitX+9} ${pitY-9} L ${pitX+44} ${pitY} L ${pitX+9} ${pitY+9} Z" fill="${cPipe}"/><path d="M ${pitX+12} ${pitY} L ${pitX+74} ${pitY}" stroke="${cWater}" stroke-width="${Math.max(3,fw*0.8)}" stroke-linecap="round" stroke-dasharray="2 13" style="${anim}"/>`;}
+  else if(up){jet=`<path d="M ${pitX-9} ${pitY-9} L ${pitX} ${pitY-44} L ${pitX+9} ${pitY-9} Z" fill="${cPipe}"/><path d="M ${pitX} ${pitY-12} L ${pitX+20} ${pitY-72}" stroke="${cWater}" stroke-width="${Math.max(3,fw*0.8)}" stroke-linecap="round" stroke-dasharray="2 13" style="${anim}"/>`;}
+  else{jet=`<path d="M ${pitX-9} ${pitY+9} L ${pitX} ${pitY+44} L ${pitX+9} ${pitY+9} Z" fill="${cPipe}"/><path d="M ${pitX} ${pitY+12} L ${pitX+20} ${pitY+72}" stroke="${cWater}" stroke-width="${Math.max(3,fw*0.8)}" stroke-linecap="round" stroke-dasharray="2 13" style="${anim}"/>`;}
+  let dim='';
+  if(hasRiser){const dxx=pitX+46,y1=Math.min(gY,pitY),y2=Math.max(gY,pitY),ym=(gY+pitY)/2;
+    dim=`<line x1="${dxx}" y1="${y1}" x2="${dxx}" y2="${y2}" stroke="${cTx2}" stroke-width="1.2"/><line x1="${dxx-6}" y1="${y1}" x2="${dxx+6}" y2="${y1}" stroke="${cTx2}" stroke-width="1.2"/><line x1="${dxx-6}" y1="${y2}" x2="${dxx+6}" y2="${y2}" stroke="${cTx2}" stroke-width="1.2"/><text x="${dxx+9}" y="${ym+4}" font-family="JetBrains Mono" font-weight="600" font-size="12" fill="${cTx}">H = ${f(Math.abs(d.h),0)} pies</text>`;}
+  let lq,lp;
+  if(!hasRiser){lq=`<text x="${pitX}" y="${pitY-42}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="12.5" fill="${cTx}">Q = ${f(d.Q,1)} gpm</text>`;lp=`<text x="${pitX}" y="${pitY-26}" text-anchor="middle" font-family="DM Sans" font-size="11" fill="${cTx2}">Pp = ${f(d.Pp,0)} psi</text>`;}
+  else if(up){lq=`<text x="${pitX-14}" y="${pitY+2}" text-anchor="end" font-family="JetBrains Mono" font-weight="600" font-size="12.5" fill="${cTx}">Q = ${f(d.Q,1)} gpm</text>`;lp=`<text x="${pitX-14}" y="${pitY+19}" text-anchor="end" font-family="DM Sans" font-size="11" fill="${cTx2}">Pp = ${f(d.Pp,0)} psi</text>`;}
+  else{lq=`<text x="${pitX-14}" y="${pitY-6}" text-anchor="end" font-family="JetBrains Mono" font-weight="600" font-size="12.5" fill="${cTx}">Q = ${f(d.Q,1)} gpm</text>`;lp=`<text x="${pitX-14}" y="${pitY+11}" text-anchor="end" font-family="DM Sans" font-size="11" fill="${cTx2}">Pp = ${f(d.Pp,0)} psi</text>`;}
+  const N=Math.max(1,Math.min(14,Math.round(d.L/100)));
+  const horizLen=elbowX-bx1, riserLen=hasRiser?riserPx:0, totalPx=horizLen+riserLen, segPx=totalPx/N;
+  let coup='';
+  for(let k=1;k<N;k++){const dpx=segPx*k;
+    if(dpx<=horizLen){const cxp=bx1+dpx; coup+=`<rect x="${(cxp-3.5).toFixed(1)}" y="${gY-(w/2+5)}" width="7" height="${w+10}" rx="2" fill="${cCoup}" stroke="#16213e" stroke-width="1"/>`;}
+    else{const d2=dpx-horizLen, cyp=up?gY-d2:gY+d2; coup+=`<rect x="${elbowX-(w/2+5)}" y="${(cyp-3.5).toFixed(1)}" width="${w+10}" height="7" rx="2" fill="${cCoup}" stroke="#16213e" stroke-width="1"/>`;}}
+  const midX=(bx1+elbowX)/2;
+  return `
+    ${pVer?`<path d="${pVer}" fill="none" stroke="${cPipe}" stroke-width="${w}" stroke-linecap="round"/>`:''}
+    <path d="${pHor}" fill="none" stroke="${cPipe}" stroke-width="${w}" stroke-linecap="round"/>
+    ${flow}${coup}${jet}
+    <rect x="${bx0}" y="${by0}" width="${bx1-bx0}" height="${by1-by0}" rx="7" fill="${cBox}" stroke="${cBoxBd}" stroke-width="2"/>
+    <text x="${(bx0+bx1)/2}" y="${by0-9}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="12" fill="${cTx}">BOMBA</text>
+    <text x="${(bx0+bx1)/2}" y="${(by0+by1)/2+1}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="14" fill="${cPb}">${f(d.Pb,0)}</text>
+    <text x="${(bx0+bx1)/2}" y="${(by0+by1)/2+17}" text-anchor="middle" font-family="DM Sans" font-size="10" fill="${cTx2}">Pb (psi)</text>
+    <circle cx="${bx1}" cy="${gY}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    ${hasRiser?`<circle cx="${elbowX}" cy="${gY}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>`:''}
+    <text x="${midX}" y="${gY-w/2-10}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="11.5" fill="${cPipe}">${d.hose}</text>
+    <text x="${midX}" y="${gY+w/2+18}" text-anchor="middle" font-family="DM Sans" font-size="10.5" fill="${cTx2}">L = ${f(d.L,0)} pies · ${N} tramo${N>1?'s':''} de 100 pies · V = ${f(d.V,1)} pies/seg</text>
+    <circle cx="${pitX}" cy="${pitY}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    ${lq}${lp}${dim}`;
+}
+
+/* ===== Diagrama: fuerza de reacción ===== */
+function svgReaccion(d,light){
+  const cPipe='#c0392b',cTx=light?'#16213e':'#e2e8f4',cTx2=light?'#5b6675':'#8b95b0',cWater=light?'#1f7fa0':'#38d4f8',cNode=light?'#ffffff':'#0b0f16',cSteel=light?'#9aa6b5':'#7d8896';
+  const cy=185, dur=durAnim(Math.sqrt(Math.max(d.P,1))).toFixed(2), anim=light?'':`animation:dash ${dur}s linear infinite;`;
+  const jw=Math.max(5,Math.min(18,Math.sqrt(Math.max(d.Q,1)))), aw=Math.max(8,Math.min(30,d.FRkg*0.55)), nzX=360;
+  const body=`<rect x="${nzX-90}" y="${cy-15}" width="70" height="30" rx="5" fill="${cSteel}" stroke="#16213e" stroke-width="1.5"/><path d="M ${nzX-20} ${cy-15} L ${nzX} ${cy-9} L ${nzX} ${cy+9} L ${nzX-20} ${cy+15} Z" fill="${cSteel}" stroke="#16213e" stroke-width="1.5"/>`;
+  const jet=`<path d="M ${nzX+4} ${cy} L ${nzX+230} ${cy}" stroke="${cWater}" stroke-width="${jw}" stroke-linecap="round" stroke-dasharray="2 14" style="${anim}"/><path d="M ${nzX+230} ${cy-11} L ${nzX+262} ${cy} L ${nzX+230} ${cy+11} Z" fill="${cWater}"/>`;
+  const arX0=nzX-92, arX1=arX0-180;
+  const react=`<line x1="${arX0}" y1="${cy}" x2="${arX1+18}" y2="${cy}" stroke="${cPipe}" stroke-width="${aw}" stroke-linecap="round"/><path d="M ${arX1+22} ${cy-aw*0.9} L ${arX1-10} ${cy} L ${arX1+22} ${cy+aw*0.9} Z" fill="${cPipe}"/>`;
+  return `${react}${body}${jet}
+    <circle cx="${nzX}" cy="${cy}" r="5" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    <text x="${nzX-55}" y="${cy-30}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="12" fill="${cTx}">PITÓN</text>
+    <text x="${nzX+150}" y="${cy-16}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="12.5" fill="${cTx}">Q = ${f(d.Q,1)} gpm</text>
+    <text x="${nzX+150}" y="${cy+26}" text-anchor="middle" font-family="DM Sans" font-size="11" fill="${cTx2}">P = ${f(d.P,0)} psi${d.d?` · Ø ${f(d.d,3)}"`:''}</text>
+    <text x="${(arX0+arX1)/2}" y="${cy-aw/2-12}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="16" fill="${cPipe}">FR = ${f(d.FRkg,1)} kg</text>
+    <text x="${(arX0+arX1)/2}" y="${cy+aw/2+22}" text-anchor="middle" font-family="DM Sans" font-size="10.5" fill="${cTx2}">(${f(d.FRlb,1)} lb) · empuje hacia atrás</text>`;
+}
+
+/* ===== Diagrama: tramo de manguera (fricción) ===== */
+function svgFriccion(d,light){
+  const cPipe='#c0392b',cTx=light?'#16213e':'#e2e8f4',cTx2=light?'#5b6675':'#8b95b0',cWater=light?'#1f7fa0':'#38d4f8',cNode=light?'#ffffff':'#0b0f16',cCoup=light?'#9aa6b5':'#cdd6e6';
+  const cy=195, x0=120, x1=650, w=grosorTubo(d.dnom), fw=Math.max(3.5,w*0.42), dur=durAnim(d.V).toFixed(2), anim=light?'':`animation:dash ${dur}s linear infinite;`;
+  const N=Math.max(1,Math.min(14,Math.round(d.L/100)));
+  let coup='';
+  for(let k=1;k<N;k++){const cxp=x0+(x1-x0)*k/N; coup+=`<rect x="${(cxp-3.5).toFixed(1)}" y="${cy-(w/2+5)}" width="7" height="${w+10}" rx="2" fill="${cCoup}" stroke="#16213e" stroke-width="1"/>`;}
+  const mid=(x0+x1)/2;
+  return `<path d="M ${x0} ${cy} L ${x1} ${cy}" stroke="${cPipe}" stroke-width="${w}" stroke-linecap="round"/>
+    <path d="M ${x0} ${cy} L ${x1} ${cy}" stroke="${cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}"/>
+    ${coup}
+    <path d="M ${x0-42} ${cy} L ${x0-8} ${cy}" stroke="${cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 13" style="${anim}"/><path d="M ${x0-10} ${cy-9} L ${x0+6} ${cy} L ${x0-10} ${cy+9} Z" fill="${cWater}"/>
+    <path d="M ${x1+8} ${cy} L ${x1+46} ${cy}" stroke="${cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 13" style="${anim}"/><path d="M ${x1+42} ${cy-9} L ${x1+58} ${cy} L ${x1+42} ${cy+9} Z" fill="${cWater}"/>
+    <circle cx="${x0}" cy="${cy}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    <circle cx="${x1}" cy="${cy}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    <text x="${mid}" y="${cy-w/2-30}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="16" fill="${cPipe}">Pérdida Pf = ${f(d.Pf,2)} psi</text>
+    <text x="${mid}" y="${cy-w/2-12}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="11.5" fill="${cTx}">${d.hose}</text>
+    <text x="${mid}" y="${cy+w/2+18}" text-anchor="middle" font-family="DM Sans" font-size="10.5" fill="${cTx2}">L = ${f(d.L,0)} pies · ${N} tramo${N>1?'s':''} de 100 pies · V = ${f(d.V,1)} pies/seg</text>
+    <text x="${x0-46}" y="${cy-w/2-10}" text-anchor="start" font-family="JetBrains Mono" font-weight="600" font-size="12" fill="${cTx}">Q = ${f(d.Q,1)} gpm</text>`;
+}
+
+/* ===== Diagrama: columna de agua (altura / montante) ===== */
+function svgColumna(d,light){
+  const cPipe='#c0392b',cTx=light?'#16213e':'#e2e8f4',cTx2=light?'#5b6675':'#8b95b0',cWater=light?'#1f7fa0':'#38d4f8',cNode=light?'#ffffff':'#0b0f16',cWall=light?'#16213e':'#46506a',cWaterFill=light?'#bfe0ee':'#173a48';
+  const baseY=312, cx=300, dur=durAnim(Math.sqrt(Math.max(d.Ph,1))).toFixed(2), anim=light?'':`animation:dash ${dur}s linear infinite;`;
+  const px=Math.max(70,Math.min(238,Math.abs(d.hft)*1.6)), topY=baseY-px, cw=46, fw=14;
+  const dxx=cx-cw/2-34;
+  return `<rect x="${cx-cw/2}" y="${topY}" width="${cw}" height="${px}" fill="${cWaterFill}" stroke="${cWall}" stroke-width="3"/>
+    <path d="M ${cx} ${baseY} L ${cx+170} ${baseY}" stroke="${cPipe}" stroke-width="${fw+6}" stroke-linecap="round"/>
+    <path d="M ${cx} ${topY+6} L ${cx} ${baseY}" stroke="${cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}"/>
+    <path d="M ${cx} ${baseY} L ${cx+170} ${baseY}" stroke="${cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}"/>
+    <path d="M ${cx+166} ${baseY-10} L ${cx+196} ${baseY} L ${cx+166} ${baseY+10} Z" fill="${cWater}"/>
+    <text x="${cx}" y="${topY-10}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="12" fill="${cTx}">COLUMNA DE AGUA</text>
+    <line x1="${dxx}" y1="${topY}" x2="${dxx}" y2="${baseY}" stroke="${cTx2}" stroke-width="1.2"/><line x1="${dxx-6}" y1="${topY}" x2="${dxx+6}" y2="${topY}" stroke="${cTx2}" stroke-width="1.2"/><line x1="${dxx-6}" y1="${baseY}" x2="${dxx+6}" y2="${baseY}" stroke="${cTx2}" stroke-width="1.2"/>
+    <text x="${dxx-8}" y="${(topY+baseY)/2}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="12" fill="${cTx}" transform="rotate(-90 ${dxx-8} ${(topY+baseY)/2})">H = ${f(d.hft,1)} pies · ${f(d.hft/M_FT,1)} m</text>
+    <circle cx="${cx}" cy="${baseY}" r="6" fill="${cNode}" stroke="#16213e" stroke-width="2"/>
+    <text x="${cx+200}" y="${baseY-12}" text-anchor="start" font-family="JetBrains Mono" font-weight="600" font-size="15" fill="${cPipe}">${d.etiqueta==='P'?'P':'Ph'} = ${f(d.Ph,2)} psi</text>
+    <text x="${cx+200}" y="${baseY+10}" text-anchor="start" font-family="DM Sans" font-size="10.5" fill="${cTx2}">presión en la base</text>`;
+}
+
+/* ===== Reporte PDF ===== */
+function bandHTML(t){return `<div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;color:#16213e;text-transform:uppercase;letter-spacing:.7px;padding:0 0 4px;margin:11px 0 6px;border-bottom:2px solid #16213e;">${t}</div>`;}
+function kpiHTML(items){
+  const cells=items.map((it,i)=>`<div style="flex:1;padding:9px 16px;${i>0?'border-left:1px solid #c8d2dd;':''}">
+    <div style="font-size:9px;color:#5b6675;font-weight:600;text-transform:uppercase;letter-spacing:.4px;font-family:'DM Sans',sans-serif;">${it.lab}</div>
+    <div style="font-size:18px;font-weight:600;color:#16213e;font-family:'JetBrains Mono',monospace;margin-top:3px;">${it.val} ${it.u}</div></div>`).join('');
+  return `<div style="display:flex;border-top:2px solid #16213e;border-bottom:1px solid #c8d2dd;background:#fff;margin:0 0 6px;">${cells}</div>`;
+}
+function memTablaHTML(M){
+  const rows=M.map(r=>`<tr>
+    <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[0]}</td>
+    <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'JetBrains Mono',monospace;text-align:right;border-bottom:1px solid #d8e0e8;">${r[1]}</td>
+    <td style="padding:4px 6px;font-size:9.5px;color:#5b6675;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[2]}</td>
+    <td style="padding:4px 10px;font-size:10.5px;color:#0f172a;font-family:'JetBrains Mono',monospace;text-align:right;border-bottom:1px solid #d8e0e8;">${r[3]}</td>
+    <td style="padding:4px 6px;font-size:9.5px;color:#5b6675;font-family:'DM Sans',sans-serif;border-bottom:1px solid #d8e0e8;">${r[4]}</td></tr>`).join('');
+  return `<table style="width:100%;border-collapse:collapse;border-top:2px solid #16213e;background:#fff;">
+    <thead><tr>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:6px 10px;text-align:left;">Parámetro</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 10px;text-align:right;">Valor</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 6px;text-align:left;">UM</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 10px;text-align:right;">Conv.</th>
+      <th style="background:#16213e;color:#fff;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;padding:6px 6px;text-align:left;">UM</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function buildReport(d){
+  const fecha=new Date().toLocaleDateString('es-PE');
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:14px 18px;">
+    <div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="${LOGO_URL}" alt="ILFIS" style="height:38px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+    <div style="color:#fff;line-height:1.25;">
+      <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
+      <div style="font-size:15px;font-weight:600;margin-top:2px;">${d.titulo}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}<br><span style="font-size:9px;">Unidades: Americano</span></div>
+  </div>`;
+  const campos=[];
+  const add=(l,id)=>{if($(id).value)campos.push(`<span><b>${l}:</b> ${$(id).value}</span>`);};
+  add('Cálculo N.°','pcalc');add('Proyecto / ejercicio','pproy');add('Responsable','presp');
+  const proy=campos.length?`<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:10.5px;color:#0f172a;padding:9px 2px;border-bottom:1px solid #c8d2dd;font-family:'DM Sans',sans-serif;">${campos.join('')}</div>`:'';
+  const pasosHTML=`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#16213e;line-height:1.9;padding:4px 0;">${d.pasos.map(p=>'› '+p).join('<br>')}</div>`;
+  const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:auto;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al cálculo hidráulico. Los resultados son responsabilidad del usuario; verificar los criterios del proyecto. Generado con ILFIS UBUNTU.</div>`;
+  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:0 0 9mm;font-family:'DM Sans',sans-serif;">
+    <div style="padding:10mm 12mm 0;">${head}</div>
+    <div style="padding:0 12mm;display:flex;flex-direction:column;flex:1;">
+      ${proy}
+      ${bandHTML('Resultado')}${kpiHTML(d.kpis)}
+      ${bandHTML('Paso a paso')}${pasosHTML}
+      ${bandHTML('Memoria de cálculo')}${memTablaHTML(d.mem)}
+      ${DIB?`${bandHTML('Esquema')}<div style="border:1px solid #16213e;background:#fff;padding:6px;margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;"><svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-height:230px;">${svgDib(DIB,true)}</svg></div>`:''}
+      ${pie}
+    </div></div>`;
+}
+function reportePDF(){
+  if(!ESTADO){calcular();}
+  if(!ESTADO){alert('Completa los datos antes de generar el reporte.');return;}
+  $('printArea').innerHTML=buildReport(ESTADO);
+  setTimeout(()=>window.print(),250);
+}
+
+/* ===== Init ===== */
+function init(){
+  $('f_hose').innerHTML=Object.keys(FACTOR_C).map(k=>`<option>${k}</option>`).join('');
+  $('f_hose').value='Nitrilo 2½"'; $('f_C').value=FACTOR_C['Nitrilo 2½"'];
+  $('f_hose').addEventListener('change',()=>{$('f_C').value=FACTOR_C[$('f_hose').value];calcular();});
+
+  $('l_hose').innerHTML=Object.keys(FACTOR_C).map(k=>`<option>${k}</option>`).join('');
+  $('l_hose').value='Nitrilo 1½"'; $('l_C').value=FACTOR_C['Nitrilo 1½"'];
+  $('l_hose').addEventListener('change',()=>{$('l_C').value=FACTOR_C[$('l_hose').value];calcular();});
+
+  document.querySelectorAll('.seg').forEach(seg=>{
+    const key=seg.dataset.radio;
+    seg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); SEG[key]=b.dataset.v; pintarGrupos(); calcular();
+    }));
+  });
+
+  $('modo').addEventListener('change',()=>{pintarGrupos();calcular();});
+  document.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input',calcular); el.addEventListener('change',calcular);
+  });
+  $('btnpdf').addEventListener('click',reportePDF);
+
+  pintarGrupos(); calcular();
+}
+init();
+
+/* ===================== ARMADOR DE MANIOBRA (Fase 2) ===================== */
+let AM_ESTADO=null, AM_DIB=null;
+
+function pitonHTML(p,withDet){
+  return `<label>Tipo de pitón</label>
+    <select id="${p}_tipo" class="am-pt">
+      <option value="liso">Orificio liso</option>
+      <option value="rateado">Rateado (gpm @ psi)</option>
+      <option value="qp">Caudal y presión</option>
+      ${withDet?'<option value="det">Determinada por el bifurco (solo boquilla)</option>':''}
+    </select>
+    <div class="${p}_sub" data-t="liso">
+      <div class="fila">
+        <div class="unidad"><div><label>Diámetro de orificio</label><input id="${p}_D" type="number" step="0.01" placeholder="Ej. 0.5"></div><div><label>UM</label><select id="${p}_Du"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+        <div class="unidad"><div><label>Presión en punta</label><input id="${p}_P" type="number" step="0.1" placeholder="Ej. 120"></div><div><label>UM</label><select id="${p}_Pu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+      </div>
+    </div>
+    <div class="${p}_sub hidden" data-t="rateado">
+      <div class="fila3">
+        <div class="unidad"><div><label>Caudal nominal Q₁</label><input id="${p}_Q1" type="number" step="0.1" placeholder="Ej. 125"></div><div><label>UM</label><select id="${p}_Q1u"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+        <div class="unidad"><div><label>Presión nominal P₁</label><input id="${p}_P1" type="number" step="0.1" value="100"></div><div><label>UM</label><select id="${p}_P1u"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+        <div class="unidad"><div><label>Presión de trabajo</label><input id="${p}_Pw" type="number" step="0.1" placeholder="Ej. 120"></div><div><label>UM</label><select id="${p}_Pwu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+      </div>
+    </div>
+    <div class="${p}_sub hidden" data-t="qp">
+      <div class="fila">
+        <div class="unidad"><div><label>Caudal Q</label><input id="${p}_Q" type="number" step="0.1" placeholder="Ej. 150"></div><div><label>UM</label><select id="${p}_Qu"><option value="gpm">gpm</option><option value="lpm">lpm</option></select></div></div>
+        <div class="unidad"><div><label>Presión en punta</label><input id="${p}_Pp" type="number" step="0.1" placeholder="Ej. 100"></div><div><label>UM</label><select id="${p}_Ppu"><option value="psi">psi</option><option value="bar">bar</option></select></div></div>
+      </div>
+    </div>
+    ${withDet?`<div class="${p}_sub hidden" data-t="det">
+      <div class="fila">
+        <div class="unidad"><div><label>Diámetro de boquilla</label><input id="${p}_dD" type="number" step="0.01" placeholder="Ej. 0.75"></div><div><label>UM</label><select id="${p}_dDu"><option value="in">pulg</option><option value="mm">mm</option></select></div></div>
+        <div></div>
+      </div>
+      <p class="nota">No pongas presión: la calcula el tool con la presión que llega del bifurco.</p>
+    </div>`:''}`;
+}
+
+function readPiton(p){
+  const tipo=$(`${p}_tipo`).value;
+  if(tipo==='det'){
+    const D=toIn(`${p}_dD`,`${p}_dDu`);
+    if(!isFinite(D)||D<=0)return null;
+    return {det:true,D};
+  }
+  if(tipo==='liso'){
+    const D=toIn(`${p}_D`,`${p}_Du`), P=toPsi(`${p}_P`,`${p}_Pu`);
+    if(!isFinite(D)||!isFinite(P)||D<=0||P<0)return null;
+    return {Q:K_CAUDAL*D*D*Math.sqrt(P), Pp:P, tipo, D, pasoQ:`Caudal del pitón: Q = 29.84 · ${f(D,3)}² · √${f(P,1)} = ${f(K_CAUDAL*D*D*Math.sqrt(P),1)} gpm`};
+  }else if(tipo==='rateado'){
+    const Q1=toGpm(`${p}_Q1`,`${p}_Q1u`), P1=toPsi(`${p}_P1`,`${p}_P1u`), Pw=toPsi(`${p}_Pw`,`${p}_Pwu`);
+    if(!isFinite(Q1)||!isFinite(P1)||!isFinite(Pw)||P1<=0||Pw<0)return null;
+    const Q=Q1*Math.sqrt(Pw/P1);
+    return {Q, Pp:Pw, tipo, pasoQ:`Caudal del pitón: Q = ${f(Q1,1)} · √(${f(Pw,1)}/${f(P1,1)}) = ${f(Q,1)} gpm`};
+  }else{
+    const Q=toGpm(`${p}_Q`,`${p}_Qu`), Pp=toPsi(`${p}_Pp`,`${p}_Ppu`);
+    if(!isFinite(Q)||!isFinite(Pp))return null;
+    return {Q, Pp, tipo, pasoQ:`Caudal y presión dados: Q = ${f(Q,1)} gpm · Pp = ${f(Pp,1)} psi`};
+  }
+}
+
+const amHoseName=cId=>{const s=document.querySelector(`.am-hose[data-c="${cId}"]`);return s?s.value:'';};
+function amLeg(cId,Q,LId,LuId){
+  const C=num(cId), L=toFt(LId,LuId);
+  if(!isFinite(C)||!isFinite(Q)||!isFinite(L)||L<0)return null;
+  const hose=amHoseName(cId), dnom=DIAM_HOSE[hose]||2;
+  return {C,L,hose,dnom,Pf:C*Math.pow(Q/100,2)*(L/100), V:Q/(VELDIV*dnom*dnom), N:Math.max(1,Math.round(L/100))};
+}
+function amH(hId,huId,dirId){const h=toFt(hId,huId);if(!isFinite(h))return 0;const s=(dirId&&$(dirId).value==='debajo')?-1:1;return PSI_FT*h*s;}
+
+function amCalcular(){
+  const m=$('am_modo').value;
+  let kpis=[],pasos=[],mem=[],aviso='',titulo='';
+  const falta=()=>{aviso='Completa los datos de la maniobra para ver el resultado.';};
+
+  if(m==='linea'){
+    titulo='Maniobra: línea simple';
+    const pt=readPiton('ln'), leg=pt?amLeg('ln_C',pt.Q,'ln_L','ln_Lu'):null;
+    if(!pt||!leg){falta();}
+    else{
+      const Ph=amH('ln_h','ln_hu','ln_dir'), Pb=pt.Pp+leg.Pf+Ph;
+      kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi'},{lab:'Caudal de la línea',val:f(pt.Q,1),u:'gpm'}];
+      pasos=[pt.pasoQ,
+        `Fricción: Pf = ${f(leg.C,3)} · (${f(pt.Q,1)}/100)² · (${f(leg.L,0)}/100) = ${f(leg.Pf,2)} psi`,
+        `Altura: Ph = 0.4335 · ${f(amH('ln_h','ln_hu','ln_dir')/PSI_FT,1)} = ${f(Ph,2)} psi`,
+        `Bomba = Pp + Pf + Ph = ${f(pt.Pp,1)} + ${f(leg.Pf,2)} + ${f(Ph,2)} = ${f(Pb,2)} psi`];
+      mem=[['Presión en punta',f(pt.Pp,1),'psi',f(pt.Pp/PSI_BAR,2),'bar'],
+           ['Caudal',f(pt.Q,1),'gpm',f(pt.Q*GPM_LPM,1),'lpm'],
+           ['Manguera',leg.hose,'','',''],['Factor C',f(leg.C,3),'','',''],
+           ['Longitud',f(leg.L,0),'pies',f(leg.L/M_FT,1),'m'],
+           ['Pérdida por fricción',f(leg.Pf,2),'psi',f(leg.Pf/PSI_BAR,3),'bar'],
+           ['Presión por altura',f(Ph,2),'psi',f(Ph/PSI_BAR,3),'bar'],
+           ['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+      AM_DIB={kind:'linea',Q:pt.Q,Pp:pt.Pp,Pb,C:leg.C,L:leg.L,hose:leg.hose,dnom:leg.dnom,V:leg.V,h:amH('ln_h','ln_hu','ln_dir')/PSI_FT,dir:$('ln_dir').value};
+    }
+  }
+
+  else if(m==='sueltas'){
+    titulo='Maniobra: dos líneas sueltas';
+    const ptA=readPiton('sa'), legA=ptA?amLeg('sa_C',ptA.Q,'sa_L','sa_Lu'):null;
+    const ptB=readPiton('sb'), legB=ptB?amLeg('sb_C',ptB.Q,'sb_L','sb_Lu'):null;
+    if(!ptA||!legA||!ptB||!legB){falta();}
+    else{
+      const PhA=amH('sa_h','sa_hu'), PhB=amH('sb_h','sb_hu');
+      const PA=ptA.Pp+legA.Pf+PhA, PB=ptB.Pp+legB.Pf+PhB;
+      const Pb=Math.max(PA,PB), exig=PA>=PB?'A':'B';
+      kpis=[{lab:'Presión de bomba (la más exigente)',val:f(Pb,2),u:'psi'},{lab:'Caudal total',val:f(ptA.Q+ptB.Q,1),u:'gpm'}];
+      pasos=[`Línea A → ${ptA.pasoQ}`,
+        `Línea A: P = ${f(ptA.Pp,1)} + ${f(legA.Pf,2)} (fricción) + ${f(PhA,2)} (altura) = ${f(PA,2)} psi`,
+        `Línea B → ${ptB.pasoQ}`,
+        `Línea B: P = ${f(ptB.Pp,1)} + ${f(legB.Pf,2)} (fricción) + ${f(PhB,2)} (altura) = ${f(PB,2)} psi`,
+        `La bomba debe cubrir la más exigente (Línea ${exig}) = ${f(Pb,2)} psi`];
+      mem=[['Línea A — caudal',f(ptA.Q,1),'gpm',f(ptA.Q*GPM_LPM,1),'lpm'],
+           ['Línea A — presión requerida',f(PA,2),'psi',f(PA/PSI_BAR,2),'bar'],
+           ['Línea B — caudal',f(ptB.Q,1),'gpm',f(ptB.Q*GPM_LPM,1),'lpm'],
+           ['Línea B — presión requerida',f(PB,2),'psi',f(PB/PSI_BAR,2),'bar'],
+           ['Presión de bomba (más exigente)',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+      AM_DIB={kind:'sueltas',A:{Q:ptA.Q,Pp:ptA.Pp,P:PA,hose:legA.hose,dnom:legA.dnom,L:legA.L},B:{Q:ptB.Q,Pp:ptB.Pp,P:PB,hose:legB.hose,dnom:legB.dnom,L:legB.L},exig};
+    }
+  }
+
+  else if(m==='bifurcacion'){
+    titulo='Maniobra: bifurcación a 2 ramas';
+    const ig=$('b_iguales').checked;
+    $('ramaB_box').classList.toggle('hidden',ig);
+    const ptA=readPiton('ba'), PhA=amH('ba_h','ba_hu');
+    let ptB,PhB;
+    if(ig){ptB=ptA;PhB=PhA;}
+    else{ptB=readPiton('bb');PhB=amH('bb_h','bb_hu');}
+    const acc=num('bt_acc')||0;
+    const idA={C:'ba_C',L:'ba_L',Lu:'ba_Lu'}, idB=ig?idA:{C:'bb_C',L:'bb_L',Lu:'bb_Lu'};
+    if(!ptA||!ptB){falta();}
+    else if(ptA.det&&ptB.det){aviso='Una rama debe tener presión conocida (no las dos "determinadas"). Si marcaste "ramas iguales", destíldalo.';}
+    else if(!ptA.det&&!ptB.det){
+      const legA=amLeg(idA.C,ptA.Q,idA.L,idA.Lu), legB=amLeg(idB.C,ptB.Q,idB.L,idB.Lu);
+      if(!legA||!legB){falta();}
+      else{
+        const jA=ptA.Pp+legA.Pf+PhA, jB=ptB.Pp+legB.Pf+PhB;
+        const junc=Math.max(jA,jB), exig=jA>=jB?'A':'B';
+        const Qt=ptA.Q+ptB.Q;
+        const legT=amLeg('bt_C',Qt,'bt_L','bt_Lu'), PhT=amH('bt_h','bt_hu');
+        if(!legT){falta();}
+        else{
+          const Pb=junc+legT.Pf+PhT+acc;
+          kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi'},{lab:'Caudal total (tronco)',val:f(Qt,1),u:'gpm'}];
+          pasos=[`Cada rama → ${ptA.pasoQ}`,
+            `Presión en la unión (rama ${exig}, la más exigente) = ${f(exig==='A'?ptA.Pp:ptB.Pp,1)} + ${f(exig==='A'?legA.Pf:legB.Pf,2)} (fricción) + ${f(exig==='A'?PhA:PhB,2)} (altura) = ${f(junc,2)} psi`,
+            `Caudal combinado en el tronco = ${f(ptA.Q,1)} + ${f(ptB.Q,1)} = ${f(Qt,1)} gpm`,
+            `Fricción del tronco = ${f(legT.C,3)} · (${f(Qt,1)}/100)² · (${f(legT.L,0)}/100) = ${f(legT.Pf,2)} psi`,
+            `Bomba = unión + fricción tronco + altura tronco + bifurcación = ${f(junc,2)} + ${f(legT.Pf,2)} + ${f(PhT,2)} + ${f(acc,2)} = ${f(Pb,2)} psi`];
+          mem=[['Caudal por rama (A)',f(ptA.Q,1),'gpm',f(ptA.Q*GPM_LPM,1),'lpm'],
+               ['Caudal por rama (B)',f(ptB.Q,1),'gpm',f(ptB.Q*GPM_LPM,1),'lpm'],
+               ['Presión en la unión',f(junc,2),'psi',f(junc/PSI_BAR,2),'bar'],
+               ['Caudal en el tronco',f(Qt,1),'gpm',f(Qt*GPM_LPM,1),'lpm'],
+               ['Fricción del tronco',f(legT.Pf,2),'psi',f(legT.Pf/PSI_BAR,3),'bar'],
+               ['Altura del tronco',f(PhT,2),'psi',f(PhT/PSI_BAR,3),'bar'],
+               ['Pérdida en la bifurcación',f(acc,2),'psi','',''],
+               ['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+          AM_DIB={kind:'bifurcacion',Qt,Pb,acc,junc,exig,
+            dnomT:legT.dnom,hoseT:legT.hose,LT:legT.L,
+            A:{Q:ptA.Q,Pp:ptA.Pp,hose:legA.hose,dnom:legA.dnom,L:legA.L,Pj:jA},
+            B:{Q:ptB.Q,Pp:ptB.Pp,hose:legB.hose,dnom:legB.dnom,L:legB.L,Pj:jB}};
+        }
+      }
+    }
+    else{
+      const detSide=ptA.det?'A':'B';
+      const ctrlPt=ptA.det?ptB:ptA, ctrlPh=ptA.det?PhB:PhA, ctrlId=ptA.det?idB:idA;
+      const detPt=ptA.det?ptA:ptB, detPh=ptA.det?PhA:PhB, detId=ptA.det?idA:idB;
+      const legCtrl=amLeg(ctrlId.C,ctrlPt.Q,ctrlId.L,ctrlId.Lu);
+      const detC=num(detId.C), detL=toFt(detId.L,detId.Lu);
+      if(!legCtrl||!isFinite(detC)||!isFinite(detL)||detL<0){falta();}
+      else{
+        const Pi=ctrlPt.Pp+legCtrl.Pf+ctrlPh;
+        const Ndet=Math.max(1,Math.round(detL/100)), Pieff=Pi-detPh;
+        const KF=0.089042*detC*Math.pow(detPt.D,4)*Ndet, F=KF*Pieff/(1+KF), Ppd=Pieff-F;
+        if(!(Ppd>0)){aviso='La presión que llega del bifurco no alcanza para esa boquilla en la rama determinada.';}
+        else{
+          const Qdet=K_CAUDAL*detPt.D*detPt.D*Math.sqrt(Ppd);
+          const Qt=ctrlPt.Q+Qdet;
+          const legT=amLeg('bt_C',Qt,'bt_L','bt_Lu'), PhT=amH('bt_h','bt_hu');
+          if(!legT){falta();}
+          else{
+            const Pb=Pi+legT.Pf+PhT+acc;
+            const detHose=amHoseName(detId.C), detDnom=DIAM_HOSE[detHose]||1.5;
+            kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi'},{lab:'Caudal total (tronco)',val:f(Qt,1),u:'gpm'}];
+            pasos=[`Rama que manda (${detSide==='A'?'B':'A'}) → ${ctrlPt.pasoQ}`,
+              `Presión a la salida del bifurco = ${f(ctrlPt.Pp,1)} + ${f(legCtrl.Pf,2)} (fricción) + ${f(ctrlPh,2)} (altura) = ${f(Pi,2)} psi`,
+              `Rama determinada (${detSide}, boquilla ${f(detPt.D,3)}″, ${Ndet} mang.): F = (0.089042 · ${f(detC,1)} · ${f(detPt.D,3)}⁴ · ${f(Pieff,2)} · ${Ndet}) / (1 + 0.089042 · ${f(detC,1)} · ${f(detPt.D,3)}⁴ · ${Ndet}) = ${f(F,2)} psi`,
+              `Presión en esa boquilla = ${f(Pieff,2)} − ${f(F,2)} = ${f(Ppd,2)} psi → Caudal = 29.84 · ${f(detPt.D,3)}² · √${f(Ppd,2)} = ${f(Qdet,1)} gpm`,
+              `Caudal combinado = ${f(ctrlPt.Q,1)} + ${f(Qdet,1)} = ${f(Qt,1)} gpm`,
+              `Fricción del tronco = ${f(legT.C,3)} · (${f(Qt,1)}/100)² · (${f(legT.L,0)}/100) = ${f(legT.Pf,2)} psi`,
+              `Bomba = bifurco + fricción tronco + altura + bifurcación = ${f(Pi,2)} + ${f(legT.Pf,2)} + ${f(PhT,2)} + ${f(acc,2)} = ${f(Pb,2)} psi`];
+            mem=[['Caudal de la rama que manda',f(ctrlPt.Q,1),'gpm',f(ctrlPt.Q*GPM_LPM,1),'lpm'],
+                 ['Presión a la salida del bifurco',f(Pi,2),'psi',f(Pi/PSI_BAR,2),'bar'],
+                 ['Fricción en la rama determinada (F)',f(F,2),'psi',f(F/PSI_BAR,3),'bar'],
+                 ['Presión en la boquilla determinada',f(Ppd,2),'psi',f(Ppd/PSI_BAR,2),'bar'],
+                 ['Caudal de la rama determinada',f(Qdet,1),'gpm',f(Qdet*GPM_LPM,1),'lpm'],
+                 ['Caudal en el tronco',f(Qt,1),'gpm',f(Qt*GPM_LPM,1),'lpm'],
+                 ['Fricción del tronco',f(legT.Pf,2),'psi',f(legT.Pf/PSI_BAR,3),'bar'],
+                 ['Pérdida en la bifurcación',f(acc,2),'psi','',''],
+                 ['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+            const ctrlData={Q:ctrlPt.Q,Pp:ctrlPt.Pp,hose:legCtrl.hose,dnom:legCtrl.dnom,L:legCtrl.L};
+            const detData={Q:Qdet,Pp:Ppd,hose:detHose,dnom:detDnom,L:detL};
+            AM_DIB={kind:'bifurcacion',Qt,Pb,acc,junc:Pi,exig:detSide==='A'?'B':'A',det:true,detSide,
+              dnomT:legT.dnom,hoseT:legT.hose,LT:legT.L,
+              A:detSide==='A'?detData:ctrlData, B:detSide==='A'?ctrlData:detData};
+          }
+        }
+      }
+    }
+  }
+
+  else if(m==='siamesa'){
+    titulo='Maniobra: siamesa (dos líneas que se juntan)';
+    const pt=readPiton('si');
+    const neck=pt?amLeg('sn_C',pt.Q,'sn_L','sn_Lu'):null;
+    const Qhalf=pt?pt.Q/2:NaN;
+    const par=pt?amLeg('sp_C',Qhalf,'sp_L','sp_Lu'):null;
+    const acc=num('sn_acc')||0, Ph=amH('sp_h','sp_hu');
+    if(!pt||!neck||!par){falta();}
+    else{
+      const Pb=pt.Pp+neck.Pf+acc+par.Pf+Ph;
+      kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi'},{lab:'Caudal total',val:f(pt.Q,1),u:'gpm'}];
+      pasos=[pt.pasoQ,
+        `Tramo final (una línea, todo el caudal): Pf = ${f(neck.C,3)} · (${f(pt.Q,1)}/100)² · (${f(neck.L,0)}/100) = ${f(neck.Pf,2)} psi`,
+        `Pérdida en la siamesa = ${f(acc,2)} psi`,
+        `Tramo en paralelo (cada línea lleva la mitad: ${f(Qhalf,1)} gpm): Pf = ${f(par.C,3)} · (${f(Qhalf,1)}/100)² · (${f(par.L,0)}/100) = ${f(par.Pf,2)} psi`,
+        `Altura = ${f(Ph,2)} psi`,
+        `Bomba = ${f(pt.Pp,1)} + ${f(neck.Pf,2)} + ${f(acc,2)} + ${f(par.Pf,2)} + ${f(Ph,2)} = ${f(Pb,2)} psi`];
+      mem=[['Presión en el pitón',f(pt.Pp,1),'psi',f(pt.Pp/PSI_BAR,2),'bar'],
+           ['Caudal total',f(pt.Q,1),'gpm',f(pt.Q*GPM_LPM,1),'lpm'],
+           ['Caudal por línea (mitad)',f(Qhalf,1),'gpm',f(Qhalf*GPM_LPM,1),'lpm'],
+           ['Fricción tramo final',f(neck.Pf,2),'psi',f(neck.Pf/PSI_BAR,3),'bar'],
+           ['Pérdida en la siamesa',f(acc,2),'psi','',''],
+           ['Fricción tramo paralelo',f(par.Pf,2),'psi',f(par.Pf/PSI_BAR,3),'bar'],
+           ['Presión por altura',f(Ph,2),'psi',f(Ph/PSI_BAR,3),'bar'],
+           ['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']];
+      AM_DIB={kind:'siamesa',Q:pt.Q,Qhalf,Pp:pt.Pp,Pb,acc,
+        neck:{hose:neck.hose,dnom:neck.dnom,L:neck.L},par:{hose:par.hose,dnom:par.dnom,L:par.L}};
+    }
+  }
+
+  // ---- render ----
+  if(aviso){
+    $('am_avisoArea').innerHTML=`<div class="aviso">${aviso}</div>`;
+    $('am_kpiArea').innerHTML=`<div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>`;
+    $('am_pasoArea').innerHTML=`<p class="nota">Completa los datos de la maniobra para ver el cálculo.</p>`;
+    $('am_memBody').innerHTML=''; $('am_dibCard').style.display='none';
+    AM_ESTADO=null; AM_DIB=null; return;
+  }
+  $('am_avisoArea').innerHTML='';
+  $('am_kpiArea').innerHTML=kpis.map(k=>`<div class="kpi destacado"><div class="lab">${k.lab}</div><div><span class="val">${k.val}</span> <span class="u">${k.u}</span></div></div>`).join('');
+  $('am_pasoArea').innerHTML=pasos.map(p=>`<div class="formula">${p}</div>`).join('');
+  $('am_memBody').innerHTML=mem.map(r=>`<tr><td class="eti">${r[0]}</td><td class="num">${r[1]}</td><td class="u">${r[2]}</td><td class="num">${r[3]}</td><td class="u">${r[4]}</td></tr>`).join('');
+  AM_ESTADO={titulo,kpis,pasos,mem};
+  if(AM_DIB){
+    $('am_dibCard').style.display='block';
+    $('am_dibTitulo').textContent=AM_DIB_TITULO[AM_DIB.kind]||'La maniobra en movimiento';
+    $('am_dibSvg').innerHTML=amSvgDib(AM_DIB,false);
+    $('am_dibNota').textContent=AM_DIB_NOTA[AM_DIB.kind]||'';
+  }else{$('am_dibCard').style.display='none';}
+}
+
+/* ===== Diagramas del Armador ===== */
+const AM_DIB_TITULO={linea:'La línea en movimiento',sueltas:'Las dos líneas sueltas',bifurcacion:'La bifurcación en movimiento',siamesa:'El siamesado en movimiento'};
+const AM_DIB_NOTA={
+  linea:'El agua sale de la bomba, recorre la manguera y descarga por el pitón.',
+  sueltas:'Dos líneas independientes desde la misma bomba. La bomba debe cubrir la línea que pide más presión (marcada).',
+  bifurcacion:'El tronco lleva el caudal combinado hasta la bifurcación; ahí se reparte a las dos ramas. La unión toma la presión de la rama más exigente.',
+  siamesa:'Dos líneas en paralelo llevan la mitad del caudal cada una, se juntan en la siamesa y un tramo final lleva todo el caudal al pitón.'};
+function amSvgDib(d,light){
+  if(!d)return '';
+  if(d.kind==='linea')return svgLinea(d,light);
+  if(d.kind==='sueltas')return amSvgSueltas(d,light);
+  if(d.kind==='bifurcacion')return amSvgBifur(d,light);
+  if(d.kind==='siamesa')return amSvgSiamesa(d,light);
+  return '';
+}
+function amCols(light){return{cPipe:'#c0392b',cTx:light?'#16213e':'#e2e8f4',cTx2:light?'#5b6675':'#8b95b0',cWater:light?'#1f7fa0':'#38d4f8',cNode:light?'#ffffff':'#0b0f16',cBox:light?'#eef2f7':'#1e2433',cBoxBd:light?'#16213e':'#46506a',cPb:light?'#16213e':'#38d4f8',cCoup:light?'#9aa6b5':'#cdd6e6',cHalo:light?'#ffffff':'#0b0f16'};}
+function amCoupSeg(c,x0,y0,x1,y1,w,N){
+  if(!(N>1))return '';
+  const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,px=-dy/L,py=dx/L,hw=w/2+4;
+  let s='';
+  for(let k=1;k<N;k++){const t=k/N,cx=x0+dx*t,cy=y0+dy*t;
+    s+=`<line x1="${(cx+px*hw).toFixed(1)}" y1="${(cy+py*hw).toFixed(1)}" x2="${(cx-px*hw).toFixed(1)}" y2="${(cy-py*hw).toFixed(1)}" stroke="${c.cCoup}" stroke-width="2.6" stroke-linecap="round"/>`;}
+  return s;
+}
+function amBomba(c,x,y,label,val,unidad){return `<rect x="${x}" y="${y-26}" width="84" height="52" rx="7" fill="${c.cBox}" stroke="${c.cBoxBd}" stroke-width="2"/>
+  <text x="${x+42}" y="${y-32}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="11.5" fill="${c.cTx}">${label}</text>
+  <text x="${x+42}" y="${y+1}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="15" fill="${c.cPb}">${val}</text>
+  <text x="${x+42}" y="${y+17}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${unidad}</text>`;}
+function amPipe(c,path,w,fw,Q,dnom,light){const dur=durAnim(Q/(VELDIV*dnom*dnom)).toFixed(2),anim=light?'':`animation:dash ${dur}s linear infinite;`;
+  return `<path d="${path}" fill="none" stroke="${c.cPipe}" stroke-width="${w}" stroke-linecap="round"/><path d="${path}" fill="none" stroke="${c.cWater}" stroke-width="${fw}" stroke-linecap="round" stroke-dasharray="2 16" style="${anim}"/>`;}
+function amArrow(c,x,y,dx,dy,sz){const n=Math.hypot(dx,dy)||1;dx/=n;dy/=n;const px=-dy,py=dx;
+  return `<path d="M ${x+dx*sz} ${y+dy*sz} L ${x-dx*sz*0.2+px*sz*0.7} ${y-dy*sz*0.2+py*sz*0.7} L ${x-dx*sz*0.2-px*sz*0.7} ${y-dy*sz*0.2-py*sz*0.7} Z" fill="${c.cPipe}"/>`;}
+
+function amSvgBifur(d,light){
+  const c=amCols(light), bx=28, cy=180, xS=bx+84, nodeX=360;
+  const wT=grosorTubo(d.dnomT),wA=grosorTubo(d.A.dnom),wB=grosorTubo(d.B.dnom);
+  const maxB=Math.max(d.A.L,d.B.L,1), brBudget=Math.min(284,690-nodeX), brScale=brBudget/maxB;
+  const dax=0.95,day=-0.32, pxA=Math.max(165,brScale*d.A.L), pxB=Math.max(165,brScale*d.B.L);
+  const pax=nodeX+dax*pxA, pay=cy+day*pxA, pbx=nodeX+dax*pxB, pby=cy-day*pxB;
+  const NT=Math.max(1,Math.round(d.LT/100)),NA=Math.max(1,Math.round(d.A.L/100)),NB=Math.max(1,Math.round(d.B.L/100));
+  const exA=d.exig==='A';
+  const tagA=d.det?(d.detSide==='A'?' · calculada':' · manda'):(exA?' · más exigente':'');
+  const tagB=d.det?(d.detSide==='B'?' · calculada':' · manda'):(!exA?' · más exigente':'');
+  const H='';
+  return amPipe(c,`M ${xS} ${cy} L ${nodeX} ${cy}`,wT,Math.max(3,wT*0.42),d.Qt,d.dnomT,light)
+    +amPipe(c,`M ${nodeX} ${cy} L ${pax} ${pay}`,wA,Math.max(3,wA*0.42),d.A.Q,d.A.dnom,light)
+    +amPipe(c,`M ${nodeX} ${cy} L ${pbx} ${pby}`,wB,Math.max(3,wB*0.42),d.B.Q,d.B.dnom,light)
+    +amCoupSeg(c,xS,cy,nodeX,cy,wT,NT)+amCoupSeg(c,nodeX,cy,pax,pay,wA,NA)+amCoupSeg(c,nodeX,cy,pbx,pby,wB,NB)
+    +amArrow(c,pax,pay,dax,day,15)+amArrow(c,pbx,pby,dax,-day,15)
+    +amBomba(c,bx,cy,'BOMBA',f(d.Pb,0),'Pb (psi)')
+    +`<circle cx="${nodeX}" cy="${cy}" r="7" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +`<text x="${nodeX}" y="${cy+40}" text-anchor="middle" ${H} font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">BIFURCACIÓN +${f(d.acc,0)} psi</text>`
+    +`<text x="${nodeX}" y="${cy-13}" text-anchor="middle" ${H} font-family="JetBrains Mono" font-weight="600" font-size="11" fill="${c.cTx}">unión ${f(d.junc,0)} psi</text>`
+    +`<text x="${(xS+nodeX)/2}" y="${cy-wT/2-9}" text-anchor="middle" ${H} font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">${d.hoseT}</text>`
+    +`<text x="${(xS+nodeX)/2}" y="${cy+wT/2+16}" text-anchor="middle" ${H} font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">tronco ${f(d.LT,0)} pies · ${NT} mang.</text>`
+    +`<text x="${pax-16}" y="${pay-50}" text-anchor="end" ${H} font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">Rama A${tagA}</text>`
+    +`<text x="${pax-16}" y="${pay-35}" text-anchor="end" ${H} font-family="JetBrains Mono" font-weight="600" font-size="10.5" fill="${c.cTx}">${f(d.A.Q,1)} gpm · ${f(d.A.Pp,0)} psi</text>`
+    +`<text x="${pax-16}" y="${pay-20}" text-anchor="end" ${H} font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${d.A.hose} · ${f(d.A.L,0)} pies · ${NA} mang.</text>`
+    +`<text x="${pbx-16}" y="${pby+22}" text-anchor="end" ${H} font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">Rama B${tagB}</text>`
+    +`<text x="${pbx-16}" y="${pby+37}" text-anchor="end" ${H} font-family="JetBrains Mono" font-weight="600" font-size="10.5" fill="${c.cTx}">${f(d.B.Q,1)} gpm · ${f(d.B.Pp,0)} psi</text>`
+    +`<text x="${pbx-16}" y="${pby+52}" text-anchor="end" ${H} font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${d.B.hose} · ${f(d.B.L,0)} pies · ${NB} mang.</text>`;
+}
+
+function amSvgSueltas(d,light){
+  const c=amCols(light), bx=28, ay=112, by=256, xS=bx+84;
+  const wA=grosorTubo(d.A.dnom),wB=grosorTubo(d.B.dnom);
+  const maxL=Math.max(d.A.L,d.B.L,1), spanMax=560;
+  const xAe=xS+Math.max(150,spanMax*d.A.L/maxL), xBe=xS+Math.max(150,spanMax*d.B.L/maxL);
+  const NA=Math.max(1,Math.round(d.A.L/100)),NB=Math.max(1,Math.round(d.B.L/100));
+  const exA=d.exig==='A';
+  return amPipe(c,`M ${xS} ${ay} L ${xAe} ${ay}`,wA,Math.max(3,wA*0.42),d.A.Q,d.A.dnom,light)
+    +amPipe(c,`M ${xS} ${by} L ${xBe} ${by}`,wB,Math.max(3,wB*0.42),d.B.Q,d.B.dnom,light)
+    +amCoupSeg(c,xS,ay,xAe,ay,wA,NA)+amCoupSeg(c,xS,by,xBe,by,wB,NB)
+    +amArrow(c,xAe+18,ay,1,0,15)+amArrow(c,xBe+18,by,1,0,15)
+    +amBomba(c,bx,(ay+by)/2,'BOMBA',f(Math.max(d.A.P,d.B.P),0),'Pb (psi)')
+    +`<line x1="${xS}" y1="${ay}" x2="${xS}" y2="${by}" stroke="${c.cPipe}" stroke-width="3"/>`
+    +`<circle cx="${xAe}" cy="${ay}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/><circle cx="${xBe}" cy="${by}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +`<text x="${(xS+xAe)/2}" y="${ay-wA/2-10}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">Línea A${exA?' · más exigente':''} · ${d.A.hose}</text>`
+    +`<text x="${(xS+xAe)/2}" y="${ay+wA/2+16}" text-anchor="middle" font-family="DM Sans" font-size="10" fill="${c.cTx2}">${f(d.A.L,0)} pies · ${NA} mang. · ${f(d.A.Q,1)} gpm · pide ${f(d.A.P,0)} psi</text>`
+    +`<text x="${(xS+xBe)/2}" y="${by-wB/2-10}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">Línea B${!exA?' · más exigente':''} · ${d.B.hose}</text>`
+    +`<text x="${(xS+xBe)/2}" y="${by+wB/2+16}" text-anchor="middle" font-family="DM Sans" font-size="10" fill="${c.cTx2}">${f(d.B.L,0)} pies · ${NB} mang. · ${f(d.B.Q,1)} gpm · pide ${f(d.B.P,0)} psi</text>`;
+}
+
+function amSvgSiamesa(d,light){
+  const c=amCols(light), bx=28, cy=185, xL=118, sx=435, nx=585;
+  const wP=grosorTubo(d.par.dnom), wN=grosorTubo(d.neck.dnom);
+  const upY=cy-46, dnY=cy+46, jetX=nx+44;
+  const animN=light?'':`animation:dash ${durAnim(d.Q/(VELDIV*d.neck.dnom*d.neck.dnom)).toFixed(2)}s linear infinite;`;
+  return amPipe(c,`M ${bx+84} ${cy} L ${xL} ${upY} L ${sx} ${upY} L ${sx} ${cy}`,wP,Math.max(3,wP*0.42),d.Qhalf,d.par.dnom,light)
+    +amPipe(c,`M ${bx+84} ${cy} L ${xL} ${dnY} L ${sx} ${dnY} L ${sx} ${cy}`,wP,Math.max(3,wP*0.42),d.Qhalf,d.par.dnom,light)
+    +amPipe(c,`M ${sx} ${cy} L ${nx} ${cy}`,wN,Math.max(3,wN*0.42),d.Q,d.neck.dnom,light)
+    +amCoupSeg(c,xL,upY,sx,upY,wP,Math.max(1,Math.round(d.par.L/100)))+amCoupSeg(c,xL,dnY,sx,dnY,wP,Math.max(1,Math.round(d.par.L/100)))+amCoupSeg(c,sx,cy,nx,cy,wN,Math.max(1,Math.round(d.neck.L/100)))
+    +`<path d="M ${nx} ${cy} L ${jetX} ${cy}" stroke="${c.cWater}" stroke-width="${Math.max(3,wN*0.5)}" stroke-linecap="round" stroke-dasharray="2 13" style="${animN}"/>`
+    +amArrow(c,jetX+8,cy,1,0,15)
+    +amBomba(c,bx,cy,'TOMA / BOMBA',f(d.Pb,0),'Pb (psi)')
+    +`<circle cx="${sx}" cy="${cy}" r="7" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +`<circle cx="${nx}" cy="${cy}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +`<text x="${(xL+sx)/2}" y="${upY-wP/2-23}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">2 líneas en paralelo</text>`
+    +`<text x="${(xL+sx)/2}" y="${upY-wP/2-8}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${d.par.hose} · ${f(d.par.L,0)} pies c/u · ${f(d.Qhalf,1)} gpm c/u</text>`
+    +`<text x="${sx}" y="${dnY+20}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">SIAMESA +${f(d.acc,0)} psi</text>`
+    +`<text x="${(sx+nx)/2}" y="${cy-wN/2-9}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">${d.neck.hose}</text>`
+    +`<text x="${(sx+nx)/2}" y="${cy+wN/2+15}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">tramo final ${f(d.neck.L,0)} pies · ${f(d.Q,1)} gpm</text>`
+    +`<text x="${jetX+14}" y="${cy-4}" text-anchor="start" font-family="JetBrains Mono" font-weight="600" font-size="11" fill="${c.cTx}">${f(d.Q,1)} gpm</text>`
+    +`<text x="${jetX+14}" y="${cy+12}" text-anchor="start" font-family="DM Sans" font-size="10" fill="${c.cTx2}">${f(d.Pp,0)} psi</text>`;
+}
+
+/* ===== Reporte PDF del Armador ===== */
+function buildReportAM(d){
+  const fecha=new Date().toLocaleDateString('es-PE');
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:14px 18px;">
+    <div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="${LOGO_URL}" alt="ILFIS" style="height:38px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+    <div style="color:#fff;line-height:1.25;">
+      <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
+      <div style="font-size:15px;font-weight:600;margin-top:2px;">${d.titulo}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}<br><span style="font-size:9px;">Unidades: Americano</span></div>
+  </div>`;
+  const campos=[]; const add=(l,id)=>{if($(id).value)campos.push(`<span><b>${l}:</b> ${$(id).value}</span>`);};
+  add('Cálculo N.°','pcalc');add('Proyecto / ejercicio','pproy');add('Responsable','presp');
+  const proy=campos.length?`<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:10.5px;color:#0f172a;padding:9px 2px;border-bottom:1px solid #c8d2dd;font-family:'DM Sans',sans-serif;">${campos.join('')}</div>`:'';
+  const pasosHTML=`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#16213e;line-height:1.9;padding:4px 0;">${d.pasos.map(p=>'› '+p).join('<br>')}</div>`;
+  const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:auto;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al cálculo hidráulico. Los resultados son responsabilidad del usuario; verificar los criterios del proyecto. Generado con ILFIS UBUNTU.</div>`;
+  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:0 0 9mm;font-family:'DM Sans',sans-serif;">
+    <div style="padding:10mm 12mm 0;">${head}</div>
+    <div style="padding:0 12mm;display:flex;flex-direction:column;flex:1;">
+      ${proy}
+      ${bandHTML('Resultado')}${kpiHTML(d.kpis)}
+      ${bandHTML('Paso a paso')}${pasosHTML}
+      ${bandHTML('Memoria de cálculo')}${memTablaHTML(d.mem)}
+      ${AM_DIB?`${bandHTML('Esquema')}<div style="border:1px solid #16213e;background:#fff;padding:6px;margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;"><svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-height:230px;">${amSvgDib(AM_DIB,true)}</svg></div>`:''}
+      ${pie}
+    </div></div>`;
+}
+function reporteAM(){
+  if(!AM_ESTADO){amCalcular();}
+  if(!AM_ESTADO){alert('Completa los datos antes de generar el reporte.');return;}
+  $('printArea').innerHTML=buildReportAM(AM_ESTADO);
+  setTimeout(()=>window.print(),250);
+}
+
+/* ===== Init del Armador ===== */
+const AM_HOSE_DEF={ln_C:'Nitrilo 2½"',sa_C:'Nitrilo 2½"',sb_C:'Nitrilo 2½"',bt_C:'Nitrilo 2½"',ba_C:'Nitrilo 1½"',bb_C:'Nitrilo 1½"',sn_C:'Nitrilo 2½"',sp_C:'Nitrilo 2½"'};
+function amPintar(){
+  const m=$('am_modo').value;
+  document.querySelectorAll('.am-grp').forEach(g=>g.classList.toggle('hidden',g.dataset.grp!==m));
+}
+function amInit(){
+  // pitón slots
+  document.querySelectorAll('.piton-slot').forEach(s=>{const d=s.dataset.piton;s.innerHTML=pitonHTML(d,d==='ba'||d==='bb');});
+  // manguera selects + C por defecto
+  document.querySelectorAll('.am-hose').forEach(sel=>{
+    sel.innerHTML=Object.keys(FACTOR_C).map(k=>`<option>${k}</option>`).join('');
+    const cId=sel.dataset.c, def=AM_HOSE_DEF[cId];
+    if(def){sel.value=def;} const cEl=$(cId); if(cEl)cEl.value=FACTOR_C[sel.value];
+  });
+  // pestañas
+  document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    const t=b.dataset.tab;
+    $('tab-puntual').classList.toggle('hidden',t!=='puntual');
+    $('tab-armar').classList.toggle('hidden',t!=='armar');
+    $('tab-libre').classList.toggle('hidden',t!=='libre');
+  }));
+  // recalculo + interacciones (delegado en el contenedor)
+  const cont=$('tab-armar');
+  cont.addEventListener('input',amCalcular);
+  cont.addEventListener('change',e=>{
+    const t=e.target;
+    if(t.classList.contains('am-pt')){const p=t.id.replace('_tipo','');document.querySelectorAll('.'+p+'_sub').forEach(s=>s.classList.toggle('hidden',s.dataset.t!==t.value));if(t.value==='det'){const ig=$('b_iguales');if(ig&&ig.checked)ig.checked=false;}}
+    if(t.classList.contains('am-hose')){const cEl=$(t.dataset.c); if(cEl)cEl.value=FACTOR_C[t.value];}
+    amCalcular();
+  });
+  $('am_modo').addEventListener('change',()=>{amPintar();amCalcular();});
+  $('am_btnpdf').addEventListener('click',reporteAM);
+  amPintar(); amCalcular();
+}
+
+/* ===================== ARMADOR LIBRE POR BLOQUES (Fase 3) ===================== */
+let LB_TREE=[], LB_NID=0, LB_ESTADO=null, LB_DIB=null, LB_STEPS=[];
+const LB_LBL=['A','B','C','D','E','F'];
+const LB_ERR={vacio:'Toca un botón (Manguera, Siamesa, Bifurcación o Pitón) para empezar.',
+  sinfin:'La maniobra debe terminar en un pitón o en una bifurcación.',
+  medio:'Tienes un pitón o una bifurcación en medio: deben ir al final de su línea.',
+  datos:'Completa los datos de las piezas para ver el resultado.',
+  sindeterminante:'En la bifurcación, al menos una rama debe tener un pitón normal (no todas "determinadas").',
+  detsuelto:'El pitón "determinado por el bifurco" solo va dentro de una bifurcación.',
+  detsinmang:'La rama determinada necesita al menos una manguera.',
+  detbaja:'La presión que llega del bifurco no alcanza para esa boquilla determinada.'};
+
+const lbN=v=>{const x=parseFloat(v);return isFinite(x)?x:NaN;};
+const lbFt=(v,u)=>{const x=lbN(v);return u==='m'?x*M_FT:x;};
+const lbIn=(v,u)=>{const x=lbN(v);return u==='mm'?x/IN_MM:x;};
+const lbPsi=(v,u)=>{const x=lbN(v);return u==='bar'?x*PSI_BAR:x;};
+const lbGpm=(v,u)=>{const x=lbN(v);return u==='lpm'?x/GPM_LPM:x;};
+
+const lbId=()=>++LB_NID;
+function newMang(){return {id:lbId(),kind:'manguera',hose:'Nitrilo 2½"',L:'',Lu:'ft',h:'',hu:'ft',dir:'encima'};}
+function newSia(){return {id:lbId(),kind:'siamesa',hose:'Nitrilo 2½"',L:'',Lu:'ft',lines:'2',loss:'5',h:'',hu:'ft',dir:'encima'};}
+function newPit(){return {id:lbId(),kind:'piton',tipo:'qp',D:'',Du:'in',P:'',Pu:'psi',Q1:'',P1:'100',Pw:'',Pwu:'psi',Q:'',Qu:'gpm',Pp:'',Ppu:'psi'};}
+function newPitDet(){return {id:lbId(),kind:'piton',tipo:'det',dD:'',dDu:'in'};}
+function ramaNueva(){return [newMang(),newPit()];}
+function newBif(){return {id:lbId(),kind:'bifurcacion',loss:'5',ramas:[ramaNueva(),ramaNueva()]};}
+
+/* ---- helpers de árbol ---- */
+function eachNode(cb){(function walk(line){for(const n of line){cb(n);if(n.kind==='bifurcacion')n.ramas.forEach(walk);}})(LB_TREE);}
+function findNode(id){let r=null;eachNode(n=>{if(n.id==id)r=n;});return r;}
+function findLineOf(id){let res=null;(function walk(line){const i=line.findIndex(n=>n.id==id);if(i>=0)res={line,idx:i};for(const n of line)if(n.kind==='bifurcacion')n.ramas.forEach(walk);})(LB_TREE);return res;}
+function findLineById(lineId){if(lineId==='main')return LB_TREE;const m=/^b(\d+)-(\d+)$/.exec(lineId);if(m){const b=findNode(m[1]);if(b&&b.ramas[+m[2]])return b.ramas[+m[2]];}return null;}
+
+/* ---- motor recursivo (mismas fórmulas que la Fase 2) ---- */
+function solveLine(line,ctx){
+  if(!line||line.length===0)return {err:'vacio'};
+  const term=line[line.length-1];
+  if(term.kind!=='piton'&&term.kind!=='bifurcacion')return {err:'sinfin'};
+  for(let i=0;i<line.length-1;i++)if(line[i].kind==='piton'||line[i].kind==='bifurcacion')return {err:'medio'};
+  let d;
+  if(term.kind==='piton'){
+    if(term.tipo==='det')return {err:'detsuelto'};
+    const pt=lbPiton(term); if(!pt)return {err:'datos'};
+    LB_STEPS.push(`${ctx?ctx+' · ':''}${pt.pasoQ}`);
+    d={Q:pt.Q,Preq:pt.Pp,dib:{kind:'chain',Q:pt.Q,Pp:pt.Pp,segs:[]}};
+  }else{
+    const b=solveBifur(term,ctx); if(b.err)return b;
+    d={Q:b.Q,Preq:b.Preq,dib:b.dib};
+  }
+  const segs=[];
+  for(let i=line.length-2;i>=0;i--){
+    const n=line[i];
+    if(n.kind==='manguera'){
+      const leg=lbLeg(n,d.Q); if(!leg)return {err:'datos'};
+      const ph=lbHt(n); d={Q:d.Q,Preq:d.Preq+leg.Pf+ph,dib:d.dib};
+      LB_STEPS.push(`${ctx?ctx+' · ':''}fricción ${leg.hose} (${f(leg.L,0)} pies): Pf = ${f(leg.C,3)}·(${f(d.Q,1)}/100)²·(${f(leg.L,0)}/100) = ${f(leg.Pf,2)} psi`);
+      if(Math.abs(ph)>1e-9)LB_STEPS.push(`${ctx?ctx+' · ':''}altura: Ph = ${f(ph,2)} psi`);
+      segs.push({type:'manguera',hose:leg.hose,dnom:leg.dnom,L:leg.L,N:leg.N,ph,Q:d.Q});
+    }else if(n.kind==='siamesa'){
+      const lines=Math.max(2,parseInt(n.lines)||2), leg=lbLeg(n,d.Q/lines); if(!leg)return {err:'datos'};
+      const loss=lbN(n.loss)||0, ph=lbHt(n);
+      d={Q:d.Q,Preq:d.Preq+leg.Pf+loss+ph,dib:d.dib};
+      LB_STEPS.push(`${ctx?ctx+' · ':''}siamesa: ${lines} líneas a ${f(d.Q/lines,1)} gpm, Pf = ${f(leg.C,3)}·(${f(d.Q/lines,1)}/100)²·(${f(leg.L,0)}/100) = ${f(leg.Pf,2)} psi (+${f(loss,0)} psi de siamesa)`);
+      segs.push({type:'siamesa',hose:leg.hose,dnom:leg.dnom,L:leg.L,N:leg.N,lines,ph,loss,Q:d.Q});
+    }else return {err:'medio'};
+  }
+  segs.reverse();
+  if(d.dib.kind==='chain')d.dib.segs=segs; else d.dib.trunk=segs;
+  return d;
+}
+function solveBifur(node,ctx){
+  const loss=lbN(node.loss)||0, norm=[], det=[];
+  node.ramas.forEach((r,idx)=>{const term=r[r.length-1];((term&&term.kind==='piton'&&term.tipo==='det')?det:norm).push({r,idx});});
+  if(norm.length===0)return {err:'sindeterminante'};
+  const ns=norm.map(o=>({...o,sol:solveLine(o.r,`Rama ${LB_LBL[o.idx]}`)}));
+  for(const o of ns)if(o.sol.err)return o.sol;
+  const Pi=Math.max(...ns.map(o=>o.sol.Preq));
+  let Qsum=ns.reduce((a,o)=>a+o.sol.Q,0);
+  const branches=new Array(node.ramas.length);
+  ns.forEach(o=>{branches[o.idx]={label:LB_LBL[o.idx],det:false,exig:Math.abs(o.sol.Preq-Pi)<1e-9,Q:o.sol.Q,Pp:o.sol.dib.Pp,Preq:o.sol.Preq,segs:o.sol.dib.segs};});
+  for(const o of det){
+    const res=solveDetBranch(o.r,Pi,`Rama ${LB_LBL[o.idx]}`); if(res.err)return res;
+    Qsum+=res.Q; branches[o.idx]={label:LB_LBL[o.idx],det:true,Q:res.Q,Pp:res.Ppd,Preq:Pi,segs:res.segs};
+  }
+  LB_STEPS.push(`${ctx?ctx+' · ':''}unión: toma la rama más exigente = ${f(Pi,2)} psi; caudal combinado = ${f(Qsum,1)} gpm${loss>0?'; + '+f(loss,0)+' psi de bifurcación':''}`);
+  return {Q:Qsum,Preq:Pi+loss,dib:{kind:'bifur',Q:Qsum,Pi,junc:Pi,loss,trunk:[],branches}};
+}
+function solveDetBranch(line,Pi,ctx){
+  const term=line[line.length-1], D=lbIn(term.dD,term.dDu);
+  if(!isFinite(D)||D<=0)return {err:'datos'};
+  const mangs=line.slice(0,-1).filter(x=>x.kind==='manguera');
+  if(mangs.length===0)return {err:'detsinmang'};
+  const C=FACTOR_C[mangs[0].hose], dnom=DIAM_HOSE[mangs[0].hose]||1.5;
+  let Ltot=0, ph=0; for(const m of mangs){const L=lbFt(m.L,m.Lu); if(!isFinite(L))return {err:'datos'}; Ltot+=L; ph+=lbHt(m);}
+  const N=Math.max(1,Math.round(Ltot/100)), Pieff=Pi-ph;
+  const KF=0.089042*C*Math.pow(D,4)*N, F=KF*Pieff/(1+KF), Ppd=Pieff-F;
+  if(!(Ppd>0))return {err:'detbaja'};
+  const Q=K_CAUDAL*D*D*Math.sqrt(Ppd);
+  LB_STEPS.push(`${ctx} (determinada, boquilla ${f(D,3)}″): F = (0.089042·${f(C,0)}·${f(D,3)}⁴·${f(Pieff,2)}·${N})/(1+…) = ${f(F,2)} psi → P = ${f(Ppd,2)} psi, Q = ${f(Q,1)} gpm`);
+  return {Q,Ppd,F,segs:[{type:'manguera',hose:mangs[0].hose,dnom,L:Ltot,N,ph,Q}]};
+}
+
+/* ---- cálculo (mismas fórmulas y constantes que la Fase 2) ---- */
+function lbPiton(d){
+  if(d.tipo==='liso'){
+    const D=lbIn(d.D,d.Du), P=lbPsi(d.P,d.Pu);
+    if(!isFinite(D)||!isFinite(P)||D<=0||P<0)return null;
+    const Q=K_CAUDAL*D*D*Math.sqrt(P);
+    return {Q,Pp:P,pasoQ:`Caudal del pitón: Q = 29.84 · ${f(D,3)}² · √${f(P,1)} = ${f(Q,1)} gpm`};
+  }
+  if(d.tipo==='rateado'){
+    const Q1=lbGpm(d.Q1,d.Q1u||'gpm'), P1=lbPsi(d.P1,'psi'), Pw=lbPsi(d.Pw,d.Pwu||'psi');
+    if(!isFinite(Q1)||!isFinite(P1)||!isFinite(Pw)||P1<=0||Pw<0)return null;
+    const Q=Q1*Math.sqrt(Pw/P1);
+    return {Q,Pp:Pw,pasoQ:`Caudal del pitón: Q = ${f(Q1,1)} · √(${f(Pw,1)}/${f(P1,1)}) = ${f(Q,1)} gpm`};
+  }
+  const Q=lbGpm(d.Q,d.Qu), Pp=lbPsi(d.Pp,d.Ppu);
+  if(!isFinite(Q)||!isFinite(Pp))return null;
+  return {Q,Pp,pasoQ:`Caudal y presión dados: Q = ${f(Q,1)} gpm · Pp = ${f(Pp,1)} psi`};
+}
+function lbLeg(d,Q){
+  const C=FACTOR_C[d.hose], L=lbFt(d.L,d.Lu);
+  if(!isFinite(C)||!isFinite(Q)||!isFinite(L)||L<0)return null;
+  const dnom=DIAM_HOSE[d.hose]||2;
+  return {C,L,hose:d.hose,dnom,Pf:C*Math.pow(Q/100,2)*(L/100),N:Math.max(1,Math.round(L/100))};
+}
+function lbHt(d){const h=lbFt(d.h,d.hu);if(!isFinite(h))return 0;return PSI_FT*h*(d.dir==='debajo'?-1:1);}
+
+function lbCalc(){
+  LB_STEPS=[]; let kpis=[],pasos=[],mem=[],aviso='',titulo='Maniobra libre';
+  if(LB_TREE.length===0){aviso=LB_ERR.vacio;}
+  else{
+    const r=solveLine(LB_TREE,'');
+    if(r.err){aviso=LB_ERR[r.err]||LB_ERR.datos;}
+    else{
+      const Pb=r.Preq, isBif=r.dib.kind==='bifur';
+      kpis=[{lab:'Presión de bomba',val:f(Pb,2),u:'psi'},{lab:'Caudal total',val:f(r.Q,1),u:'gpm'}];
+      pasos=LB_STEPS.concat([`Presión de bomba = ${f(Pb,2)} psi`]);
+      mem.push(['Caudal total (en la bomba)',f(r.Q,1),'gpm',f(r.Q*GPM_LPM,1),'lpm']);
+      if(isBif){
+        r.dib.branches.forEach(b=>{
+          mem.push([`Rama ${b.label}${b.det?' (determinada)':b.exig?' (más exigente)':''} — caudal`,f(b.Q,1),'gpm',f(b.Q*GPM_LPM,1),'lpm']);
+          mem.push([`Rama ${b.label} — presión`,f(b.Preq,2),'psi',f(b.Preq/PSI_BAR,2),'bar']);
+        });
+        mem.push(['Presión en la unión',f(r.dib.junc,2),'psi',f(r.dib.junc/PSI_BAR,2),'bar']);
+        if(r.dib.loss>0)mem.push(['Pérdida en la bifurcación',f(r.dib.loss,2),'psi','','']);
+      }
+      mem.push(['Presión de bomba',f(Pb,2),'psi',f(Pb/PSI_BAR,2),'bar']);
+      LB_DIB=Object.assign({},r.dib,{Pb});
+    }
+  }
+  if(aviso){
+    $('lb_avisoArea').innerHTML=`<div class="aviso">${aviso}</div>`;
+    $('lb_kpiArea').innerHTML=`<div class="kpi destacado"><div class="lab">—</div><div><span class="val">—</span></div></div>`;
+    $('lb_pasoArea').innerHTML=`<p class="nota">Arma la maniobra para ver el cálculo.</p>`;
+    $('lb_memBody').innerHTML=''; $('lb_dibCard').style.display='none'; LB_ESTADO=null; LB_DIB=null; return;
+  }
+  $('lb_avisoArea').innerHTML='';
+  $('lb_kpiArea').innerHTML=kpis.map(k=>`<div class="kpi destacado"><div class="lab">${k.lab}</div><div><span class="val">${k.val}</span> <span class="u">${k.u}</span></div></div>`).join('');
+  $('lb_pasoArea').innerHTML=pasos.map(p=>`<div class="formula">${p}</div>`).join('');
+  $('lb_memBody').innerHTML=mem.map(r=>`<tr><td class="eti">${r[0]}</td><td class="num">${r[1]}</td><td class="u">${r[2]}</td><td class="num">${r[3]}</td><td class="u">${r[4]}</td></tr>`).join('');
+  LB_ESTADO={titulo,kpis,pasos,mem};
+  if(LB_DIB){
+    $('lb_dibCard').style.display='block';
+    $('lb_dibSvg').innerHTML=lbSvg(LB_DIB,false);
+    $('lb_dibTitulo').textContent=LB_DIB.kind==='bifur'?'La maniobra en movimiento':'La línea en movimiento';
+    $('lb_dibNota').textContent=LB_DIB.kind==='bifur'?'El tronco lleva el caudal combinado hasta la bifurcación; ahí se reparte a las ramas. La unión toma la presión de la rama más exigente.':'El agua sale de la bomba, recorre las mangueras y descarga por el pitón. El grosor del tubo es proporcional al diámetro y los cortes marcan cada tramo de 100 pies.';
+  }else{$('lb_dibCard').style.display='none';}
+}
+
+/* ---- dibujo automático del árbol (reusa primitivas de la Fase 2) ---- */
+function lbSvg(d,light){ if(!d)return ''; return d.kind==='bifur'?lbSvgBifur(d,light):lbSvgChain(d,light); }
+
+function lbSvgBifur(d,light){
+  const c=amCols(light), bx=28, cy=180, xS=bx+84;
+  const trunk=d.trunk||[], out=[],labs=[];
+  const trunkBudget=trunk.length?Math.min(250,80+trunk.length*70):60;
+  const totL=trunk.reduce((a,s)=>a+Math.max(s.L,1),0)||1;
+  let W=trunk.map(s=>Math.max(58,trunkBudget*Math.max(s.L,1)/totL));
+  const sw=W.reduce((a,b)=>a+b,0); if(sw>trunkBudget){const k=trunkBudget/sw;W=W.map(w=>w*k);}
+  let x=xS;
+  trunk.forEach((s,i)=>{ const w=W[i], x2=x+w, wt=grosorTubo(s.dnom), mx=(x+x2)/2;
+    out.push(amPipe(c,`M ${x} ${cy} L ${x2} ${cy}`,wt,Math.max(3,wt*0.42),s.Q,s.dnom,light));
+    out.push(amCoupSeg(c,x,cy,x2,cy,wt,s.N));
+    if(s.hose)labs.push(`<text x="${mx.toFixed(1)}" y="${(cy-wt/2-9).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="9.5" fill="${c.cPipe}">${s.hose}</text>`);
+    labs.push(`<text x="${mx.toFixed(1)}" y="${(cy+wt/2+14).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-size="9" fill="${c.cTx2}">${f(s.L,0)} pies</text>`);
+    x=x2; });
+  const nodeX=trunk.length?x:xS+34;
+  if(!trunk.length)out.push(`<line x1="${xS}" y1="${cy}" x2="${nodeX}" y2="${cy}" stroke="${c.cPipe}" stroke-width="3"/>`);
+  const branches=d.branches||[], B=branches.length;
+  const brBudget=Math.min(300,700-nodeX-90);
+  const maxBL=Math.max(1,...branches.map(b=>b.segs.reduce((a,s)=>a+Math.max(s.L,1),0)));
+  branches.forEach((b,bi)=>{
+    const frac=B>1?(bi/(B-1)-0.5):0, ang=frac*0.85;
+    const ux=0.95, uy=B>1?Math.sin(ang):0;
+    const blen=b.segs.reduce((a,s)=>a+Math.max(s.L,1),0)||1, px=Math.max(120,brBudget*blen/maxBL);
+    let sx=nodeX, sy=cy;
+    (b.segs.length?b.segs:[{dnom:1.5,L:1,N:1,hose:''}]).forEach(s=>{
+      const segLen=px*Math.max(s.L,1)/blen, ex=sx+ux*segLen, ey=sy+uy*segLen, wt=grosorTubo(s.dnom);
+      out.push(amPipe(c,`M ${sx.toFixed(1)} ${sy.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}`,wt,Math.max(3,wt*0.42),b.Q,s.dnom,light));
+      out.push(amCoupSeg(c,sx,sy,ex,ey,wt,s.N));
+      sx=ex; sy=ey;
+    });
+    out.push(amArrow(c,sx+ux*10,sy+uy*10,ux,uy,13));
+    const tag=b.det?' · calculada':(b.exig?' · más exigente':'');
+    const ly=uy<-0.05?sy-24:(uy>0.05?sy+30:cy-24);
+    labs.push(`<text x="${(sx+12).toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="start" font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">Rama ${b.label}${tag}</text>`);
+    labs.push(`<text x="${(sx+12).toFixed(1)}" y="${(ly+14).toFixed(1)}" text-anchor="start" font-family="JetBrains Mono" font-weight="600" font-size="10" fill="${c.cTx}">${f(b.Q,1)} gpm · ${f(b.Pp,0)} psi</text>`);
+    const m0=b.segs[0]; if(m0)labs.push(`<text x="${(sx+12).toFixed(1)}" y="${(ly+28).toFixed(1)}" text-anchor="start" font-family="DM Sans" font-size="9" fill="${c.cTx2}">${m0.hose} · ${f(b.segs.reduce((a,s)=>a+s.L,0),0)} pies</text>`);
+  });
+  return out.join('')
+    +amBomba(c,bx,cy,'BOMBA',f(d.Pb!=null?d.Pb:0,0),'Pb (psi)')
+    +`<circle cx="${nodeX.toFixed(1)}" cy="${cy}" r="7" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +`<text x="${nodeX.toFixed(1)}" y="${(cy+40).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">${d.loss>0?'BIFURCACIÓN +'+f(d.loss,0)+' psi':'DOS LÍNEAS SUELTAS'}</text>`
+    +`<text x="${nodeX.toFixed(1)}" y="${(cy-13).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono" font-weight="600" font-size="10.5" fill="${c.cTx}">unión ${f(d.junc,0)} psi</text>`
+    +labs.join('');
+}
+
+function lbSvgChain(d,light){
+  const c=amCols(light), bx=28, cy=180, xS=bx+84;
+  const avail=Math.max(120,650-xS);
+  const segs=(d.segs&&d.segs.length)?d.segs:[{hose:'',dnom:2,L:0,N:1,type:'manguera',Q:d.Q}];
+  const totL=segs.reduce((a,s)=>a+Math.max(s.L,1),0);
+  let widths=segs.map(s=>Math.max(64,avail*Math.max(s.L,1)/totL));
+  const sw=widths.reduce((a,b)=>a+b,0);
+  if(sw>avail){const k=avail/sw;widths=widths.map(w=>w*k);}
+  let x=xS; const parts=[],coup=[],labs=[],nodes=[];
+  segs.forEach((s,i)=>{
+    const w=widths[i], x2=x+w, wt=grosorTubo(s.dnom), mx=(x+x2)/2;
+    if(s.type==='siamesa'){
+      const lines=Math.max(2,parseInt(s.lines)||2), off=Math.min(32,wt+17), uy=cy-off, dy=cy+off;
+      const qh=(s.Q!=null?s.Q:d.Q)/lines, x1=x+13, x3=x2-13;
+      parts.push(amPipe(c,`M ${x} ${cy} L ${x1} ${uy} L ${x3} ${uy} L ${x2} ${cy}`,wt,Math.max(3,wt*0.42),qh,s.dnom,light));
+      parts.push(amPipe(c,`M ${x} ${cy} L ${x1} ${dy} L ${x3} ${dy} L ${x2} ${cy}`,wt,Math.max(3,wt*0.42),qh,s.dnom,light));
+      coup.push(amCoupSeg(c,x1,uy,x3,uy,wt,s.N)+amCoupSeg(c,x1,dy,x3,dy,wt,s.N));
+      nodes.push(`<circle cx="${x.toFixed(1)}" cy="${cy}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/><circle cx="${x2.toFixed(1)}" cy="${cy}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`);
+      labs.push(`<text x="${mx}" y="${(uy-10).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">SIAMESA · ${lines} líneas · ${s.hose}</text>`);
+      labs.push(`<text x="${mx}" y="${(dy+27).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${f(s.L,0)} pies c/u · ${s.N} mang. · ${f(qh,1)} gpm c/u</text>`);
+    }else{
+      parts.push(amPipe(c,`M ${x} ${cy} L ${x2} ${cy}`,wt,Math.max(3,wt*0.42),d.Q,s.dnom,light));
+      coup.push(amCoupSeg(c,x,cy,x2,cy,wt,s.N));
+      if(s.hose)labs.push(`<text x="${mx}" y="${(cy-wt/2-9).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="10" fill="${c.cPipe}">${s.hose}</text>`);
+      labs.push(`<text x="${mx}" y="${(cy+wt/2+15).toFixed(1)}" text-anchor="middle" font-family="DM Sans" font-size="9.5" fill="${c.cTx2}">${f(s.L,0)} pies · ${s.N} mang.</text>`);
+      if(i>0)nodes.push(`<circle cx="${x.toFixed(1)}" cy="${cy}" r="5" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`);
+    }
+    x=x2;
+  });
+  const jetX=x+38, animJ=light?'':`animation:dash ${durAnim(d.Q/(VELDIV*4)).toFixed(2)}s linear infinite;`;
+  const htTxt=Math.abs(d.sumPh)>1e-9?`<text x="${xS}" y="${cy-66}" text-anchor="start" font-family="DM Sans" font-weight="700" font-size="10.5" fill="${c.cPipe}">Altura total ${f(d.sumPh/PSI_FT,0)} pies · ${f(d.sumPh,1)} psi</text>`:'';
+  return parts.join('')+coup.join('')+nodes.join('')
+    +`<path d="M ${x.toFixed(1)} ${cy} L ${jetX.toFixed(1)} ${cy}" stroke="${c.cWater}" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 13" style="${animJ}"/>`
+    +amArrow(c,jetX+8,cy,1,0,15)
+    +amBomba(c,bx,cy,'BOMBA',f(d.Pb,0),'Pb (psi)')
+    +`<circle cx="${x.toFixed(1)}" cy="${cy}" r="6" fill="${c.cNode}" stroke="#16213e" stroke-width="2"/>`
+    +labs.join('')
+    +`<text x="${(jetX+14).toFixed(1)}" y="${cy-4}" text-anchor="start" font-family="JetBrains Mono" font-weight="600" font-size="11" fill="${c.cTx}">${f(d.Q,1)} gpm</text>`
+    +`<text x="${(jetX+14).toFixed(1)}" y="${cy+12}" text-anchor="start" font-family="DM Sans" font-size="10" fill="${c.cTx2}">${f(d.Pp,0)} psi</text>`
+    +htTxt;
+}
+
+/* ---- lista apilable ---- */
+function lbOpts(sel,pairs){return pairs.map(([v,t])=>`<option value="${v}"${v===sel?' selected':''}>${t}</option>`).join('');}
+function lbHoseOpts(sel){return Object.keys(FACTOR_C).map(k=>`<option${k===sel?' selected':''}>${k}</option>`).join('');}
+const LB_MINI='style="background:#1e2433;border:1px solid #46506a;color:#cdd6e6;border-radius:7px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"';
+function lbBlockHTML(b,idx,lastIdx,lineId){
+  const btn=(act,sym,tit,col)=>`<button type="button" data-act="${act}" data-id="${b.id}" title="${tit}" style="background:none;border:none;color:${col};font-size:15px;line-height:1;cursor:pointer;padding:2px 4px;">${sym}</button>`;
+  const up=idx>0?btn('up','▲','Subir','var(--tx2)'):'';
+  const dn=idx<lastIdx?btn('dn','▼','Bajar','var(--tx2)'):'';
+  const del=btn('del','✕','Quitar','var(--bad)');
+  const head=t=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><h3 style="margin:0;">${t}</h3><div style="display:flex;gap:2px;align-items:center;">${up}${dn}${del}</div></div>`;
+  if(b.kind==='manguera'){
+    const C=FACTOR_C[b.hose];
+    const um=(fld,o)=>`<select data-id="${b.id}" data-f="${fld}" class="lb-sel" style="width:82px;flex:none;">${o}</select>`;
+    return `<div class="amsub" data-id="${b.id}">${head('Manguera '+(idx+1))}
+      <label>Tipo y diámetro</label>
+      <select data-id="${b.id}" data-f="hose" class="lb-sel">${lbHoseOpts(b.hose)}</select>
+      <label>Longitud</label>
+      <div style="display:flex;gap:6px;"><input type="number" step="1" data-id="${b.id}" data-f="L" class="lb-inp" value="${b.L}" placeholder="Ej. 200" style="flex:1;min-width:0;">${um('Lu',lbOpts(b.Lu,[['ft','pies'],['m','metros']]))}</div>
+      <div class="fila">
+        <div><label>Altura (opcional)</label><div style="display:flex;gap:6px;"><input type="number" step="0.1" data-id="${b.id}" data-f="h" class="lb-inp" value="${b.h}" placeholder="0" style="flex:1;min-width:0;">${um('hu',lbOpts(b.hu,[['ft','pies'],['m','metros']]))}</div></div>
+        <div><label>Sube o baja</label><select data-id="${b.id}" data-f="dir" class="lb-sel">${lbOpts(b.dir,[['encima','sube (+)'],['debajo','baja (−)']])}</select></div>
+      </div>
+      <p class="nota" style="margin-top:7px;">Factor C (fijo) = ${f(C,3)}</p></div>`;
+  }
+  if(b.kind==='siamesa'){
+    const C=FACTOR_C[b.hose];
+    return `<div class="amsub" data-id="${b.id}" style="border-color:#2a6f7a;">${head('Siamesa (tramo en paralelo)')}
+      <div class="fila3">
+        <div><label>Manguera</label><select data-id="${b.id}" data-f="hose" class="lb-sel">${lbHoseOpts(b.hose)}</select></div>
+        <div class="unidad"><div><label>Largo por línea</label><input type="number" step="1" data-id="${b.id}" data-f="L" class="lb-inp" value="${b.L}" placeholder="Ej. 600"></div><div><label>UM</label><select data-id="${b.id}" data-f="Lu" class="lb-sel">${lbOpts(b.Lu,[['ft','pies'],['m','metros']])}</select></div></div>
+        <div><label>N.° de líneas en paralelo</label><input type="number" step="1" min="2" data-id="${b.id}" data-f="lines" class="lb-inp" value="${b.lines}"></div>
+      </div>
+      <div class="fila">
+        <div><label>Pérdida en la siamesa (psi)</label><input type="number" step="0.1" data-id="${b.id}" data-f="loss" class="lb-inp" value="${b.loss}"></div>
+        <div></div>
+      </div>
+      <p class="nota">Cada línea lleva el caudal total dividido entre el N.° de líneas. Pon una manguera normal después como tramo final.</p></div>`;
+  }
+  if(b.kind==='bifurcacion'){
+    const ramasHTML=b.ramas.map((r,ri)=>{
+      const lid='b'+b.id+'-'+ri;
+      const delR=b.ramas.length>2?`<button type="button" data-act="delRama" data-bif="${b.id}" data-idx="${ri}" style="background:none;border:none;color:var(--bad);font-size:12px;cursor:pointer;">✕ rama</button>`:'';
+      return `<div style="border:1px dashed #46506a;border-radius:8px;padding:8px;margin:6px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><b style="color:#38d4f8;font-size:11px;">RAMA ${LB_LBL[ri]}</b>${delR}</div>
+        ${lbRenderLine(r,lid)}
+        <div class="acciones" style="margin-top:6px;gap:6px;">
+          <button type="button" ${LB_MINI} data-act="addMang" data-line="${lid}">+ manguera</button>
+          <button type="button" ${LB_MINI} data-act="addPit" data-line="${lid}">+ pitón</button>
+        </div></div>`;
+    }).join('');
+    return `<div class="amsub" data-id="${b.id}" style="border-color:#c0392b;">${head('Bifurcación')}
+      <div class="fila">
+        <div><label>Pérdida en la bifurcación (psi)</label><input type="number" step="0.1" data-id="${b.id}" data-f="loss" class="lb-inp" value="${b.loss}"></div>
+        <div style="display:flex;align-items:flex-end;"><button type="button" ${LB_MINI} data-act="addRama" data-bif="${b.id}">+ otra rama</button></div>
+      </div>
+      ${ramasHTML}
+      <p class="nota">Para "dos líneas sueltas": pérdida en 0 y sin mangueras antes de la bifurcación. Para la rama determinada, en su pitón elige el tipo "Determinado por el bifurco".</p></div>`;
+  }
+  const inRama=!!lineId && lineId!=='main';
+  let body='';
+  if(b.tipo==='liso'){
+    body=`<div class="fila">
+      <div class="unidad"><div><label>Diámetro de orificio</label><input type="number" step="0.01" data-id="${b.id}" data-f="D" class="lb-inp" value="${b.D}" placeholder="Ej. 0.5"></div><div><label>UM</label><select data-id="${b.id}" data-f="Du" class="lb-sel">${lbOpts(b.Du,[['in','pulg'],['mm','mm']])}</select></div></div>
+      <div class="unidad"><div><label>Presión en punta</label><input type="number" step="0.1" data-id="${b.id}" data-f="P" class="lb-inp" value="${b.P}" placeholder="Ej. 120"></div><div><label>UM</label><select data-id="${b.id}" data-f="Pu" class="lb-sel">${lbOpts(b.Pu,[['psi','psi'],['bar','bar']])}</select></div></div>
+    </div>`;
+  }else if(b.tipo==='rateado'){
+    body=`<div class="fila3">
+      <div class="unidad"><div><label>Caudal nominal Q₁</label><input type="number" step="0.1" data-id="${b.id}" data-f="Q1" class="lb-inp" value="${b.Q1}" placeholder="Ej. 125"></div><div><label>UM</label><select data-id="${b.id}" data-f="Q1u" class="lb-sel">${lbOpts(b.Q1u||'gpm',[['gpm','gpm'],['lpm','lpm']])}</select></div></div>
+      <div><label>Presión nominal P₁ (psi)</label><input type="number" step="0.1" data-id="${b.id}" data-f="P1" class="lb-inp" value="${b.P1}"></div>
+      <div class="unidad"><div><label>Presión de trabajo</label><input type="number" step="0.1" data-id="${b.id}" data-f="Pw" class="lb-inp" value="${b.Pw}" placeholder="Ej. 120"></div><div><label>UM</label><select data-id="${b.id}" data-f="Pwu" class="lb-sel">${lbOpts(b.Pwu||'psi',[['psi','psi'],['bar','bar']])}</select></div></div>
+    </div>`;
+  }else if(b.tipo==='det'){
+    body=`<div class="fila">
+      <div class="unidad"><div><label>Diámetro de boquilla</label><input type="number" step="0.01" data-id="${b.id}" data-f="dD" class="lb-inp" value="${b.dD||''}" placeholder="Ej. 0.75"></div><div><label>UM</label><select data-id="${b.id}" data-f="dDu" class="lb-sel">${lbOpts(b.dDu||'in',[['in','pulg'],['mm','mm']])}</select></div></div>
+      <div></div>
+    </div>
+    <p class="nota">Sin presión: el caudal y la presión de esta rama los calcula solo con la presión que llega del bifurco.</p>`;
+  }else{
+    body=`<div class="fila">
+      <div class="unidad"><div><label>Caudal Q</label><input type="number" step="0.1" data-id="${b.id}" data-f="Q" class="lb-inp" value="${b.Q}" placeholder="Ej. 150"></div><div><label>UM</label><select data-id="${b.id}" data-f="Qu" class="lb-sel">${lbOpts(b.Qu,[['gpm','gpm'],['lpm','lpm']])}</select></div></div>
+      <div class="unidad"><div><label>Presión en punta</label><input type="number" step="0.1" data-id="${b.id}" data-f="Pp" class="lb-inp" value="${b.Pp}" placeholder="Ej. 100"></div><div><label>UM</label><select data-id="${b.id}" data-f="Ppu" class="lb-sel">${lbOpts(b.Ppu,[['psi','psi'],['bar','bar']])}</select></div></div>
+    </div>`;
+  }
+  const opts=[['liso','Orificio liso'],['rateado','Rateado (gpm @ psi)'],['qp','Caudal y presión']];
+  if(inRama)opts.push(['det','Determinado por el bifurco (solo boquilla)']);
+  return `<div class="amsub" data-id="${b.id}" style="border-color:#1d4e63;">${head(b.tipo==='det'?'Pitón determinado por el bifurco':'Pitón (final)')}
+    <label>Tipo de pitón</label><select data-id="${b.id}" data-f="tipo" class="lb-sel">${lbOpts(b.tipo,opts)}</select>
+    ${body}</div>`;
+}
+function lbRenderLine(line,lineId){
+  const lastIdx=line.length-1;
+  return line.map((n,i)=>lbBlockHTML(n,i,lastIdx,lineId)).join('');
+}
+function lbRender(){
+  const bomba=`<div class="amsub" style="border-color:#46506a;"><div style="display:flex;align-items:center;gap:8px;"><h3 style="margin:0;color:#cdd6e6;">Bomba / Toma</h3><span class="nota" style="margin:0;">— inicio de la maniobra</span></div></div>`;
+  $('lb_stack').innerHTML=bomba+lbRenderLine(LB_TREE,'main');
+}
+
+/* ---- reporte PDF ---- */
+function buildReportLB(d){
+  const fecha=new Date().toLocaleDateString('es-PE');
+  const head=`<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:14px 18px;">
+    <div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="${LOGO_URL}" alt="ILFIS" style="height:38px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';"></div>
+    <div style="color:#fff;line-height:1.25;">
+      <div><span style="font-size:18px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9.5px;color:#aac;text-transform:uppercase;letter-spacing:.8px;">Plataforma Interactiva PCI</span></div>
+      <div style="font-size:15px;font-weight:600;margin-top:2px;">${d.titulo}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:11px;font-family:'JetBrains Mono',monospace;">${fecha}<br><span style="font-size:9px;">Unidades: Americano</span></div>
+  </div>`;
+  const campos=[]; const add=(l,id)=>{if($(id).value)campos.push(`<span><b>${l}:</b> ${$(id).value}</span>`);};
+  add('Cálculo N.°','pcalc');add('Proyecto / ejercicio','pproy');add('Responsable','presp');
+  const proy=campos.length?`<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:10.5px;color:#0f172a;padding:9px 2px;border-bottom:1px solid #c8d2dd;font-family:'DM Sans',sans-serif;">${campos.join('')}</div>`:'';
+  const pasosHTML=`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#16213e;line-height:1.9;padding:4px 0;">${d.pasos.map(p=>'› '+p).join('<br>')}</div>`;
+  const pie=`<div style="font-size:8.5px;color:#6b7480;margin-top:auto;border-top:1px solid #c8d2dd;padding-top:7px;font-family:'DM Sans',sans-serif;">Herramienta de apoyo al cálculo hidráulico. Los resultados son responsabilidad del usuario; verificar los criterios del proyecto. Generado con ILFIS UBUNTU.</div>`;
+  return `<div style="box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column;padding:0 0 9mm;font-family:'DM Sans',sans-serif;">
+    <div style="padding:10mm 12mm 0;">${head}</div>
+    <div style="padding:0 12mm;display:flex;flex-direction:column;flex:1;">
+      ${proy}
+      ${bandHTML('Resultado')}${kpiHTML(d.kpis)}
+      ${bandHTML('Paso a paso')}${pasosHTML}
+      ${bandHTML('Memoria de cálculo')}${memTablaHTML(d.mem)}
+      ${LB_DIB?`${bandHTML('Esquema')}<div style="border:1px solid #16213e;background:#fff;padding:6px;margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;"><svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-height:230px;">${lbSvg(LB_DIB,true)}</svg></div>`:''}
+      ${pie}
+    </div></div>`;
+}
+function reporteLB(){
+  if(!LB_ESTADO){lbCalc();}
+  if(!LB_ESTADO){alert('Arma la maniobra antes de generar el reporte.');return;}
+  $('printArea').innerHTML=buildReportLB(LB_ESTADO);
+  setTimeout(()=>window.print(),250);
+}
+
+/* ---- init ---- */
+function lbAdd(lineId,kind){
+  const line=findLineById(lineId); if(!line)return;
+  const termIdx=line.findIndex(n=>n.kind==='piton'||n.kind==='bifurcacion');
+  if(kind==='manguera'||kind==='siamesa'){const blk=kind==='manguera'?newMang():newSia(); if(termIdx>=0)line.splice(termIdx,0,blk); else line.push(blk);}
+  else if(kind==='piton'){if(termIdx>=0)return; line.push(newPit());}
+  else if(kind==='det'){if(termIdx>=0)return; line.push(newPitDet());}
+  else if(kind==='bifurcacion'){if(termIdx>=0)return; line.push(newBif());}
+  lbRender(); lbCalc();
+}
+function lbInit(){
+  $('lb_addMang').addEventListener('click',()=>lbAdd('main','manguera'));
+  $('lb_addSia').addEventListener('click',()=>lbAdd('main','siamesa'));
+  $('lb_addBif').addEventListener('click',()=>lbAdd('main','bifurcacion'));
+  $('lb_addPit').addEventListener('click',()=>lbAdd('main','piton'));
+  const stack=$('lb_stack');
+  stack.addEventListener('input',e=>{
+    const t=e.target; if(!t.classList||!t.classList.contains('lb-inp'))return;
+    const n=findNode(t.dataset.id); if(n){n[t.dataset.f]=t.value; lbCalc();}
+  });
+  stack.addEventListener('change',e=>{
+    const t=e.target; if(!t.classList||!t.classList.contains('lb-sel'))return;
+    const n=findNode(t.dataset.id); if(!n)return;
+    n[t.dataset.f]=t.value; lbRender(); lbCalc();
+  });
+  stack.addEventListener('click',e=>{
+    const t=e.target.closest('[data-act]'); if(!t)return;
+    const act=t.dataset.act;
+    if(act==='addMang')return lbAdd(t.dataset.line,'manguera');
+    if(act==='addPit')return lbAdd(t.dataset.line,'piton');
+    if(act==='addPitDet')return lbAdd(t.dataset.line,'det');
+    if(act==='addRama'){const b=findNode(t.dataset.bif); if(b){b.ramas.push(ramaNueva()); lbRender(); lbCalc();} return;}
+    if(act==='delRama'){const b=findNode(t.dataset.bif); if(b&&b.ramas.length>2){b.ramas.splice(+t.dataset.idx,1); lbRender(); lbCalc();} return;}
+    const loc=findLineOf(t.dataset.id); if(!loc)return; const line=loc.line, i=loc.idx;
+    if(act==='del')line.splice(i,1);
+    else if(act==='up'&&i>0){const a=line[i-1];line[i-1]=line[i];line[i]=a;}
+    else if(act==='dn'&&i<line.length-1){const a=line[i+1];line[i+1]=line[i];line[i]=a;}
+    lbRender(); lbCalc();
+  });
+  $('lb_btnpdf').addEventListener('click',reporteLB);
+  LB_TREE=[newMang(),newPit()];
+  lbRender(); lbCalc();
+}
+
+amInit();
+lbInit();
+</script>
+</body>
+</html>
