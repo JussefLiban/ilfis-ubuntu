@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora Hidraulica N1.85 (Papel Hidraulico) - ILFIS Ubuntu</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
-:root{--bg:#0e1117;--sf:#161b26;--sf2:#1e2433;--bd:#2a3144;--tx:#e2e8f4;--tx2:#8b95b0;--tx3:#5a6380;--ac:#3b82f6;--r:10px;}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{--bg:#0e1117;--sf:#161b26;--sf2:#1e2433;--bd:#2a3144;--tx:#e2e8f4;--tx2:#8b95b0;--tx3:#5a6380;--ac:#3b82f6;--r:10px;--navy:#16213e;--rojo:#c0392b;--agua:#38d4f8;--ok:#34d399;--warn:#fbbf24;--bad:#ef7a6b;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;}
 input,select,button{font-family:'DM Sans',system-ui,sans-serif;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;outline:none;}
@@ -47,20 +47,25 @@ td{padding:6px;text-align:center;font-family:'JetBrains Mono',monospace;border-b
 .vp button.act{background:#1d4ed8;border-color:#1d4ed8;color:#fff;}
 .og .grp{grid-column:1 / -1;font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 -2px 0;padding:2px 0;border-bottom:1px solid var(--bd);}
 @media(max-width:900px){.ly{grid-template-columns:1fr;}}
+.pie{font-size:11px;color:var(--tx3);text-align:center;margin:18px 0 6px;line-height:1.6;}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+.seg button{background:var(--sf2);color:var(--tx2);border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.seg button:hover{color:#fff;border:none;}
+.seg button.on{background:#1d4ed8;color:#fff;}
 #printArea{display:none;}
 @keyframes pulseRed{0%,100%{box-shadow:0 0 0 2px rgba(220,38,38,.4),0 0 20px rgba(220,38,38,.3);}50%{box-shadow:0 0 0 3px rgba(220,38,38,.7),0 0 30px rgba(220,38,38,.6);}}
 @media print{
 *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 body{background:#fff!important;margin:0!important;padding:0!important;}
-.app{display:none!important;}
+.app,body>header{display:none!important;}
 #printArea{display:block!important;width:100%;background:#fff!important;}
 @page{size:letter portrait;margin:0;}
 .rpt-page{page-break-after:always;page-break-inside:avoid;width:100%;min-height:100vh;padding:0;margin:0;background:#fff;}
 .rpt-page:last-child{page-break-after:auto;}
 /* OVERRIDE de estilos dark para tablas del reporte */
 .rpt-table,.rpt-table *{position:static!important;}
-.rpt-table th{background:#1e3a8a!important;color:#fff!important;}
-.rpt-table th:first-child{background:#1e3a8a!important;color:#fff!important;}
+.rpt-table th{background:#16213e!important;color:#fff!important;}
+.rpt-table th:first-child{background:#16213e!important;color:#fff!important;}
 .rpt-table td{background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important;font-family:'DM Sans',sans-serif!important;}
 .rpt-table td.rpt-mono{font-family:'JetBrains Mono',monospace!important;}
 .rpt-table td.lt{background:#fff!important;color:#0f172a!important;font-weight:600!important;text-align:left!important;}
@@ -77,26 +82,27 @@ body{background:#fff!important;margin:0!important;padding:0!important;}
 <body>
 <div id="printArea"></div>
 <canvas id="offscreen" style="position:fixed;left:-99999px;top:0;width:2000px;height:1200px;"></canvas>
-<div class="app">
-  <header style="background:#16213e;border-bottom:3px solid #c0392b;padding:14px 28px;margin:-20px -20px 24px -20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+<!-- ===== ENCABEZADO OFICIAL ILFIS UBUNTU (plantilla oficial - no cambiar) ===== -->
+<header style="background:var(--navy);border-bottom:2px solid var(--rojo);padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
   <div style="background:#fff;padding:5px 12px;border-radius:7px;display:flex;align-items:center;flex-shrink:0;">
-    <img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;display:block;">
+    <img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src='../logo-nuevo.png';">
   </div>
   <div style="display:flex;flex-direction:column;gap:1px;">
     <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
       <span style="font-size:1.35rem;color:#fff;letter-spacing:1.5px;font-weight:700;">UBUNTU</span>
       <span style="font-size:0.68rem;color:#aac;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Plataforma Interactiva Asistida por IA</span>
     </div>
-    <h1 style="font-size:1.05rem;color:#fff;margin-top:6px;font-weight:600;">Calculadora Hidraulica PCI - Papel N<sup>1.85</sup></h1>
-    <p style="font-size:0.78rem;color:#8b95b0;margin-top:1px;">Escala Hazen-Williams (Q<sup>1.85</sup>) | Curvas del sistema se ven como rectas</p>
+    <h1 style="font-size:1.05rem;color:#fff;margin-top:6px;font-weight:600;">Calculadora Hidraulica PCI &mdash; Papel N<sup>1.85</sup></h1>
+    <p style="font-size:0.78rem;color:#8b95b0;margin-top:1px;">Escala Hazen-Williams (Q<sup>1.85</sup>) &middot; las curvas del sistema se ven como rectas &middot; NFPA 13 &sect;27.2.4.4 / NFPA 20</p>
   </div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-    <a href="../" style="color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);">← Volver a UBUNTU</a>
-    <button id="showPreambleBtn" style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border:1px solid #1d4ed8;color:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:none;align-items:center;gap:6px;"><span style="font-size:14px;">&#9432;</span> Ver guia</button>
-    <div id="logoPreview" style="max-width:180px;max-height:90px;display:none;"><img id="logoImg" style="max-width:180px;max-height:90px;border-radius:6px;border:1px solid var(--bd);padding:6px;background:var(--sf);" /></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <button id="showPreambleBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;display:none;align-items:center;gap:6px;"><span style="font-size:14px;">&#9432;</span> Ver guia</button>
+    <div id="logoPreview" style="display:none;"><img id="logoImg" style="max-width:160px;max-height:46px;border-radius:6px;background:#fff;padding:4px;display:block;" /></div>
+    <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" style="color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);">&larr; Volver a UBUNTU</a>
   </div>
 </header>
-
+<div class="app">
+  
 <!-- ====== VINETA DE PREAMBULO E INSTRUCCIONES ====== -->
 <div id="preamble" style="background:linear-gradient(135deg,#0e1117 0%,#161b26 100%);border:1px solid #8b5cf6;border-left:4px solid #8b5cf6;border-radius:10px;padding:18px 22px;margin-bottom:18px;">
   <div style="margin-bottom:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(139,92,246,.1) 0%,rgba(168,85,247,.05) 100%);border:1px solid rgba(139,92,246,.3);border-radius:6px;font-size:12px;color:#ddd6fe;line-height:1.5;">
@@ -158,7 +164,7 @@ body{background:#fff!important;margin:0!important;padding:0!important;}
 
 <!-- ====== DATOS DEL PROYECTO ====== -->
 <div style="background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:16px 18px;margin-bottom:18px;">
-  <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="width:4px;height:18px;background:#3b82f6;border-radius:2px;"></span>Datos del Proyecto</div>
+  <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="width:4px;height:18px;background:var(--rojo);border-radius:2px;"></span>Datos del Proyecto<span class="seg" style="margin-left:auto;"><button id="btUS" class="on" onclick="setSistema('US')">Americano</button><button id="btSI" onclick="setSistema('SI')">Internacional</button></span></div>
   <div style="display:grid;grid-template-columns:1.5fr 1fr 1.5fr 1fr;gap:12px;align-items:end;">
     <div><label>Nombre del Proyecto</label><input id="projName" type="text" placeholder="Ej: Edificio Corporativo XYZ" style="width:100%;"></div>
     <div><label>Ubicacion</label><input id="projLoc" type="text" placeholder="Ej: San Jose, Costa Rica" style="width:100%;"></div>
@@ -177,11 +183,11 @@ body{background:#fff!important;margin:0!important;padding:0!important;}
 
 <div class="ly">
     <div>
-      <div class="pn"><div class="pt">Suministro publico (curva A)</div><div class="ps">Datos del aforo del hidrante o de la red municipal. Dejar en 0 si no aplica.</div><div class="g3"><div><label>P. estatica (PSI)</label><input id="sPs" type="number" value="0" style="width:100%;"></div><div><label>P. residual (PSI)</label><input id="sPr" type="number" value="0" style="width:100%;"></div><div><label>Q medido (gpm)</label><input id="sQf" type="number" value="0" style="width:100%;"></div></div></div>
+      <div class="pn"><div class="pt">Suministro publico (curva A)</div><div class="ps">Datos del aforo del hidrante o de la red municipal. Dejar en 0 si no aplica.</div><div class="g3"><div><label id="lblPs">P. estatica (PSI)</label><input id="sPs" type="number" value="0" style="width:100%;"></div><div><label id="lblPr">P. residual (PSI)</label><input id="sPr" type="number" value="0" style="width:100%;"></div><div><label id="lblQf">Q medido (gpm)</label><input id="sQf" type="number" value="0" style="width:100%;"></div></div></div>
       <div class="pn al"><div class="pt">Tanque elevado</div><div class="ps">Altura del HWL del tanque elevado al eje de la bomba (si aplica).</div><div class="g2"><div><label>Altura</label><input id="tankH" type="number" value="0" min="0" step="0.5" style="width:100%;"></div><div><label>Unidad</label><select id="tankUnit" style="width:100%;"><option value="m" selected>Metros</option><option value="ft">Pies</option></select></div></div><div id="tankPSI" style="margin-top:5px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--tx2);"></div><div style="margin-top:10px;padding:9px 11px;background:rgba(245,158,11,.08);border-left:3px solid #f59e0b;border-radius:0 6px 6px 0;font-size:10.5px;line-height:1.5;color:#fde68a;"><div style="color:#fef3c7;"><b style="color:#86efac;">Si</b> aporta a la <b>maxima presion del sistema</b> (limite NFPA 13 de 175 psi).</div><div style="color:#fef3c7;margin-top:3px;"><b style="color:#fca5a5;">No</b> se suma al <b>margen</b> si activas el modo conservador (tanque pierde presion al bajar).</div></div></div><div class="pn" style="background:linear-gradient(135deg,#7c2d12 0%,#9a3412 100%);border-color:#c2410c;"><div style="font-size:11px;color:#fed7aa;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px;">Maxima presion del sistema</div><div style="font-size:11px;color:#fdba74;margin-bottom:6px;">P churn (Q=0) + columna del tanque</div><div id="maxPress" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px;">--</div><div id="maxPressBreak" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#fdba74;margin-top:3px;"></div></div>
-      <div class="pn"><div class="pt">Bomba contra incendios (curva B)</div><div class="ps">NFPA 20 Table 4.10.2</div><div style="margin-bottom:10px;"><label>Capacidad rated (100%)</label><select id="pQ100sel" style="width:100%;font-family:'JetBrains Mono',monospace;"></select></div><div class="ps">Presiones manuales (fabricante):</div><div class="pr" style="font-size:11px;color:var(--tx3);margin-bottom:6px;"><span>%</span><span style="text-align:center;">Q (auto)</span><span style="text-align:center;">P (PSI)</span></div><div id="pumpRows"></div></div>
+      <div class="pn"><div class="pt">Bomba contra incendios (curva B)</div><div class="ps">NFPA 20 Table 4.10.2</div><div style="margin-bottom:10px;"><label>Capacidad rated (100%)</label><select id="pQ100sel" style="width:100%;font-family:'JetBrains Mono',monospace;"></select></div><div class="ps">Presiones manuales (fabricante):</div><div class="pr" style="font-size:11px;color:var(--tx3);margin-bottom:6px;"><span>%</span><span style="text-align:center;">Q (auto)</span><span style="text-align:center;" id="lblPpump">P (PSI)</span></div><div id="pumpRows"></div></div>
       <div class="pn aa"><div class="pt">NFPA 20 &sect;4.10</div><label>Criterio</label><select id="sizingCriteria" style="width:100%;margin-bottom:8px;"><option value="nfpa">NFPA 20 (90%-140%)</option><option value="insurance" selected>Aseguradoras (90%-120%)</option><option value="municipal">Municipal (90%-100%)</option><option value="custom">Personalizado</option></select><div class="g2"><div><label>Min %</label><input id="sizeMin" type="number" value="90" style="width:100%;"></div><div><label>Max %</label><input id="sizeMax" type="number" value="120" style="width:100%;"></div></div></div>
-      <div class="pn"><div class="pt">Demandas (sistemas)</div><div class="dh" style="grid-template-columns:1fr 65px 65px 50px 75px 28px;"><span>Sistema</span><span style="text-align:center;">Q (gpm)</span><span style="text-align:center;">P (PSI)</span><span style="text-align:center;" title="Numero de rociadores calculados en el area de operacion">Spk</span><span style="text-align:center;">Riesgo</span><span></span></div><div id="demandInputs"></div><button class="ba" id="addDemand">+ agregar sistema</button></div>
+      <div class="pn"><div class="pt">Demandas (sistemas)</div><div class="dh" style="grid-template-columns:1fr 65px 65px 50px 75px 28px;"><span>Sistema</span><span style="text-align:center;" id="lblDq">Q (gpm)</span><span style="text-align:center;" id="lblDp">P (PSI)</span><span style="text-align:center;" title="Numero de rociadores calculados en el area de operacion">Spk</span><span style="text-align:center;">Riesgo</span><span></span></div><div id="demandInputs"></div><button class="ba" id="addDemand">+ agregar sistema</button></div>
       <div class="pn"><div class="pt">Opciones de visualizacion</div>
 <div class="ps">Vistas rapidas:</div>
 <div class="vp">
@@ -236,9 +242,45 @@ body{background:#fff!important;margin:0!important;padding:0!important;}
       <div id="marginTable"></div>
     </div>
   </div>
+  <p class="pie">Herramienta de apoyo al diseño. Los datos y resultados son responsabilidad del ingeniero a cargo. Verificar siempre los criterios normativos del proyecto (NFPA, FM Global, AHJ local).<br>Instituto Latinoamericano de Formación en Incendios y Seguridad &mdash; ILFIS UBUNTU</p>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
+var LOGO_URL='https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png';
+/* ===== SISTEMA DE UNIDADES (regla guia ILFIS: calculo interno SIEMPRE en US, convertir solo al mostrar) ===== */
+var SIST='US',FQ=3.78541,FP=0.0689476;
+function uQ(){return SIST==='US'?'gpm':'L/min';}
+function uP(){return SIST==='US'?'PSI':'bar';}
+function dQ(q){return SIST==='US'?q:q*FQ;}
+function dP(p){return SIST==='US'?p:p*FP;}
+function fmtQ(q){return String(Math.round(SIST==='US'?q:q*FQ));}
+function fmtP(p){return SIST==='US'?String(Math.round(p*10)/10):(p*FP).toFixed(2);}
+function inP(v){return SIST==='US'?v:v/FP;}
+function inQ(v){return SIST==='US'?v:v/FQ;}
+function limStr(){return SIST==='US'?'175 PSI':'12.07 bar';}
+function setSistema(sNew){
+  if(sNew===SIST)return;
+  var old=SIST;
+  var pF=[document.getElementById('sPs'),document.getElementById('sPr')].concat(pIn).concat(Array.prototype.slice.call(document.querySelectorAll('.dP')));
+  var qF=[document.getElementById('sQf')].concat(Array.prototype.slice.call(document.querySelectorAll('.dQ')));
+  pF.forEach(function(el){if(!el)return;var v=parseFloat(el.value);if(!isFinite(v))return;var us=(old==='US')?v:v/FP;el.value=(sNew==='US')?String(Math.round(us*10)/10):String(Math.round(us*FP*100)/100);});
+  qF.forEach(function(el){if(!el)return;var v=parseFloat(el.value);if(!isFinite(v))return;var us=(old==='US')?v:v/FQ;el.value=(sNew==='US')?String(Math.round(us)):String(Math.round(us*FQ));});
+  SIST=sNew;
+  document.getElementById('btUS').className=sNew==='US'?'on':'';
+  document.getElementById('btSI').className=sNew==='SI'?'on':'';
+  actualizarEtiquetas();
+  recalcQ();updateTank();if(typeof build==='function')build();
+}
+function actualizarEtiquetas(){
+  document.getElementById('lblPs').textContent='P. estatica ('+uP()+')';
+  document.getElementById('lblPr').textContent='P. residual ('+uP()+')';
+  document.getElementById('lblQf').textContent='Q medido ('+uQ()+')';
+  document.getElementById('lblPpump').textContent='P ('+uP()+')';
+  document.getElementById('lblDq').textContent='Q ('+uQ()+')';
+  document.getElementById('lblDp').textContent='P ('+uP()+')';
+  var ps=document.getElementById('psiScale');
+  if(ps)Array.prototype.forEach.call(ps.options,function(o){var lim=150*(+o.value);o.textContent='x'+o.value+' (hasta '+(SIST==='US'?lim+' PSI':(lim*FP).toFixed(1)+' bar')+')';});
+}
 var nfpaCap=[25,50,100,150,200,250,300,400,450,500,750,1000,1250,1500,2000,2500,3000,3500,4000,4500,5000];
 var nfpaLpm=[95,189,379,568,757,946,1136,1514,1703,1892,2839,3785,4731,5677,7570,9462,11355,13247,15140,17032,18925];
 var sel=document.getElementById('pQ100sel');nfpaCap.forEach(function(g,i){var o=document.createElement('option');o.value=g;o.textContent=g+' gpm ('+nfpaLpm[i].toLocaleString()+' L/min)';if(g===1500)o.selected=true;sel.appendChild(o);});sel.addEventListener('change',recalcQ);
@@ -266,8 +308,8 @@ document.getElementById('sizeMin').addEventListener('input',function(){if(typeof
 document.getElementById('sizeMax').addEventListener('input',function(){if(typeof build==='function')build();});
 var pR=document.getElementById('pumpRows'),qSp=[],pIn=[];
 pctList.forEach(function(pct,i){var r=document.createElement('div');r.className='pr';r.innerHTML='<span class="pp">'+pct+'%</span><span class="pq" id="qs'+i+'"></span>';var p=document.createElement('input');p.type='number';p.min='0';p.step='.1';p.value=defP[i];p.style.width='100%';r.appendChild(p);pR.appendChild(r);qSp.push(document.getElementById('qs'+i));pIn.push(p);});
-function recalcQ(){var q=+(sel.value)||0;pctList.forEach(function(_,i){qSp[i].textContent=Math.round(q*qFact[i])+' gpm';});}recalcQ();
-function getPump(){var q=+(sel.value)||0;return pctList.map(function(_,i){var pv=+(pIn[i].value);return{q:Math.round(q*qFact[i]),p:(isFinite(pv)&&pv>=0)?pv:0};});}
+function recalcQ(){var q=+(sel.value)||0;pctList.forEach(function(_,i){qSp[i].textContent=fmtQ(q*qFact[i])+' '+uQ();});}recalcQ();
+function getPump(){var q=+(sel.value)||0;return pctList.map(function(_,i){var pv=+(pIn[i].value);return{q:Math.round(q*qFact[i]),p:(isFinite(pv)&&pv>=0)?inP(pv):0};});}
 var dC=document.getElementById('demandInputs');
 function addDR(n,q,p,riesgo,spk){
 var r=document.createElement('div');r.className='dr';
@@ -275,11 +317,11 @@ var opts='';Object.keys(riesgos).forEach(function(k){opts+='<option value="'+k+'
 r.innerHTML='<input type="text" class="dN" value="'+n+'" style="width:100%;"><input type="number" class="dQ" value="'+q+'" min="0" style="width:100%;"><input type="number" class="dP" value="'+p+'" min="0" style="width:100%;"><input type="number" class="dSpk" value="'+(spk||0)+'" min="0" style="width:100%;" title="Numero de rociadores calculados"><select class="dR" style="width:100%;">'+opts+'</select><button class="bdl" onclick="this.parentElement.remove();if(typeof build===\'function\')build();">x</button>';
 dC.appendChild(r);}
 demDef.forEach(function(d){addDR(d.name,d.q,d.p,d.r||'OH1',d.n||0);});
-document.getElementById('addDemand').addEventListener('click',function(){addDR('',500,60,'OH1',0);});
+document.getElementById('addDemand').addEventListener('click',function(){addDR('',fmtQ(500),fmtP(60),'OH1',0);});
 function getTankPSI(){var h=+(document.getElementById('tankH').value)||0,u=document.getElementById('tankUnit').value;return Math.round((u==='m'?h*3.28084:h)*.4333*100)/100;}
-function updateTank(){var h=+(document.getElementById('tankH').value)||0,p=getTankPSI();document.getElementById('tankPSI').innerHTML=h>0?'= <b style="color:#7F77DD;">'+p.toFixed(1)+' PSI</b>':'<span style="color:var(--tx3);">0 PSI</span>';updateMaxPress();}
+function updateTank(){var h=+(document.getElementById('tankH').value)||0,p=getTankPSI();document.getElementById('tankPSI').innerHTML=h>0?'= <b style="color:#7F77DD;">'+fmtP(p)+' '+uP()+'</b>':'<span style="color:var(--tx3);">0 '+uP()+'</span>';updateMaxPress();}
 function updateMaxPress(){
-  var pChurn=(pIn&&pIn[0])?(+pIn[0].value||0):0,pTk=getTankPSI(),total=pChurn+pTk;
+  var pChurn=(pIn&&pIn[0])?inP(+pIn[0].value||0):0,pTk=getTankPSI(),total=pChurn+pTk;
   var mp=document.getElementById('maxPress');if(!mp)return;
   var mb=document.getElementById('maxPressBreak');
   var panel=mp.closest('.pn');
@@ -290,29 +332,29 @@ function updateMaxPress(){
     if(panel)panel.style.borderColor='#dc2626';
     if(panel)panel.style.boxShadow='0 0 0 2px rgba(220,38,38,.4),0 0 20px rgba(220,38,38,.3)';
     if(panel)panel.style.animation='pulseRed 1.5s ease-in-out infinite';
-    mp.innerHTML=total.toFixed(1)+' <span style="font-size:14px;color:#fecaca;">PSI</span> <span style="font-size:13px;color:#fff;background:#dc2626;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:700;">EXCEDE 175 PSI</span>';
-    if(mb)mb.innerHTML='<span style="color:#fecaca;">Bomba churn: '+pChurn.toFixed(1)+' + Tanque: '+pTk.toFixed(1)+' PSI</span><br><span style="color:#fff;font-weight:600;margin-top:3px;display:inline-block;">&#9888; NFPA 13 §16.1.1.1: componentes estandar 175 psi max. Excede en '+(total-LIMIT).toFixed(1)+' psi - revisar diseno o usar componentes 300 psi listados.</span>';
+    mp.innerHTML=fmtP(total)+' <span style="font-size:14px;color:#fecaca;">'+uP()+'</span> <span style="font-size:13px;color:#fff;background:#dc2626;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:700;">EXCEDE '+limStr()+'</span>';
+    if(mb)mb.innerHTML='<span style="color:#fecaca;">Bomba churn: '+fmtP(pChurn)+' + Tanque: '+fmtP(pTk)+' '+uP()+'</span><br><span style="color:#fff;font-weight:600;margin-top:3px;display:inline-block;">&#9888; NFPA 13 §16.1.1.1: componentes estandar 175 psi max. Excede en '+fmtP(total-LIMIT)+' '+uP()+' - revisar diseno o usar componentes 300 psi listados.</span>';
   } else if(total>LIMIT*0.95){
     // ENTRE 95% y 100% del limite - amarillo de advertencia
     if(panel)panel.style.background='linear-gradient(135deg,#78350f 0%,#92400e 100%)';
     if(panel)panel.style.borderColor='#d97706';
     if(panel)panel.style.boxShadow='none';
     if(panel)panel.style.animation='none';
-    mp.innerHTML=total.toFixed(1)+' <span style="font-size:14px;color:#fde68a;">PSI</span> <span style="font-size:11px;color:#fff;background:#d97706;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:700;">CERCA DEL LIMITE</span>';
-    if(mb)mb.innerHTML='<span style="color:#fde68a;">Bomba churn: '+pChurn.toFixed(1)+' + Tanque: '+pTk.toFixed(1)+' PSI | Margen al limite 175 psi: '+(LIMIT-total).toFixed(1)+' psi</span>';
+    mp.innerHTML=fmtP(total)+' <span style="font-size:14px;color:#fde68a;">'+uP()+'</span> <span style="font-size:11px;color:#fff;background:#d97706;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:700;">CERCA DEL LIMITE</span>';
+    if(mb)mb.innerHTML='<span style="color:#fde68a;">Bomba churn: '+fmtP(pChurn)+' + Tanque: '+fmtP(pTk)+' '+uP()+' | Margen al limite '+limStr()+': '+fmtP(LIMIT-total)+' '+uP()+'</span>';
   } else {
     // OK - naranja original
     if(panel)panel.style.background='linear-gradient(135deg,#7c2d12 0%,#9a3412 100%)';
     if(panel)panel.style.borderColor='#c2410c';
     if(panel)panel.style.boxShadow='none';
     if(panel)panel.style.animation='none';
-    mp.innerHTML=total.toFixed(1)+' <span style="font-size:14px;color:#fed7aa;">PSI</span>';
-    if(mb)mb.innerHTML='Bomba churn: '+pChurn.toFixed(1)+' + Tanque: '+pTk.toFixed(1)+' PSI | Margen al limite 175 psi: '+(LIMIT-total).toFixed(1)+' psi';
+    mp.innerHTML=fmtP(total)+' <span style="font-size:14px;color:#fed7aa;">'+uP()+'</span>';
+    if(mb)mb.innerHTML='Bomba churn: '+fmtP(pChurn)+' + Tanque: '+fmtP(pTk)+' '+uP()+' | Margen al limite '+limStr()+': '+fmtP(LIMIT-total)+' '+uP();
   }
 }
 document.getElementById('tankH').addEventListener('input',updateTank);document.getElementById('tankUnit').addEventListener('change',updateTank);updateTank();
-function getDem(){var ns=document.querySelectorAll('.dN'),qs=document.querySelectorAll('.dQ'),ps=document.querySelectorAll('.dP'),rs=document.querySelectorAll('.dR'),spks=document.querySelectorAll('.dSpk'),r=[];ns.forEach(function(n,i){var orig=demDef[i]||{};r.push({name:n.value||'Sistema '+(i+1),q:+qs[i].value,p:+ps[i].value,riesgo:rs[i]?rs[i].value:'OH1',n:spks[i]?(+spks[i].value||0):(orig.n||0),g:orig.g||'Otros'});});return r;}
-function getSup(){var Ps=+(document.getElementById('sPs').value)||0,Pr=+(document.getElementById('sPr').value)||0,Qf=+(document.getElementById('sQf').value)||0,pts=[];if(!isFinite(Ps)||Ps<0)Ps=0;if(!isFinite(Pr)||Pr<0)Pr=0;if(!isFinite(Qf)||Qf<0)Qf=0;if(Qf<=0){for(var q=0;q<=4000;q+=50)pts.push({q:q,p:Ps});return pts;}for(var q=0;q<=4000;q+=10){var pa=q===0?Ps:Ps-(Ps-Pr)*Math.pow(q/Qf,1.85);if(pa<0)break;pts.push({q:q,p:Math.round(pa*100)/100});}return pts;}
+function getDem(){var ns=document.querySelectorAll('.dN'),qs=document.querySelectorAll('.dQ'),ps=document.querySelectorAll('.dP'),rs=document.querySelectorAll('.dR'),spks=document.querySelectorAll('.dSpk'),r=[];ns.forEach(function(n,i){var orig=demDef[i]||{};r.push({name:n.value||'Sistema '+(i+1),q:inQ(+qs[i].value||0),p:inP(+ps[i].value||0),riesgo:rs[i]?rs[i].value:'OH1',n:spks[i]?(+spks[i].value||0):(orig.n||0),g:orig.g||'Otros'});});return r;}
+function getSup(){var Ps=inP(+(document.getElementById('sPs').value)||0),Pr=inP(+(document.getElementById('sPr').value)||0),Qf=inQ(+(document.getElementById('sQf').value)||0),pts=[];if(!isFinite(Ps)||Ps<0)Ps=0;if(!isFinite(Pr)||Pr<0)Pr=0;if(!isFinite(Qf)||Qf<0)Qf=0;if(Qf<=0){for(var q=0;q<=4000;q+=50)pts.push({q:q,p:Ps});return pts;}for(var q=0;q<=4000;q+=10){var pa=q===0?Ps:Ps-(Ps-Pr)*Math.pow(q/Qf,1.85);if(pa<0)break;pts.push({q:q,p:Math.round(pa*100)/100});}return pts;}
 function R(v){return Math.round(v*10)/10;}
 // Transformaciones para escala N1.85 (Hazen-Williams)
 function n185(q){return q<=0?0:Math.pow(q,1.85);}
@@ -401,7 +443,7 @@ function mkDS(c,mg,dk){
 function mkOpts(c,dk){
   var gC=dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.08)',gM=dk?'rgba(255,255,255,.14)':'rgba(0,0,0,.2)',tC=dk?'rgba(255,255,255,.6)':'rgba(0,0,0,.65)';
   return{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'nearest',intersect:false},layout:{padding:{top:8,right:24,bottom:8,left:8}},
-    scales:{x:{type:'linear',min:0,max:n185(c.qMA),title:{display:true,text:'Caudal Q (GPM) - escala N^1.85',color:tC,font:{size:12,weight:'500'}},
+    scales:{x:{type:'linear',min:0,max:n185(c.qMA),title:{display:true,text:'Caudal Q ('+uQ()+') - escala N^1.85',color:tC,font:{size:12,weight:'500'}},
       afterBuildTicks:function(axis){
         // Generar ticks en valores enteros de Q (no de Q^1.85)
         var qMaxR=c.qMA,step;
@@ -419,17 +461,17 @@ function mkOpts(c,dk){
         axis.ticks=ticks.sort(function(a,b){return a.value-b.value;});
       },
       grid:{color:function(x){return x.tick.minor?gC:gM;},lineWidth:function(x){return x.tick.minor?.4:1.2;}},
-      ticks:{color:tC,font:{size:10},autoSkip:false,callback:function(v){var qR=Math.round(invN185(v));return qR>0?qR:0;}}},
-      y:{type:'linear',min:0,max:c.pMA,title:{display:true,text:'Presion (PSI)',color:tC,font:{size:12,weight:'500'}},grid:{color:function(x){return x.tick.value%50===0?gM:gC;},lineWidth:function(x){return x.tick.value%50===0?1.2:.5;}},ticks:{color:tC,font:{size:10},callback:function(v){return v%10===0?v:'';}}}},
-    plugins:{legend:{display:false},title:{display:false},tooltip:{enabled:true,backgroundColor:dk?'rgba(20,20,40,.95)':'rgba(255,255,255,.97)',titleColor:dk?'#e0e4f0':'#111',bodyColor:dk?'#b0b8d0':'#333',borderWidth:1,cornerRadius:8,padding:10,filter:function(i){return !i.dataset.label.toString().startsWith('mg_')&&!i.dataset.label.toString().endsWith(' pts');},callbacks:{label:function(x){var p=x.raw;if(x.dataset.label==='Demanda'){var d=c.dem[x.dataIndex];return(d?d.name:'')+': '+Math.round(p.x)+' gpm @ '+R(p.y)+' PSI';}return x.dataset.label+': '+Math.round(p.x)+' gpm / '+R(p.y)+' PSI';}}}}};
+      ticks:{color:tC,font:{size:10},autoSkip:false,callback:function(v){var qR=Math.round(invN185(v));return qR>0?Math.round(dQ(qR)):0;}}},
+      y:{type:'linear',min:0,max:c.pMA,title:{display:true,text:'Presion ('+uP()+')',color:tC,font:{size:12,weight:'500'}},grid:{color:function(x){return x.tick.value%50===0?gM:gC;},lineWidth:function(x){return x.tick.value%50===0?1.2:.5;}},ticks:{color:tC,font:{size:10},callback:function(v){return v%10===0?(SIST==='US'?v:(v*FP).toFixed(1)):'';}}}},
+    plugins:{legend:{display:false},title:{display:false},tooltip:{enabled:true,backgroundColor:dk?'rgba(20,20,40,.95)':'rgba(255,255,255,.97)',titleColor:dk?'#e0e4f0':'#111',bodyColor:dk?'#b0b8d0':'#333',borderWidth:1,cornerRadius:8,padding:10,filter:function(i){return !i.dataset.label.toString().startsWith('mg_')&&!i.dataset.label.toString().endsWith(' pts');},callbacks:{label:function(x){var p=x.raw;if(x.dataset.label==='Demanda'){var d=c.dem[x.dataIndex];return(d?d.name:'')+': '+fmtQ(invN185(p.x))+' '+uQ()+' @ '+fmtP(p.y)+' '+uP();}return x.dataset.label+': '+fmtQ(invN185(p.x))+' '+uQ()+' / '+fmtP(p.y)+' '+uP();}}}}};
 }
 
 function mkPlugins(c,mg,dk){
   var sZ=document.getElementById('showZone').checked,sD=document.getElementById('showD').checked,sB=document.getElementById('showB').checked;
   var dL=dk?'#00ee77':'#007744';
   return[{id:'bg',beforeDraw:function(ch){if(!dk){ch.ctx.save();ch.ctx.fillStyle='#fff';ch.ctx.fillRect(0,0,ch.width,ch.height);ch.ctx.restore();}}},
-  {id:'z',beforeDatasetsDraw:function(ch){if(!sZ||c.q100<=0)return;var x=ch.scales.x,y=ch.scales.y,ct=ch.ctx,x1=x.getPixelForValue(n185(c.qMnZ)),x2=x.getPixelForValue(n185(c.qMxZ));ct.save();ct.fillStyle=dk?'rgba(186,117,23,.06)':'rgba(186,117,23,.08)';ct.fillRect(x1,y.top,x2-x1,y.bottom-y.top);ct.strokeStyle=dk?'rgba(186,117,23,.3)':'rgba(186,117,23,.4)';ct.lineWidth=1;ct.setLineDash([5,4]);ct.beginPath();ct.moveTo(x1,y.top);ct.lineTo(x1,y.bottom);ct.stroke();ct.beginPath();ct.moveTo(x2,y.top);ct.lineTo(x2,y.bottom);ct.stroke();ct.setLineDash([]);ct.font='500 10px system-ui';ct.fillStyle=dk?'rgba(186,117,23,.6)':'rgba(140,90,20,.8)';ct.textAlign='center';ct.fillText(c.sMin+'% ('+c.qMnZ+')',x1,y.bottom-6);ct.fillText(c.sMax+'% ('+c.qMxZ+')',x2,y.bottom-6);ct.restore();}},
-  {id:'l',afterDatasetsDraw:function(ch){var ct=ch.ctx,ds=ch.data.datasets;if(sD&&c.dem.length){var mi=ds.findIndex(function(d){return d.label==='Demanda';});if(mi<0)return;var mt=ch.getDatasetMeta(mi),pos=[];mt.data.forEach(function(p,i){pos.push({x:p.x,y:p.y,i:i});});pos.sort(function(a,b){return a.y-b.y;});var uY=[];ct.save();var minM=null,minI=-1;mg.forEach(function(mm,ii){if(mm.m!==null&&(minM===null||mm.m<minM)){minM=mm.m;minI=ii;}});mt.data.forEach(function(p,i){if(i===minI){ct.beginPath();ct.arc(p.x,p.y,16,0,Math.PI*2);ct.strokeStyle='#f59e0b';ct.lineWidth=3;ct.stroke();ct.beginPath();ct.arc(p.x,p.y,22,0,Math.PI*2);ct.strokeStyle='rgba(245,158,11,.4)';ct.lineWidth=2;ct.stroke();}});pos.forEach(function(p){var i=p.i,d=c.dem[i],m=mg[i];if(!d)return;var lx=p.x+18,ly=p.y;ct.font='500 12px system-ui';var tw=ct.measureText(d.name+' ('+m.qP+'%)').width+100;if(lx+tw>ch.scales.x.right)lx=p.x-tw-6;for(var u=0;u<uY.length;u++){if(Math.abs(ly-uY[u])<32)ly=uY[u]+32;}uY.push(ly);ct.textAlign=lx<p.x?'right':'left';ct.fillStyle=dL;ct.fillText(d.name+' ('+m.qP+'%)',lx,ly-4);if(m&&m.m!==null){ct.font='400 11px system-ui';ct.fillStyle=m.ok?(dk?'#00ee77':'#065f46'):(dk?'#ff5566':'#b91c1c');ct.fillText((m.m>=0?'+':'')+m.m.toFixed(1)+' PSI ('+(m.pm>=0?'+':'')+m.pm.toFixed(0)+'%)',lx,ly+12);}ct.beginPath();ct.strokeStyle=dk?'rgba(0,255,136,.2)':'rgba(0,100,50,.15)';ct.lineWidth=.8;ct.moveTo(p.x+(lx<p.x?-8:8),p.y);ct.lineTo(lx+(lx<p.x?4:-4),ly-8);ct.stroke();});ct.restore();}
+  {id:'z',beforeDatasetsDraw:function(ch){if(!sZ||c.q100<=0)return;var x=ch.scales.x,y=ch.scales.y,ct=ch.ctx,x1=x.getPixelForValue(n185(c.qMnZ)),x2=x.getPixelForValue(n185(c.qMxZ));ct.save();ct.fillStyle=dk?'rgba(186,117,23,.06)':'rgba(186,117,23,.08)';ct.fillRect(x1,y.top,x2-x1,y.bottom-y.top);ct.strokeStyle=dk?'rgba(186,117,23,.3)':'rgba(186,117,23,.4)';ct.lineWidth=1;ct.setLineDash([5,4]);ct.beginPath();ct.moveTo(x1,y.top);ct.lineTo(x1,y.bottom);ct.stroke();ct.beginPath();ct.moveTo(x2,y.top);ct.lineTo(x2,y.bottom);ct.stroke();ct.setLineDash([]);ct.font='500 10px system-ui';ct.fillStyle=dk?'rgba(186,117,23,.6)':'rgba(140,90,20,.8)';ct.textAlign='center';ct.fillText(c.sMin+'% ('+fmtQ(c.qMnZ)+')',x1,y.bottom-6);ct.fillText(c.sMax+'% ('+fmtQ(c.qMxZ)+')',x2,y.bottom-6);ct.restore();}},
+  {id:'l',afterDatasetsDraw:function(ch){var ct=ch.ctx,ds=ch.data.datasets;if(sD&&c.dem.length){var mi=ds.findIndex(function(d){return d.label==='Demanda';});if(mi<0)return;var mt=ch.getDatasetMeta(mi),pos=[];mt.data.forEach(function(p,i){pos.push({x:p.x,y:p.y,i:i});});pos.sort(function(a,b){return a.y-b.y;});var uY=[];ct.save();var minM=null,minI=-1;mg.forEach(function(mm,ii){if(mm.m!==null&&(minM===null||mm.m<minM)){minM=mm.m;minI=ii;}});mt.data.forEach(function(p,i){if(i===minI){ct.beginPath();ct.arc(p.x,p.y,16,0,Math.PI*2);ct.strokeStyle='#f59e0b';ct.lineWidth=3;ct.stroke();ct.beginPath();ct.arc(p.x,p.y,22,0,Math.PI*2);ct.strokeStyle='rgba(245,158,11,.4)';ct.lineWidth=2;ct.stroke();}});pos.forEach(function(p){var i=p.i,d=c.dem[i],m=mg[i];if(!d)return;var lx=p.x+18,ly=p.y;ct.font='500 12px system-ui';var tw=ct.measureText(d.name+' ('+m.qP+'%)').width+100;if(lx+tw>ch.scales.x.right)lx=p.x-tw-6;for(var u=0;u<uY.length;u++){if(Math.abs(ly-uY[u])<32)ly=uY[u]+32;}uY.push(ly);ct.textAlign=lx<p.x?'right':'left';ct.fillStyle=dL;ct.fillText(d.name+' ('+m.qP+'%)',lx,ly-4);if(m&&m.m!==null){ct.font='400 11px system-ui';ct.fillStyle=m.ok?(dk?'#00ee77':'#065f46'):(dk?'#ff5566':'#b91c1c');ct.fillText((m.m>=0?'+':'')+fmtP(m.m)+' '+uP()+' ('+(m.pm>=0?'+':'')+m.pm.toFixed(0)+'%)',lx,ly+12);}ct.beginPath();ct.strokeStyle=dk?'rgba(0,255,136,.2)':'rgba(0,100,50,.15)';ct.lineWidth=.8;ct.moveTo(p.x+(lx<p.x?-8:8),p.y);ct.lineTo(lx+(lx<p.x?4:-4),ly-8);ct.stroke();});ct.restore();}
   if(sB){var bi=ds.findIndex(function(d){return d.label==='Curva B';});if(bi>=0){var m2=ch.getDatasetMeta(bi);ct.save();
     // Lineas guia hasta los ejes para el punto RATED (100%)
     var ratedIdx=pctList.indexOf(100);
@@ -445,8 +487,8 @@ function mkPlugins(c,mg,dk){
       // Etiquetas en los ejes
       var qR=c.pump[ratedIdx]?c.pump[ratedIdx].q:0,pR=c.pump[ratedIdx]?c.pump[ratedIdx].p:0;
       ct.font='700 11px system-ui';ct.fillStyle=dk?'#fbbf24':'#92400e';
-      ct.textAlign='center';ct.fillText(qR+' gpm',rp.x,yAx.bottom+14);
-      ct.textAlign='right';ct.fillText(pR.toFixed(1)+' PSI',xAx.left-6,rp.y+3);
+      ct.textAlign='center';ct.fillText(fmtQ(qR)+' '+uQ(),rp.x,yAx.bottom+14);
+      ct.textAlign='right';ct.fillText(fmtP(pR)+' '+uP(),xAx.left-6,rp.y+3);
       // Marcar los OTROS puntos (0%, 50%, 125%, 150%) en el eje X SIN lineas guia
       ct.font='600 10px system-ui';ct.fillStyle=dk?'rgba(216,90,48,.85)':'#c44520';ct.textAlign='center';
       m2.data.forEach(function(pp,ii){
@@ -456,7 +498,7 @@ function mkPlugins(c,mg,dk){
         ct.strokeStyle=dk?'rgba(216,90,48,.6)':'rgba(180,69,32,.6)';ct.lineWidth=1.5;
         ct.beginPath();ct.moveTo(pp.x,yAx.bottom);ct.lineTo(pp.x,yAx.bottom+4);ct.stroke();
         // Etiqueta debajo del eje X
-        ct.fillText(qV+' gpm',pp.x,yAx.bottom+14);
+        ct.fillText(fmtQ(qV)+' '+uQ(),pp.x,yAx.bottom+14);
       });
       // Anillo destacado en el punto RATED
       ct.beginPath();ct.arc(rp.x,rp.y,12,0,Math.PI*2);ct.strokeStyle='#fbbf24';ct.lineWidth=2.5;ct.stroke();
@@ -486,7 +528,7 @@ function mkPlugins(c,mg,dk){
 var cvs=document.getElementById('hydChart'),chart=null;
 function build(){
   var c=getAll(),mg=calcMg(c);
-  var projN=document.getElementById('projName').value||'Proyecto sin nombre',engN=document.getElementById('engName').value||'';document.getElementById('chartInfo').innerHTML='<span><b>'+projN+'</b>'+(engN?' | '+engN:'')+'</span> | Bomba '+c.q100+' gpm | NFPA 20: '+c.sMin+'%-'+c.sMax+'% ('+c.qMnZ+'-'+c.qMxZ+' gpm)'+(c.tP>0?' | Tanque '+c.tP.toFixed(1)+' PSI':'')+(c.noTank&&c.tP>0?' <span style="background:#92400e;color:#fbbf24;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;margin-left:6px;">MARGEN CONSERVADOR (sin tanque)</span>':'');
+  var projN=document.getElementById('projName').value||'Proyecto sin nombre',engN=document.getElementById('engName').value||'';document.getElementById('chartInfo').innerHTML='<span><b>'+projN+'</b>'+(engN?' | '+engN:'')+'</span> | Bomba '+fmtQ(c.q100)+' '+uQ()+' | NFPA 20: '+c.sMin+'%-'+c.sMax+'% ('+fmtQ(c.qMnZ)+'-'+fmtQ(c.qMxZ)+' '+uQ()+')'+(c.tP>0?' | Tanque '+fmtP(c.tP)+' '+uP():'')+(c.noTank&&c.tP>0?' <span style="background:#92400e;color:#fbbf24;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;margin-left:6px;">MARGEN CONSERVADOR (sin tanque)</span>':'');
   if(chart)chart.destroy();
   var opts=mkOpts(c,true);opts.animation={duration:300};
   chart=new Chart(cvs,{type:'scatter',data:{datasets:mkDS(c,mg,true)},options:opts,plugins:mkPlugins(c,mg,true)});
@@ -495,8 +537,8 @@ function build(){
   if(out.length){var ah='<div class="at aw"><strong>NFPA 20 &sect;4.10:</strong> ';out.forEach(function(m,i){ah+=(i?', ':'')+m.name+' @ '+m.qP+'% '+(m.qP<c.sMin?'(sobredimensionada)':'(sobrecarga)');});aE.innerHTML=ah+'</div>';}
   else if(c.dem.length)aE.innerHTML='<div class="at ao"><strong>NFPA 20 &sect;4.10:</strong> Todos en rango '+c.sMin+'%-'+c.sMax+'%.</div>';else aE.innerHTML='';
   var tbl=document.getElementById('marginTable');if(!mg.length){tbl.innerHTML='';return;}
-  var h='<div class="tw"><h3>Analisis: ref '+rN[c.mVs]+' | Bomba '+c.q100+' gpm'+(c.tP>0?' + Tanque '+c.tP.toFixed(1)+' PSI':'')+'</h3><div style="overflow-x:auto;"><table><tr>';
-  ['Sistema','Riesgo','Spk','Q','%Rated','P dem','P(A)','P(B)','P(B+T)','P(C)','P ref','Margen','Presion','Zona'].forEach(function(t){h+='<th>'+t+'</th>';});h+='</tr>';
+  var h='<div class="tw"><h3>Analisis: ref '+rN[c.mVs]+' | Bomba '+fmtQ(c.q100)+' '+uQ()+(c.tP>0?' + Tanque '+fmtP(c.tP)+' '+uP():'')+'</h3><div style="overflow-x:auto;"><table><tr>';
+  ['Sistema','Riesgo','Spk','Q ('+uQ()+')','%Rated','P dem','P(A)','P(B)','P(B+T)','P(C)','P ref','Margen ('+uP()+')','Presion','Zona'].forEach(function(t){h+='<th>'+t+'</th>';});h+='</tr>';
   // Identificar sistema mas demandante (menor margen)
 var minMargin=null,minIdx=-1;
 mg.forEach(function(m,i){if(m.m!==null&&(minMargin===null||m.m<minMargin)){minMargin=m.m;minIdx=i;}});
@@ -505,9 +547,9 @@ var isCrit=(i===minIdx);
 var rowStyle=isCrit?' style="background:linear-gradient(90deg,rgba(245,158,11,.15) 0%,rgba(245,158,11,.05) 100%);border-left:3px solid #f59e0b;"':'';
 var nameCell=isCrit?'<span style="display:inline-block;padding:1px 6px;background:#f59e0b;color:#1a1a2e;font-size:9px;font-weight:700;border-radius:3px;margin-right:6px;letter-spacing:.3px;">MAS DEMANDANTE</span>'+m.name:m.name;
 var rInfo=riesgos[m.riesgo]||riesgos.OH1;
-h+='<tr'+rowStyle+'><td>'+nameCell+'</td><td><span style="display:inline-block;padding:2px 7px;background:'+rInfo.bg+';color:'+rInfo.color+';border:1px solid '+rInfo.color+';border-radius:4px;font-size:10px;font-weight:700;" title="'+rInfo.full+'">'+rInfo.lbl+'</span></td><td style="font-weight:600;color:#fbbf24;">'+(m.n||'-')+'</td><td>'+m.qD+'</td><td style="font-weight:600;">'+m.qP+'%</td><td>'+m.pD+'</td>';
-[m.pA,m.pB,m.pBT,m.pC].forEach(function(v){h+='<td style="color:var(--tx2);">'+(v!==null?v:'--')+'</td>';});
-h+='<td style="font-weight:600;">'+(m.pRef!==null?m.pRef:'--')+'</td><td style="font-weight:600;color:'+tc+';">'+(m.m!==null?s+m.m.toFixed(1):'--')+'</td><td><span class="pl '+(m.ok?'po':'pf2')+'">'+(m.ok?'OK':'Deficit')+'</span></td><td><span class="pl '+(m.inZ?'po':'pw')+'">'+m.qP+'%</span></td></tr>';});
+h+='<tr'+rowStyle+'><td>'+nameCell+'</td><td><span style="display:inline-block;padding:2px 7px;background:'+rInfo.bg+';color:'+rInfo.color+';border:1px solid '+rInfo.color+';border-radius:4px;font-size:10px;font-weight:700;" title="'+rInfo.full+'">'+rInfo.lbl+'</span></td><td style="font-weight:600;color:#fbbf24;">'+(m.n||'-')+'</td><td>'+fmtQ(m.qD)+'</td><td style="font-weight:600;">'+m.qP+'%</td><td>'+fmtP(m.pD)+'</td>';
+[m.pA,m.pB,m.pBT,m.pC].forEach(function(v){h+='<td style="color:var(--tx2);">'+(v!==null?fmtP(v):'--')+'</td>';});
+h+='<td style="font-weight:600;">'+(m.pRef!==null?fmtP(m.pRef):'--')+'</td><td style="font-weight:600;color:'+tc+';">'+(m.m!==null?s+fmtP(m.m):'--')+'</td><td><span class="pl '+(m.ok?'po':'pf2')+'">'+(m.ok?'OK':'Deficit')+'</span></td><td><span class="pl '+(m.inZ?'po':'pw')+'">'+m.qP+'%</span></td></tr>';});
   h+='</table></div>';
 
 tbl.innerHTML=h;
@@ -565,11 +607,11 @@ function printHTML(img,c,mg,dk){
   h+='<div style="text-align:center;margin-bottom:4px;padding-bottom:3px;border-bottom:2.5px solid '+hc+';"><div style="font-size:14px;font-weight:700;color:'+hc+'!important;">Grafica del sistema vs bomba / sistema combinado</div><div style="font-size:9px;color:'+tx2+'!important;">Ing. Dennis Ramirez</div></div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid '+(dk?'#2a3144':'#ddd')+';margin-bottom:3px;font-size:7.5px;color:'+tx2+'!important;">';
   h+='<span><b style="color:'+tx+'!important;">Sum:</b> Ps='+document.getElementById('sPs').value+' Pr='+document.getElementById('sPr').value+' Qf='+document.getElementById('sQf').value+'</span>';
-  h+='<span><b style="color:'+tx+'!important;">Bomba:</b> '+c.q100+'gpm</span>';
-  if(c.tP>0)h+='<span><b style="color:'+tx+'!important;">Tanq:</b> '+c.tP.toFixed(1)+'PSI</span>';
-  h+='<span><b style="color:'+tx+'!important;">NFPA:</b> '+c.sMin+'-'+c.sMax+'% ('+c.qMnZ+'-'+c.qMxZ+')</span>';
+  h+='<span><b style="color:'+tx+'!important;">Bomba:</b> '+fmtQ(c.q100)+uQ()+'</span>';
+  if(c.tP>0)h+='<span><b style="color:'+tx+'!important;">Tanq:</b> '+fmtP(c.tP)+uP()+'</span>';
+  h+='<span><b style="color:'+tx+'!important;">NFPA:</b> '+c.sMin+'-'+c.sMax+'% ('+fmtQ(c.qMnZ)+'-'+fmtQ(c.qMxZ)+')</span>';
   h+='<span><b style="color:'+tx+'!important;">Ref:</b> '+rN[c.mVs]+'</span>';
-  h+='<span><b style="color:'+tx+'!important;">Pts:</b> ';c.pump.forEach(function(p,i){h+=pctList[i]+'%='+p.q+'/'+p.p+(i<4?', ':'');});h+='</span></div>';
+  h+='<span><b style="color:'+tx+'!important;">Pts:</b> ';c.pump.forEach(function(p,i){h+=pctList[i]+'%='+fmtQ(p.q)+'/'+fmtP(p.p)+(i<4?', ':'');});h+='</span></div>';
   h+='<div style="margin-bottom:3px;"><img src="'+img+'" style="width:100%;border:1px solid '+(dk?'#2a3144':'#ccc')+';"/></div>';
   var allOk=true,aH='';mg.forEach(function(m){if(!m.inZ){allOk=false;aH+=m.name+'@'+m.qP+'% ';}});
   if(!allOk)h+='<div style="padding:2px 5px;margin-bottom:2px;border-radius:3px;background:'+wC+';color:'+wT+'!important;font-size:7px;"><b>NFPA &sect;4.10:</b> '+aH+'</div>';
@@ -578,12 +620,12 @@ function printHTML(img,c,mg,dk){
   ['Sistema','Q','%','P dem','P(A)','P(B)','P(B+T)','P(C)','P ref','Margen','%M','Pres','Zona'].forEach(function(t){h+='<th style="padding:2px 2px;border:1px solid '+bc+';background:'+thBg+';color:'+tx2+'!important;text-align:center;white-space:nowrap;">'+t+'</th>';});h+='</tr>';
   mg.forEach(function(m){var s=m.m!==null&&m.m>=0?'+':'';
     h+='<tr><td style="padding:2px;border:1px solid '+bc2+';text-align:left;font-weight:600;color:'+tx+'!important;">'+m.name+'</td>';
-    h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx+'!important;">'+m.qD+'</td>';
+    h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx+'!important;">'+fmtQ(m.qD)+'</td>';
     h+='<td style="padding:2px;border:1px solid '+bc2+';font-weight:700;color:'+tx+'!important;">'+m.qP+'%</td>';
-    h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx+'!important;">'+m.pD+'</td>';
-    [m.pA,m.pB,m.pBT,m.pC].forEach(function(v){h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx2+'!important;">'+(v!==null?v:'--')+'</td>';});
-    h+='<td style="padding:2px;border:1px solid '+bc2+';font-weight:700;color:'+tx+'!important;">'+(m.pRef!==null?m.pRef:'--')+'</td>';
-    h+='<td style="padding:2px;border:1px solid '+bc2+';font-weight:700;color:'+(m.ok?okT:fT)+'!important;">'+(m.m!==null?s+m.m.toFixed(1):'--')+'</td>';
+    h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx+'!important;">'+fmtP(m.pD)+'</td>';
+    [m.pA,m.pB,m.pBT,m.pC].forEach(function(v){h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx2+'!important;">'+(v!==null?fmtP(v):'--')+'</td>';});
+    h+='<td style="padding:2px;border:1px solid '+bc2+';font-weight:700;color:'+tx+'!important;">'+(m.pRef!==null?fmtP(m.pRef):'--')+'</td>';
+    h+='<td style="padding:2px;border:1px solid '+bc2+';font-weight:700;color:'+(m.ok?okT:fT)+'!important;">'+(m.m!==null?s+fmtP(m.m):'--')+'</td>';
     h+='<td style="padding:2px;border:1px solid '+bc2+';color:'+tx2+'!important;">'+(m.pm!==null?s+m.pm.toFixed(0)+'%':'--')+'</td>';
     h+='<td style="padding:2px;border:1px solid '+bc2+';"><span style="padding:1px 3px;border-radius:2px;font-size:6px;font-weight:700;background:'+(m.ok?okC:fC)+';color:'+(m.ok?okT:fT)+'!important;">'+(m.ok?'OK':'DEF')+'</span></td>';
     h+='<td style="padding:2px;border:1px solid '+bc2+';"><span style="padding:1px 3px;border-radius:2px;font-size:6px;font-weight:700;background:'+(m.inZ?okC:wC)+';color:'+(m.inZ?okT:wT)+'!important;">'+m.qP+'%</span></td></tr>';});
@@ -606,7 +648,7 @@ function buildReportHTML(c,mg,chartImg){
   var rN={C:'Curva C (A+B+Tanque)',BT:'B+Tanque',B:'Curva B (Bomba)',A:'Curva A (Suministro)'};
   var fecha=new Date().toLocaleDateString('es-CR',{year:'numeric',month:'long',day:'numeric'});
   var hora=new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
-  var pChurn=(pIn&&pIn[0])?(+pIn[0].value||0):0,pTk=getTankPSI(),pMax=pChurn+pTk;
+  var pChurn=(pIn&&pIn[0])?inP(+pIn[0].value||0):0,pTk=getTankPSI(),pMax=pChurn+pTk;
   var maxStatus=pMax>175?'EXCEDE':(pMax>175*0.95?'CERCA':'OK');
   var maxColor=pMax>175?'#dc2626':(pMax>175*0.95?'#d97706':'#065f46');
 
@@ -623,10 +665,10 @@ function buildReportHTML(c,mg,chartImg){
 
   var s={
     bg:'#fff',tx:'#0f172a',tx2:'#475569',tx3:'#94a3b8',
-    ac:'#1e40af',ac2:'#dbeafe',
+    ac:'#2a3a66',ac2:'#dbeafe',
     rd:'#dc2626',gn:'#059669',or:'#ea580c',ye:'#ca8a04',
     bd:'#cbd5e1',bd2:'#e2e8f4',
-    hd:'#1e3a8a'
+    hd:'#16213e'
   };
 
   var html='<style>.rpt-page{font-family:\'DM Sans\',system-ui,sans-serif;color:'+s.tx+';width:215.9mm;min-height:279.4mm;padding:14mm 16mm;box-sizing:border-box;background:#fff;font-size:10px;line-height:1.4;}.rpt-mono{font-family:\'JetBrains Mono\',monospace;}.rpt-h1{font-size:22px;font-weight:700;color:'+s.hd+';letter-spacing:-.3px;margin:0;}.rpt-h2{font-size:13px;font-weight:700;color:'+s.hd+';margin:18px 0 8px 0;padding-bottom:4px;border-bottom:2px solid '+s.hd+';text-transform:uppercase;letter-spacing:.4px;}.rpt-h3{font-size:11px;font-weight:600;color:'+s.tx+';margin:10px 0 5px 0;}.rpt-table{width:100%;border-collapse:collapse;font-size:9px;background:#fff;}.rpt-table th{background:'+s.hd+'!important;color:#fff!important;padding:5px 4px;text-align:center;font-weight:600;border:1px solid '+s.hd+';position:static!important;}.rpt-table td{padding:4px;border:1px solid '+s.bd+';text-align:center;background:#fff!important;color:'+s.tx+'!important;font-family:\'DM Sans\',sans-serif;position:static!important;}.rpt-table td.rpt-mono{font-family:\'JetBrains Mono\',monospace;}.rpt-table td.lt{text-align:left!important;font-weight:600;background:#fff!important;color:'+s.tx+'!important;}.rpt-table tr:nth-child(even) td{background:#f8fafc!important;}.rpt-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.rpt-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}.rpt-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}.rpt-card{border:1px solid '+s.bd+';border-radius:6px;padding:10px;background:#f8fafc;}.rpt-card-lbl{font-size:8.5px;color:'+s.tx2+';text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:3px;}.rpt-card-val{font-size:18px;font-weight:700;color:'+s.hd+';font-family:\'JetBrains Mono\',monospace;}.rpt-card-sub{font-size:8.5px;color:'+s.tx2+';margin-top:2px;}.rpt-badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:8px;font-weight:700;text-transform:uppercase;}.rpt-pulse{padding:8px 12px;border-radius:6px;margin:8px 0;font-size:10px;}.rpt-foot{position:absolute;bottom:8mm;left:16mm;right:16mm;border-top:1px solid '+s.bd+';padding-top:5px;font-size:8px;color:'+s.tx3+';display:flex;justify-content:space-between;}</style>';
@@ -635,9 +677,14 @@ function buildReportHTML(c,mg,chartImg){
   html+='<div class="rpt-page" style="position:relative;">';
   // Header banda lateral
   html+='<div style="position:absolute;top:0;left:0;width:8mm;height:100%;background:linear-gradient(180deg,'+s.hd+' 0%,'+s.ac+' 100%);"></div>';
+  // Banda oficial ILFIS UBUNTU (plantilla oficial: navy + linea roja + logo en caja blanca)
+  html+='<div style="display:flex;align-items:center;gap:16px;background:#16213e;border-bottom:2px solid #c0392b;padding:12px 16px;border-radius:6px 6px 0 0;margin-bottom:16px;">';
+  html+='<div style="background:#fff;padding:6px 14px;display:inline-flex;border-radius:6px;"><img src="'+LOGO_URL+'" alt="ILFIS" style="height:36px;display:block;" onerror="this.onerror=null;this.src=\'../logo-nuevo.png\';"></div>';
+  html+='<div style="color:#fff;line-height:1.25;"><div><span style="font-size:17px;font-weight:700;letter-spacing:1.3px;">UBUNTU</span> <span style="font-size:9px;color:#aac;text-transform:uppercase;">Plataforma Interactiva Asistida por IA</span></div>';
+  html+='<div style="font-size:13px;font-weight:600;margin-top:2px;">Calculadora Hidraulica PCI - Papel N<sup>1.85</sup></div></div>';
+  html+='<div style="margin-left:auto;text-align:right;color:#cdd6e6;font-size:10px;font-family:\'JetBrains Mono\',monospace;">'+fecha+'</div></div>';
   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;">';
   html+='<div><div style="font-size:9px;color:'+s.tx2+';text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">REPORTE TECNICO</div><div class="rpt-h1" style="margin-top:4px;">Analisis Hidraulico</div><div style="font-size:14px;color:'+s.tx2+';margin-top:2px;">Sistema de Proteccion contra Incendios</div></div>';
-  html+='<div id="rpt-logo-block" style="text-align:right;border-left:3px solid '+s.hd+';padding-left:14px;"><div style="margin-bottom:3px;"><img src="https://jussefliban.github.io/ilfis-ubuntu/logo-nuevo.png" alt="ILFIS" style="height:36px;width:auto;"/></div><div style="font-size:9px;color:'+s.tx2+';">Ubuntu - Plataforma Interactiva PCI</div></div>';
   html+='</div>';
   // Banner proyecto
   var projName=document.getElementById('projName').value||'Proyecto sin nombre';
@@ -654,18 +701,18 @@ function buildReportHTML(c,mg,chartImg){
   // Datos clave en tarjetas
   html+='<div class="rpt-h2">Datos Clave del Sistema</div>';
   html+='<div class="rpt-grid4">';
-  html+='<div class="rpt-card"><div class="rpt-card-lbl">Bomba Rated</div><div class="rpt-card-val">'+c.q100+'</div><div class="rpt-card-sub">gpm @ '+(pIn[2]?pIn[2].value:'--')+' PSI</div></div>';
-  html+='<div class="rpt-card"><div class="rpt-card-lbl">Bomba Churn</div><div class="rpt-card-val">'+pChurn.toFixed(0)+'</div><div class="rpt-card-sub">PSI @ Q=0</div></div>';
-  html+='<div class="rpt-card"><div class="rpt-card-lbl">Tanque HWL</div><div class="rpt-card-val">'+pTk.toFixed(1)+'</div><div class="rpt-card-sub">PSI cabeza estatica</div></div>';
-  html+='<div class="rpt-card" style="border:2px solid '+maxColor+';background:'+(pMax>175?'#fef2f2':(pMax>175*0.95?'#fffbeb':'#ecfdf5'))+';"><div class="rpt-card-lbl" style="color:'+maxColor+';">Maxima Sistema</div><div class="rpt-card-val" style="color:'+maxColor+';">'+pMax.toFixed(1)+'</div><div class="rpt-card-sub" style="color:'+maxColor+';font-weight:600;">'+(pMax>175?'EXCEDE 175 PSI':(pMax>175*0.95?'CERCA DEL LIMITE':'OK NFPA 13'))+'</div></div>';
+  html+='<div class="rpt-card"><div class="rpt-card-lbl">Bomba Rated</div><div class="rpt-card-val">'+fmtQ(c.q100)+'</div><div class="rpt-card-sub">'+uQ()+' @ '+(pIn[2]?pIn[2].value:'--')+' '+uP()+'</div></div>';
+  html+='<div class="rpt-card"><div class="rpt-card-lbl">Bomba Churn</div><div class="rpt-card-val">'+fmtP(pChurn)+'</div><div class="rpt-card-sub">'+uP()+' @ Q=0</div></div>';
+  html+='<div class="rpt-card"><div class="rpt-card-lbl">Tanque HWL</div><div class="rpt-card-val">'+fmtP(pTk)+'</div><div class="rpt-card-sub">'+uP()+' cabeza estatica</div></div>';
+  html+='<div class="rpt-card" style="border:2px solid '+maxColor+';background:'+(pMax>175?'#fef2f2':(pMax>175*0.95?'#fffbeb':'#ecfdf5'))+';"><div class="rpt-card-lbl" style="color:'+maxColor+';">Maxima Sistema</div><div class="rpt-card-val" style="color:'+maxColor+';">'+fmtP(pMax)+'</div><div class="rpt-card-sub" style="color:'+maxColor+';font-weight:600;">'+(pMax>175?'EXCEDE '+limStr():(pMax>175*0.95?'CERCA DEL LIMITE':'OK NFPA 13'))+'</div></div>';
   html+='</div>';
 
   // Resumen estadistico
   html+='<div class="rpt-h2">Resumen Estadistico</div>';
   html+='<div class="rpt-grid3">';
   html+='<div class="rpt-card"><div class="rpt-card-lbl">Total Sistemas</div><div class="rpt-card-val">'+mg.length+'</div></div>';
-  html+='<div class="rpt-card"><div class="rpt-card-lbl">Q maximo demandado</div><div class="rpt-card-val">'+qMax.toFixed(0)+'</div><div class="rpt-card-sub">gpm | '+qMaxN+'</div></div>';
-  html+='<div class="rpt-card"><div class="rpt-card-lbl">P maxima demandada</div><div class="rpt-card-val">'+pMaxD.toFixed(1)+'</div><div class="rpt-card-sub">PSI | '+pMaxDN+'</div></div>';
+  html+='<div class="rpt-card"><div class="rpt-card-lbl">Q maximo demandado</div><div class="rpt-card-val">'+fmtQ(qMax)+'</div><div class="rpt-card-sub">'+uQ()+' | '+qMaxN+'</div></div>';
+  html+='<div class="rpt-card"><div class="rpt-card-lbl">P maxima demandada</div><div class="rpt-card-val">'+fmtP(pMaxD)+'</div><div class="rpt-card-sub">'+uP()+' | '+pMaxDN+'</div></div>';
   html+='</div>';
 
   // Estado NFPA 20
@@ -673,7 +720,7 @@ function buildReportHTML(c,mg,chartImg){
   var nfpaCol=outZone===0?s.gn:s.or;
   html+='<div class="rpt-pulse" style="background:'+(outZone===0?'#ecfdf5':'#fff7ed')+';border:1px solid '+nfpaCol+';color:'+nfpaCol+';">';
   html+='<b>NFPA 20 §4.10 ('+c.sMin+'%-'+c.sMax+'%):</b> ';
-  if(outZone===0)html+='Todas las demandas dentro del rango operacional aceptable ('+c.qMnZ+' - '+c.qMxZ+' gpm).';
+  if(outZone===0)html+='Todas las demandas dentro del rango operacional aceptable ('+fmtQ(c.qMnZ)+' - '+fmtQ(c.qMxZ)+' '+uQ()+').';
   else html+=outZone+' demanda(s) fuera del rango '+c.sMin+'%-'+c.sMax+'% - revisar dimensionamiento.';
   html+='</div>';
   if(deficits>0){
@@ -685,12 +732,12 @@ function buildReportHTML(c,mg,chartImg){
   // Tabla de configuracion
   html+='<div class="rpt-h2">Configuracion del Sistema</div>';
   html+='<table class="rpt-table"><tr><th style="width:28%;">Parametro</th><th>Valor</th></tr>';
-  html+='<tr><td class="lt">Suministro publico (Curva A)</td><td class="rpt-mono">Pe='+document.getElementById('sPs').value+' PSI | Pr='+document.getElementById('sPr').value+' PSI @ Qf='+document.getElementById('sQf').value+' gpm</td></tr>';
-  html+='<tr><td class="lt">Tanque elevado</td><td class="rpt-mono">'+document.getElementById('tankH').value+' '+document.getElementById('tankUnit').value+' = '+pTk.toFixed(1)+' PSI columna estatica</td></tr>';
+  html+='<tr><td class="lt">Suministro publico (Curva A)</td><td class="rpt-mono">Pe='+document.getElementById('sPs').value+' '+uP()+' | Pr='+document.getElementById('sPr').value+' '+uP()+' @ Qf='+document.getElementById('sQf').value+' '+uQ()+'</td></tr>';
+  html+='<tr><td class="lt">Tanque elevado</td><td class="rpt-mono">'+document.getElementById('tankH').value+' '+document.getElementById('tankUnit').value+' = '+fmtP(pTk)+' '+uP()+' columna estatica</td></tr>';
   html+='<tr><td class="lt">Bomba Capacidad Rated</td><td class="rpt-mono">'+c.q100+' gpm ('+Math.round(c.q100*3.785)+' L/min)</td></tr>';
   html+='<tr><td class="lt">Curva Bomba (0/50/100/125/150%)</td><td class="rpt-mono">';
-  c.pump.forEach(function(p,i){html+=pctList[i]+'%='+p.q+'/'+p.p.toFixed(1)+' '+(i<4?' | ':'');});html+='</td></tr>';
-  html+='<tr><td class="lt">Criterio NFPA 20 §4.10</td><td class="rpt-mono">'+c.sMin+'% - '+c.sMax+'% ('+c.qMnZ+' - '+c.qMxZ+' gpm)</td></tr>';
+  c.pump.forEach(function(p,i){html+=pctList[i]+'%='+fmtQ(p.q)+'/'+fmtP(p.p)+' '+(i<4?' | ':'');});html+='</td></tr>';
+  html+='<tr><td class="lt">Criterio NFPA 20 §4.10</td><td class="rpt-mono">'+c.sMin+'% - '+c.sMax+'% ('+fmtQ(c.qMnZ)+' - '+fmtQ(c.qMxZ)+' '+uQ()+')</td></tr>';
   html+='<tr><td class="lt">Curva referencia analisis margen</td><td class="rpt-mono">'+rN[c.mVs]+'</td></tr>';
   html+='<tr><td class="lt">Modo de calculo del margen</td><td class="rpt-mono" style="color:'+(c.noTank&&c.tP>0?'#b45309':s.tx2)+';font-weight:'+(c.noTank&&c.tP>0?'700':'400')+';">'+(c.noTank&&c.tP>0?'CONSERVADOR - Tanque excluido del margen':'NORMAL - Incluye todas las contribuciones')+'</td></tr>';
   html+='</table>';
@@ -702,8 +749,8 @@ function buildReportHTML(c,mg,chartImg){
   // ============ PAGINA 2: GRAFICA EN HOJA HORIZONTAL ============
   // Hoja horizontal (landscape) dedicada a la grafica grande
   html+='<div class="rpt-page rpt-landscape" style="position:relative;width:279.4mm;min-height:215.9mm;padding:10mm 14mm;">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid '+s.hd+';padding-bottom:6px;margin-bottom:8px;">';
-  html+='<div><div class="rpt-h1" style="font-size:18px;">Curvas Hidraulicas</div><div style="font-size:10px;color:'+s.tx2+';">'+projName+' - Sistemas vs Bomba '+c.q100+' gpm</div></div>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #c0392b;padding-bottom:6px;margin-bottom:8px;">';
+  html+='<div><div class="rpt-h1" style="font-size:18px;">Curvas Hidraulicas</div><div style="font-size:10px;color:'+s.tx2+';">'+projName+' - Sistemas vs Bomba '+fmtQ(c.q100)+' '+uQ()+'</div></div>';
   html+='<div style="text-align:right;"><div style="font-size:11px;font-weight:700;color:'+s.hd+';">ILFIS UBUNTU</div><div style="font-size:9px;color:'+s.tx3+';">Pag. 2 de 3</div></div></div>';
 
   // Grafica gigante - ocupa casi toda la hoja
@@ -725,7 +772,7 @@ function buildReportHTML(c,mg,chartImg){
 
   // ============ PAGINA 3: ANALISIS, DETALLES Y CONCLUSIONES ============
   html+='<div class="rpt-page" style="position:relative;">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid '+s.hd+';padding-bottom:8px;margin-bottom:12px;">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #c0392b;padding-bottom:8px;margin-bottom:12px;">';
   html+='<div><div class="rpt-h1" style="font-size:18px;">Analisis y Conclusiones</div><div style="font-size:10px;color:'+s.tx2+';">Conformidad NFPA 20 y observaciones tecnicas</div></div>';
   html+='<div style="text-align:right;font-size:9px;color:'+s.tx3+';">Pag. 3 de 3</div></div>';
 
@@ -735,9 +782,9 @@ function buildReportHTML(c,mg,chartImg){
   var minMargin=null,minIdx=-1;
   mg.forEach(function(m,i){if(m.m!==null&&(minMargin===null||m.m<minMargin)){minMargin=m.m;minIdx=i;}});
   if(minIdx>=0){
-    html+='<div style="background:linear-gradient(90deg,#fef3c7 0%,#fff 100%);border-left:4px solid #f59e0b;padding:7px 10px;border-radius:4px;margin-bottom:6px;font-size:9.5px;color:#78350f;"><b>SISTEMA MAS DEMANDANTE:</b> '+mg[minIdx].name+' - '+mg[minIdx].qD.toFixed(0)+' gpm @ '+mg[minIdx].pD.toFixed(1)+' PSI (margen +'+mg[minIdx].m.toFixed(1)+' PSI - el mas critico).</div>';
+    html+='<div style="background:linear-gradient(90deg,#fef3c7 0%,#fff 100%);border-left:4px solid #f59e0b;padding:7px 10px;border-radius:4px;margin-bottom:6px;font-size:9.5px;color:#78350f;"><b>SISTEMA MAS DEMANDANTE:</b> '+mg[minIdx].name+' - '+fmtQ(mg[minIdx].qD)+' '+uQ()+' @ '+fmtP(mg[minIdx].pD)+' '+uP()+' (margen +'+fmtP(mg[minIdx].m)+' '+uP()+' - el mas critico).</div>';
   }
-  html+='<table class="rpt-table" style="font-size:8.5px;"><tr><th>Sistema</th><th>Riesgo</th><th>Spk</th><th>Q (gpm)</th><th>% Rated</th><th>P dem (PSI)</th><th>P ref (PSI)</th><th>Margen</th><th>Estado</th><th>Zona</th></tr>';
+  html+='<table class="rpt-table" style="font-size:8.5px;"><tr><th>Sistema</th><th>Riesgo</th><th>Spk</th><th>Q ('+uQ()+')</th><th>% Rated</th><th>P dem ('+uP()+')</th><th>P ref ('+uP()+')</th><th>Margen ('+uP()+')</th><th>Estado</th><th>Zona</th></tr>';
   mg.forEach(function(m,i){
     var sg=m.m!==null&&m.m>=0?'+':'';
     var isCrit=(i===minIdx);
@@ -747,11 +794,11 @@ function buildReportHTML(c,mg,chartImg){
     html+='<tr'+rowStyle+'><td class="lt"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+nameTag+m.name+'</td>';
     html+='<td'+(isCrit?' style="background:#fef3c7!important;"':'')+'><span style="padding:1px 5px;background:'+rInfo.color+';color:#fff;border-radius:3px;font-size:8px;font-weight:700;">'+rInfo.lbl+'</span></td>';
     html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+' style="font-weight:700;color:#b45309;">'+(m.n>0?m.n:'--')+'</td>';
-    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+m.qD.toFixed(0)+'</td>';
+    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+fmtQ(m.qD)+'</td>';
     html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'><b>'+m.qP+'%</b></td>';
-    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+m.pD.toFixed(1)+'</td>';
-    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+(m.pRef!==null?m.pRef.toFixed(1):'--')+'</td>';
-    html+='<td class="rpt-mono" style="color:'+(m.ok?s.gn:s.rd)+';font-weight:700;'+(isCrit?'background:#fef3c7!important;':'')+'">'+(m.m!==null?sg+m.m.toFixed(1):'--')+'</td>';
+    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+fmtP(m.pD)+'</td>';
+    html+='<td class="rpt-mono"'+(isCrit?' style="background:#fef3c7!important;"':'')+'>'+(m.pRef!==null?fmtP(m.pRef):'--')+'</td>';
+    html+='<td class="rpt-mono" style="color:'+(m.ok?s.gn:s.rd)+';font-weight:700;'+(isCrit?'background:#fef3c7!important;':'')+'">'+(m.m!==null?sg+fmtP(m.m):'--')+'</td>';
     html+='<td'+(isCrit?' style="background:#fef3c7!important;"':'')+'><span class="rpt-badge" style="background:'+(m.ok?'#d1fae5':'#fee2e2')+';color:'+(m.ok?s.gn:s.rd)+';">'+(m.ok?'OK':'DEFICIT')+'</span></td>';
     html+='<td'+(isCrit?' style="background:#fef3c7!important;"':'')+'><span class="rpt-badge" style="background:'+(m.inZ?'#d1fae5':'#fef3c7')+';color:'+(m.inZ?s.gn:s.ye)+';">'+m.qP+'%</span></td>';
     html+='</tr>';
@@ -760,18 +807,18 @@ function buildReportHTML(c,mg,chartImg){
 
   // Tabla detallada con todas las presiones
   html+='<div class="rpt-h2">Presiones Disponibles por Curva</div>';
-  html+='<table class="rpt-table"><tr><th>Sistema</th><th>Riesgo</th><th>Spk</th><th>Q dem</th><th>P dem</th><th>P(A)</th><th>P(B)</th><th>P(B+T)</th><th>P(C)</th><th>%M</th></tr>';
+  html+='<table class="rpt-table"><tr><th>Sistema</th><th>Riesgo</th><th>Spk</th><th>Q dem ('+uQ()+')</th><th>P dem ('+uP()+')</th><th>P(A)</th><th>P(B)</th><th>P(B+T)</th><th>P(C)</th><th>%M</th></tr>';
   mg.forEach(function(m){
     var rInfo=riesgos[m.riesgo]||riesgos.OH1;
     html+='<tr><td class="lt">'+m.name+'</td>';
     html+='<td><span style="padding:1px 5px;background:'+rInfo.color+';color:#fff;border-radius:3px;font-size:8px;font-weight:700;">'+rInfo.lbl+'</span></td>';
     html+='<td class="rpt-mono" style="font-weight:700;color:#b45309;">'+(m.n>0?m.n:'--')+'</td>';
-    html+='<td class="rpt-mono">'+m.qD.toFixed(0)+'</td>';
-    html+='<td class="rpt-mono">'+m.pD.toFixed(1)+'</td>';
-    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pA!==null?m.pA.toFixed(1):'--')+'</td>';
-    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pB!==null?m.pB.toFixed(1):'--')+'</td>';
-    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pBT!==null?m.pBT.toFixed(1):'--')+'</td>';
-    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pC!==null?m.pC.toFixed(1):'--')+'</td>';
+    html+='<td class="rpt-mono">'+fmtQ(m.qD)+'</td>';
+    html+='<td class="rpt-mono">'+fmtP(m.pD)+'</td>';
+    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pA!==null?fmtP(m.pA):'--')+'</td>';
+    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pB!==null?fmtP(m.pB):'--')+'</td>';
+    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pBT!==null?fmtP(m.pBT):'--')+'</td>';
+    html+='<td class="rpt-mono" style="color:'+s.tx2+';">'+(m.pC!==null?fmtP(m.pC):'--')+'</td>';
     html+='<td class="rpt-mono" style="color:'+(m.pm>=0?s.gn:s.rd)+';font-weight:700;">'+(m.pm!==null?(m.pm>=0?'+':'')+m.pm.toFixed(0)+'%':'--')+'</td>';
     html+='</tr>';
   });
@@ -780,15 +827,15 @@ function buildReportHTML(c,mg,chartImg){
   // Conclusiones
   html+='<div class="rpt-h2">Conclusiones</div>';
   html+='<div style="font-size:10px;line-height:1.6;color:'+s.tx+';">';
-  html+='<p style="margin:6px 0;"><b>1. Cumplimiento NFPA 13:</b> La presion maxima del sistema (P churn + columna del tanque) es de <b>'+pMax.toFixed(1)+' PSI</b>, '+(pMax>175?'<span style="color:'+s.rd+';font-weight:700;">superando el limite de 175 PSI para componentes estandar (NFPA 13 §16.1.1.1). Se requiere especificar componentes listados a 300 PSI o instalar PRV (NFPA 13 §16.9).</span>':(pMax>175*0.95?'<span style="color:'+s.or+';">cerca del limite de 175 PSI ('+(175-pMax).toFixed(1)+' PSI de margen). Verificar especificacion de componentes durante construccion.</span>':'<span style="color:'+s.gn+';">dentro del limite de 175 PSI para componentes estandar listados.</span>'))+'</p>';
+  html+='<p style="margin:6px 0;"><b>1. Cumplimiento NFPA 13:</b> La presion maxima del sistema (P churn + columna del tanque) es de <b>'+fmtP(pMax)+' '+uP()+'</b>, '+(pMax>175?'<span style="color:'+s.rd+';font-weight:700;">superando el limite de 175 PSI para componentes estandar (NFPA 13 §16.1.1.1). Se requiere especificar componentes listados a 300 PSI o instalar PRV (NFPA 13 §16.9).</span>':(pMax>175*0.95?'<span style="color:'+s.or+';">cerca del limite de 175 PSI / 12.07 bar ('+fmtP(175-pMax)+' '+uP()+' de margen). Verificar especificacion de componentes durante construccion.</span>':'<span style="color:'+s.gn+';">dentro del limite de 175 PSI para componentes estandar listados.</span>'))+'</p>';
   html+='<p style="margin:6px 0;"><b>2. Dimensionamiento de bomba (NFPA 20 §4.10):</b> '+(outZone===0?'Las '+mg.length+' demandas calculadas se ubican dentro del rango operacional '+c.sMin+'%-'+c.sMax+'% del caudal nominal. La bomba esta correctamente dimensionada para todos los escenarios analizados.':'Se identificaron '+outZone+' sistema(s) fuera del rango '+c.sMin+'%-'+c.sMax+'%. '+(c.dem.filter(function(d,i){return mg[i].qP<c.sMin;}).length>0?'Algunos sistemas operan en zona de bomba sobredimensionada (Q < '+c.sMin+'%), lo cual es aceptable pero indica que la bomba podria atender escenarios de mayor demanda futura.':'')+(c.dem.filter(function(d,i){return mg[i].qP>c.sMax;}).length>0?' Hay sistemas en zona de sobrecarga (Q > '+c.sMax+'%) que requieren atencion - revisar diseno.':'') )+'</p>';
   html+='<p style="margin:6px 0;"><b>3. Margen de seguridad:</b> '+(deficits===0?'Todas las demandas son atendidas con presion suficiente respecto a la curva de referencia ('+rN[c.mVs]+'). El sistema cuenta con suficiente capacidad hidraulica.':deficits+' sistema(s) presentan deficit de presion. Se recomienda revisar el diseno hidraulico, considerar cambios en diametros de tuberia o reposicionar sprinklers de mayor demanda.')+'</p>';
-  html+='<p style="margin:6px 0;"><b>4. Suministro de agua:</b> '+(pTk>0?'Tanque elevado con HWL aportando <b>'+pTk.toFixed(1)+' PSI</b> de cabeza estatica.':'Sin tanque elevado configurado. Verificar fuente de suministro.')+'</p>';
+  html+='<p style="margin:6px 0;"><b>4. Suministro de agua:</b> '+(pTk>0?'Tanque elevado con HWL aportando <b>'+fmtP(pTk)+' '+uP()+'</b> de cabeza estatica.':'Sin tanque elevado configurado. Verificar fuente de suministro.')+'</p>';
   // 5. Nota sobre margen conservador
   if(c.noTank&&c.tP>0){
-    html+='<p style="margin:6px 0;"><b>5. Margen conservador (tanque excluido):</b> Este analisis se realizo con la opcion <b>"Excluir tanque del margen"</b> activada. Esto significa que la presion estatica del tanque ('+pTk.toFixed(1)+' PSI) NO se sumo al calculo del margen de presion de las demandas, aunque SI se incluye para la maxima presion del sistema. Este criterio es mas conservador y se justifica porque, durante la operacion del sistema contra incendios, el nivel del tanque desciende progresivamente del HWL al LWL, disminuyendo la cabeza estatica disponible. Diseñar el margen asumiendo el tanque siempre lleno es optimista; al final del periodo de duracion requerido (60-90 minutos para sprinklers), la cabeza estatica puede haber disminuido varios PSI. NFPA 22 y FM Global DS 3-2 §2.2.2.2 reconocen explicitamente esta variabilidad: la norma exige que el volumen utilizable se cuente solo entre el nivel a 2 ft (0.6 m) sobre el anti-vortex plate de succion y el nivel donde abren las valvulas de llenado automatico, demostrando que el HWL no es constante durante la operacion. Adicionalmente, §2.2.2.9 requiere una alarma de bajo nivel a 9 in (225 mm) debajo del Full Water Line, confirmando que el nivel desciende durante el funcionamiento del sistema. <i>Resultado: si el analisis es OK bajo este criterio, el sistema cuenta con margen real durante toda la operacion, no solo al inicio.</i></p>';
+    html+='<p style="margin:6px 0;"><b>5. Margen conservador (tanque excluido):</b> Este analisis se realizo con la opcion <b>"Excluir tanque del margen"</b> activada. Esto significa que la presion estatica del tanque ('+fmtP(pTk)+' '+uP()+') NO se sumo al calculo del margen de presion de las demandas, aunque SI se incluye para la maxima presion del sistema. Este criterio es mas conservador y se justifica porque, durante la operacion del sistema contra incendios, el nivel del tanque desciende progresivamente del HWL al LWL, disminuyendo la cabeza estatica disponible. Diseñar el margen asumiendo el tanque siempre lleno es optimista; al final del periodo de duracion requerido (60-90 minutos para sprinklers), la cabeza estatica puede haber disminuido varios PSI. NFPA 22 y FM Global DS 3-2 §2.2.2.2 reconocen explicitamente esta variabilidad: la norma exige que el volumen utilizable se cuente solo entre el nivel a 2 ft (0.6 m) sobre el anti-vortex plate de succion y el nivel donde abren las valvulas de llenado automatico, demostrando que el HWL no es constante durante la operacion. Adicionalmente, §2.2.2.9 requiere una alarma de bajo nivel a 9 in (225 mm) debajo del Full Water Line, confirmando que el nivel desciende durante el funcionamiento del sistema. <i>Resultado: si el analisis es OK bajo este criterio, el sistema cuenta con margen real durante toda la operacion, no solo al inicio.</i></p>';
   } else if(pTk>0){
-    html+='<p style="margin:6px 0;"><b>5. Margen normal:</b> El calculo del margen incluye la presion estatica del tanque ('+pTk.toFixed(1)+' PSI). Considerar que durante la operacion el nivel del tanque desciende, reduciendo esa contribucion. Para un analisis mas conservador, considerar activar la opcion "Excluir tanque del margen".</p>';
+    html+='<p style="margin:6px 0;"><b>5. Margen normal:</b> El calculo del margen incluye la presion estatica del tanque ('+fmtP(pTk)+' '+uP()+'). Considerar que durante la operacion el nivel del tanque desciende, reduciendo esa contribucion. Para un analisis mas conservador, considerar activar la opcion "Excluir tanque del margen".</p>';
   }
   html+='</div>';
 
@@ -883,7 +930,8 @@ document.getElementById('logoClear').addEventListener('click',function(){
 // ====== GUARDAR JSON ======
 function snapshotState(){
   var state={
-    version:1,
+    version:2,
+    units:SIST,
     timestamp:new Date().toISOString(),
     project:{
       name:document.getElementById('projName').value,
@@ -971,6 +1019,8 @@ document.getElementById('loadJsonFile').addEventListener('change',function(e){
 
 function restoreState(s){
   if(!s||typeof s!=='object')throw new Error('JSON invalido');
+  var ju=(s.units==='SI')?'SI':'US';
+  if(ju!==SIST){SIST=ju;document.getElementById('btUS').className=SIST==='US'?'on':'';document.getElementById('btSI').className=SIST==='SI'?'on':'';actualizarEtiquetas();}
   // Proyecto
   if(s.project){
     document.getElementById('projName').value=s.project.name||'';
