@@ -584,6 +584,17 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
   <div class="explorador-inner">
     <p class="subtitle">Herramientas de cálculo y verificación para diseño contra incendios.<br>Cada calculadora abre en una pestaña nueva.</p>
     <div class="video-grid">
+      <a href="javascript:void(0)" onclick="abrirCalculadorPremium();return false;" class="vcard" style="text-decoration:none;cursor:pointer;">
+        <div class="vcard-thumb" style="background:#0a1a30;position:relative;">
+          <img src="calculador-hidraulico-integral/thumb.png" alt="Calculador Hidráulico Integral" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <span class="curso-lock-badge"><i class="ti ti-lock"></i> Premium</span>
+        </div>
+        <div class="vcard-body">
+          <div class="vcard-cat">Integral · Hidráulica PCI · Premium</div>
+          <div class="vcard-title">Calculador Hidráulico Integral — diseño de sistemas completos</div>
+          <span class="vcard-link"><i class="ti ti-lock"></i> Acceso con código</span>
+        </div>
+      </a>
       <a href="calculadora-hidraulica/" target="_blank" rel="noopener" class="vcard" style="text-decoration:none;cursor:pointer;">
         <div class="vcard-thumb" style="background:#0a1a30;">
           <img src="calculadora-hidraulica/thumb.jpg" alt="Calculadora Hidráulica" style="width:100%;height:100%;object-fit:cover;display:block;">
@@ -621,16 +632,6 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="vcard-body">
           <div class="vcard-cat">Rociadores · Hidráulica PCI</div>
           <div class="vcard-title">Precálculo — Sistema de Rociadores: caudal, presión y bomba</div>
-          <span class="vcard-link"><i class="ti ti-external-link"></i> Abrir calculadora</span>
-        </div>
-      </a>
-      <a href="calculador-hidraulico-integral/" target="_blank" rel="noopener" class="vcard" style="text-decoration:none;cursor:pointer;">
-        <div class="vcard-thumb" style="background:#0a1a30;">
-          <img src="calculador-hidraulico-integral/thumb.png" alt="Calculador Hidráulico Integral" style="width:100%;height:100%;object-fit:cover;display:block;">
-        </div>
-        <div class="vcard-body">
-          <div class="vcard-cat">Integral · Hidráulica PCI</div>
-          <div class="vcard-title">Calculador Hidráulico Integral — diseño de sistemas completos</div>
           <span class="vcard-link"><i class="ti ti-external-link"></i> Abrir calculadora</span>
         </div>
       </a>
@@ -2933,6 +2934,13 @@ function _tieneAcceso(curso) {
   return new Date(_cursosActivos[curso]) > new Date();
 }
 
+function abrirCalculadorPremium() {
+  _paywallCursoActual = '__calculador_integral__';
+  document.getElementById('paywall-titulo').textContent = 'Calculador Hidráulico Integral';
+  document.getElementById('paywall-incluye').innerHTML = '<div class="paywall-tagline">Herramienta premium de diseño hidráulico — acceso reservado a testers ILFIS.</div><ul class="paywall-checks"><li>Diseño de sistemas hidráulicos completos</li><li>Ingresa tu código de acceso para entrar</li></ul>';
+  document.getElementById('paywall-overlay').classList.add('visible');
+}
+
 function mostrarPaywall(curso) {
   _paywallCursoActual = curso;
   const info = CURSOS_INFO[curso] || { nombre: curso, clases: 0 };
@@ -3016,6 +3024,19 @@ async function _submitPago() {
   const cvv    = document.getElementById('pf-cvv').value.trim();
   const errEl  = document.getElementById('pf-error');
   const btnEl  = document.getElementById('btn-pagar');
+
+  // Candado del Calculador Hidráulico Integral (gate simbólico en el navegador; no es un curso del backend)
+  if (_paywallCursoActual === '__calculador_integral__') {
+    if (numero === '1234567812345678') {
+      errEl.style.display = 'none';
+      window.open('calculador-hidraulico-integral/', '_blank', 'noopener');
+      cerrarPaywall(); _volverPaywall();
+    } else {
+      errEl.textContent = 'Código incorrecto.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
 
   // Solo el número de tarjeta es obligatorio (los demás son decorativos hasta integrar PayPal real)
   if (!numero) {
