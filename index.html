@@ -2927,6 +2927,7 @@ const CURSOS_INFO = {
   hidraulicabasica: { nombre: "Curso de Hidráulica Básica", clases: 13 },
   montantes:        { nombre: "Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras", clases: 10 },
   ipmagua:          { nombre: "Diplomado de IPM de Sistemas de Extinción a Base de Agua", clases: 39 },
+  calculador: { nombre: "Calculador Hidráulico Integral", clases: 0 },
 };
 
 function _tieneAcceso(curso) {
@@ -2935,7 +2936,8 @@ function _tieneAcceso(curso) {
 }
 
 function abrirCalculadorPremium() {
-  _paywallCursoActual = '__calculador_integral__';
+  if (_tieneAcceso('calculador')) { window.open('calculador-hidraulico-integral/', '_blank', 'noopener'); return; }
+  _paywallCursoActual = 'calculador';
   document.getElementById('paywall-titulo').textContent = 'Calculador Hidráulico Integral';
   document.getElementById('paywall-incluye').innerHTML = '<div class="paywall-tagline">Herramienta premium de diseño hidráulico — acceso reservado a testers ILFIS.</div><ul class="paywall-checks"><li>Diseño de sistemas hidráulicos completos</li><li>Ingresa tu código de acceso para entrar</li></ul>';
   document.getElementById('paywall-overlay').classList.add('visible');
@@ -3025,19 +3027,6 @@ async function _submitPago() {
   const errEl  = document.getElementById('pf-error');
   const btnEl  = document.getElementById('btn-pagar');
 
-  // Candado del Calculador Hidráulico Integral (gate simbólico en el navegador; no es un curso del backend)
-  if (_paywallCursoActual === '__calculador_integral__') {
-    if (numero === '1234567812345678') {
-      errEl.style.display = 'none';
-      window.open('calculador-hidraulico-integral/', '_blank', 'noopener');
-      cerrarPaywall(); _volverPaywall();
-    } else {
-      errEl.textContent = 'Código incorrecto.';
-      errEl.style.display = 'block';
-    }
-    return;
-  }
-
   // Solo el número de tarjeta es obligatorio (los demás son decorativos hasta integrar PayPal real)
   if (!numero) {
     errEl.textContent = 'Ingresa el número de tarjeta para continuar.';
@@ -3078,9 +3067,15 @@ async function _submitPago() {
     renderMiCuenta();
 
     // Cerrar paywall y mostrar mensaje de éxito breve
+    const _cursoActivado = _paywallCursoActual;
     cerrarPaywall();
     _volverPaywall();   // reinicia la vista para la próxima vez
-    alert('✅ ¡Acceso activado! Ya puedes ver todas las clases de este diplomado durante 30 días.');
+    if (_cursoActivado === 'calculador') {
+      window.open('calculador-hidraulico-integral/', '_blank', 'noopener');
+      alert('✅ ¡Acceso activado! Ya puedes usar el Calculador Hidráulico Integral durante 30 días.');
+    } else {
+      alert('✅ ¡Acceso activado! Ya puedes ver todas las clases de este diplomado durante 30 días.');
+    }
 
   } catch(err) {
     errEl.textContent = err.message || 'Error procesando el pago. Intenta de nuevo.';
@@ -3137,6 +3132,7 @@ const ADMIN_NAMES = {
   hidraulicabasica: "Hidráulica Básica",
   montantes:         "Montantes y Mangueras",
   ipmagua:           "IPM Base Agua",
+  calculador:        "Calculador Hidráulico Integral",
 };
 let _adminAlumnos    = [];
 let _adminModalUid   = null;
