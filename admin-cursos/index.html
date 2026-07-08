@@ -90,7 +90,7 @@ select:focus{outline:none;border-color:var(--azul);}
   <input type="password" id="inpClave" placeholder="Clave de administración" onkeydown="if(event.key==='Enter')entrar()">
   <div style="margin-top:14px;"><button class="btn rojo" onclick="entrar()">Entrar</button></div>
   <div class="err" id="claveErr"></div>
-  <p style="font-size:.7rem;color:var(--texto2);margin-top:14px;">La clave se mantiene solo mientras esta pestaña está abierta (no se guarda en el navegador).</p>
+  <p style="font-size:.7rem;color:var(--texto2);margin-top:14px;">La clave queda guardada en este navegador (la misma de la Zona Intranet).</p>
 </div>
 
 <div id="panel">
@@ -127,7 +127,7 @@ const NOMBRE = {
   montantes:"Montantes", ipmagua:"IPM Agua", calculador:"Calculador Premium"
 };
 
-let clave = sessionStorage.getItem("ilfis_admin_key_s") || null;
+let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
 let alumnos = [];
 
 const $ = id => document.getElementById(id);
@@ -164,7 +164,7 @@ async function entrar(){
   $("claveErr").style.display = "none";
   try{
     await cargarAlumnos(true);
-    sessionStorage.setItem("ilfis_admin_key_s", clave);
+    localStorage.setItem("ilfis_admin_key", clave);
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
@@ -177,7 +177,7 @@ async function entrar(){
 }
 
 function cerrarSesion(){
-  sessionStorage.removeItem("ilfis_admin_key_s");
+  localStorage.removeItem("ilfis_admin_key");
   location.reload();
 }
 
@@ -258,7 +258,7 @@ if(clave){
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
-  }).catch(() => { sessionStorage.removeItem("ilfis_admin_key_s"); clave = null; });
+  }).catch(() => { clave = null; });  // clave inválida: pide de nuevo sin borrar la de intranet
 }
 </script>
 </body>
