@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin de Cursos — ILFIS Ubuntu</title>
+<link rel="icon" href="../logo-nuevo.png">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#0e1117; --panel:#161b26; --campo:#1e2433; --borde:#2a3144;
+  --texto:#e2e8f4; --texto2:#8b95b0; --navy:#16213e; --rojo:#c0392b;
+  --azul:#3b82f6; --azul2:#1d4ed8; --verde:#4ade80; --ambar:#fbbf24; --rojoTxt:#f87171;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--fondo);color:var(--texto);font-family:'DM Sans',sans-serif;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.logo-box{background:#fff;border-radius:8px;padding:4px 8px;display:flex;align-items:center;}
+.logo-box img{height:34px;display:block;}
+.head-tit{flex:1;min-width:200px;}
+.head-tit .l1{font-size:.72rem;letter-spacing:2.5px;color:#9fb0d0;font-weight:700;}
+.head-tit .l2{font-size:1.02rem;font-weight:700;}
+.volver{color:#9fb0d0;text-decoration:none;font-size:.8rem;border:1px solid #2a3a5e;border-radius:6px;padding:6px 10px;}
+.volver:hover{color:#fff;border-color:var(--azul);}
+.btn-salir{background:none;border:1px solid var(--borde);color:var(--texto2);border-radius:6px;padding:6px 10px;font-size:.75rem;cursor:pointer;font-family:inherit;display:none;}
+.btn-salir:hover{color:#fff;border-color:var(--rojo);}
+
+.pantalla{max-width:420px;margin:70px auto;background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:30px;text-align:center;}
+.pantalla h2{font-size:1.05rem;margin-bottom:14px;}
+input[type=password], input[type=text]{width:100%;background:var(--campo);border:1px solid var(--borde);border-radius:8px;color:var(--texto);font-family:inherit;font-size:.9rem;padding:11px 12px;}
+input:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-block;background:var(--azul);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn:hover{background:var(--azul2);}
+.btn.rojo{background:var(--rojo);}
+.btn.rojo:hover{background:#a93226;}
+.btn.mini{padding:5px 10px;font-size:.72rem;border-radius:6px;}
+.btn.gris{background:var(--campo);border:1px solid var(--borde);color:var(--texto2);}
+.btn.gris:hover{color:var(--texto);}
+.err{color:var(--rojoTxt);font-size:.8rem;margin-top:10px;display:none;}
+
+#panel{display:none;max-width:1250px;margin:0 auto;padding:16px;}
+.barra{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.barra input{flex:1;min-width:200px;}
+.stat{font-size:.78rem;color:var(--texto2);}
+.stat b{color:var(--texto);font-family:'JetBrains Mono',monospace;}
+
+.tabla-wrap{background:var(--panel);border:1px solid var(--borde);border-radius:12px;overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:760px;}
+th{background:var(--navy);text-align:left;padding:10px 12px;font-size:.7rem;letter-spacing:.5px;border-bottom:2px solid var(--rojo);white-space:nowrap;position:sticky;top:0;}
+td{padding:9px 12px;border-bottom:1px solid var(--borde);vertical-align:top;}
+tr:hover td{background:#1a2030;}
+.alumno-email{font-weight:600;}
+.alumno-nombre{font-size:.72rem;color:var(--texto2);}
+.chip-curso{display:inline-flex;align-items:center;gap:6px;background:var(--campo);border:1px solid var(--borde);border-radius:6px;padding:3px 8px;font-size:.7rem;margin:0 4px 4px 0;font-family:'JetBrains Mono',monospace;}
+.chip-curso.ok{border-color:#14532d;color:var(--verde);}
+.chip-curso.vencido{border-color:#7f1d1d;color:var(--rojoTxt);}
+.chip-curso .x{cursor:pointer;color:var(--texto2);font-weight:700;}
+.chip-curso .x:hover{color:var(--rojoTxt);}
+.chip-curso .mas{cursor:pointer;color:var(--texto2);font-weight:700;}
+.chip-curso .mas:hover{color:var(--verde);}
+.sin{color:var(--texto2);font-size:.72rem;}
+.acciones-td{white-space:nowrap;}
+select{background:var(--campo);border:1px solid var(--borde);border-radius:6px;color:var(--texto);font-family:inherit;font-size:.75rem;padding:5px 8px;}
+select:focus{outline:none;border-color:var(--azul);}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid var(--azul);border-radius:10px;padding:12px 20px;font-size:.85rem;display:none;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.6);}
+#toast.err{border-color:var(--rojo);color:var(--rojoTxt);}
+.nota-pie{font-size:.72rem;color:var(--texto2);margin-top:12px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
+  <div class="head-tit">
+    <div class="l1">UBUNTU · ADMINISTRACIÓN</div>
+    <div class="l2">Matrículas del módulo de cursos</div>
+  </div>
+  <button class="btn-salir" id="btnSalir" onclick="cerrarSesion()">Cerrar sesión admin</button>
+  <a class="volver" href="../">← Volver a UBUNTU</a>
+</header>
+
+<div class="pantalla" id="pClave">
+  <h2>🔐 Acceso de administración</h2>
+  <input type="password" id="inpClave" placeholder="Clave de administración" onkeydown="if(event.key==='Enter')entrar()">
+  <div style="margin-top:14px;"><button class="btn rojo" onclick="entrar()">Entrar</button></div>
+  <div class="err" id="claveErr"></div>
+  <p style="font-size:.7rem;color:var(--texto2);margin-top:14px;">La clave se mantiene solo mientras esta pestaña está abierta (no se guarda en el navegador).</p>
+</div>
+
+<div id="panel">
+  <div class="barra">
+    <input type="text" id="buscar" placeholder="🔍 Buscar alumno por correo o nombre…" oninput="renderTabla()">
+    <span class="stat">Alumnos: <b id="stTotal">0</b></span>
+    <span class="stat">Con matrícula activa: <b id="stActivos">0</b></span>
+    <button class="btn gris mini" onclick="cargarAlumnos()">↻ Recargar</button>
+  </div>
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr>
+        <th>Alumno</th>
+        <th>Matrículas activas (curso · vence)</th>
+        <th>Dar acceso (30 días)</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="nota-pie">
+    ➕ en un curso = extender 30 días · ✕ = revocar (pide confirmación). Tras dar u extender una matrícula, el alumno debe refrescar su sesión (el aula tiene el botón "Vuelve a intentar", o cerrar sesión y entrar de nuevo).<br>
+    Los cursos con aula virtual (hoy: <b>rociadores</b>) usan estas mismas matrículas para videos, cuestionarios y notas.
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+const CURSOS = ["rociadores","hidraulicos","bombas","mercancias","alarmas","hidraulicabasica","montantes","ipmagua","calculador"];
+const NOMBRE = {
+  rociadores:"Rociadores", hidraulicos:"Cálc. Hidráulicos", bombas:"Bombas",
+  mercancias:"Mercancías", alarmas:"Alarmas", hidraulicabasica:"Hidráulica Básica",
+  montantes:"Montantes", ipmagua:"IPM Agua", calculador:"Calculador Premium"
+};
+
+let clave = sessionStorage.getItem("ilfis_admin_key_s") || null;
+let alumnos = [];
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function toast(msg, esError){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = esError ? "err" : "";
+  t.style.display = "block";
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.style.display = "none", 3500);
+}
+
+async function api(path, opts={}){
+  const r = await fetch(API + path, {
+    ...opts,
+    headers: { "X-Admin-Key": clave, "Content-Type": "application/json", ...(opts.headers||{}) }
+  });
+  let data = null;
+  try { data = await r.json(); } catch(e){}
+  if(!r.ok){
+    const err = new Error((data && data.detail) ? data.detail : "Error " + r.status);
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+// ── Sesión ──
+async function entrar(){
+  clave = $("inpClave").value.trim();
+  if(!clave) return;
+  $("claveErr").style.display = "none";
+  try{
+    await cargarAlumnos(true);
+    sessionStorage.setItem("ilfis_admin_key_s", clave);
+    $("pClave").style.display = "none";
+    $("panel").style.display = "block";
+    $("btnSalir").style.display = "inline-block";
+  }catch(e){
+    clave = null;
+    const el = $("claveErr");
+    el.textContent = (e.status === 401 || e.status === 403) ? "Clave incorrecta." : ("⚠ " + e.message);
+    el.style.display = "block";
+  }
+}
+
+function cerrarSesion(){
+  sessionStorage.removeItem("ilfis_admin_key_s");
+  location.reload();
+}
+
+// ── Datos ──
+async function cargarAlumnos(silencioso){
+  const d = await api("/admin/alumnos");
+  alumnos = d.alumnos || [];
+  renderTabla();
+  if(!silencioso) toast("Lista actualizada ✓");
+}
+
+function activos(a){
+  const ahora = new Date();
+  return Object.entries(a.cursos_activos || {}).map(([c, exp]) => ({
+    curso: c, exp, vigente: new Date(exp) > ahora
+  }));
+}
+
+function renderTabla(){
+  const q = $("buscar").value.trim().toLowerCase();
+  const filtro = alumnos.filter(a => !q || (a.email||"").toLowerCase().includes(q) || (a.nombre||"").toLowerCase().includes(q));
+  $("stTotal").textContent = alumnos.length;
+  $("stActivos").textContent = alumnos.filter(a => activos(a).some(x => x.vigente)).length;
+
+  $("tbody").innerHTML = filtro.map((a, i) => {
+    const idx = alumnos.indexOf(a);
+    const chips = activos(a).map(x => `
+      <span class="chip-curso ${x.vigente ? "ok" : "vencido"}" title="vence ${x.exp.slice(0,10)}">
+        ${esc(NOMBRE[x.curso] || x.curso)} · ${x.exp.slice(0,10)}
+        <span class="mas" title="Extender 30 días" onclick="extender(${idx},'${esc(x.curso)}')">➕</span>
+        <span class="x" title="Revocar" onclick="revocar(${idx},'${esc(x.curso)}')">✕</span>
+      </span>`).join("") || '<span class="sin">— sin matrículas —</span>';
+    const opciones = CURSOS.map(c => `<option value="${c}">${esc(NOMBRE[c]||c)}</option>`).join("");
+    return `<tr>
+      <td><div class="alumno-email">${esc(a.email)}</div><div class="alumno-nombre">${esc(a.nombre)}</div></td>
+      <td>${chips}</td>
+      <td class="acciones-td">
+        <select id="sel_${idx}">${opciones}</select>
+        <button class="btn mini" onclick="darAcceso(${idx})">Dar acceso</button>
+      </td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="3" style="text-align:center;color:var(--texto2);padding:24px;">Sin resultados</td></tr>`;
+}
+
+// ── Acciones ──
+async function darAcceso(idx){
+  const a = alumnos[idx];
+  const curso = $("sel_" + idx).value;
+  try{
+    const r = await api("/admin/dar-acceso", { method:"POST", body: JSON.stringify({ uid: a.uid, curso }) });
+    toast(`✓ ${NOMBRE[curso]||curso} activado para ${a.email} hasta ${String(r.nueva_expiry).slice(0,10)}`);
+    await cargarAlumnos(true);
+  }catch(e){ toast("⚠ " + e.message, true); }
+}
+
+async function extender(idx, curso){
+  const a = alumnos[idx];
+  try{
+    const r = await api("/admin/extender", { method:"POST", body: JSON.stringify({ uid: a.uid, curso, dias: 30 }) });
+    toast(`✓ ${NOMBRE[curso]||curso} de ${a.email} extendido hasta ${String(r.nueva_expiry).slice(0,10)}`);
+    await cargarAlumnos(true);
+  }catch(e){ toast("⚠ " + e.message, true); }
+}
+
+async function revocar(idx, curso){
+  const a = alumnos[idx];
+  if(!confirm(`¿Revocar ${NOMBRE[curso]||curso} a ${a.email}?`)) return;
+  try{
+    await api("/admin/revocar", { method:"POST", body: JSON.stringify({ uid: a.uid, curso }) });
+    toast(`✓ Matrícula revocada a ${a.email}`);
+    await cargarAlumnos(true);
+  }catch(e){ toast("⚠ " + e.message, true); }
+}
+
+// ── Arranque: si hay clave en la sesión de la pestaña, entrar directo ──
+if(clave){
+  cargarAlumnos(true).then(() => {
+    $("pClave").style.display = "none";
+    $("panel").style.display = "block";
+    $("btnSalir").style.display = "inline-block";
+  }).catch(() => { sessionStorage.removeItem("ilfis_admin_key_s"); clave = null; });
+}
+</script>
+</body>
+</html>

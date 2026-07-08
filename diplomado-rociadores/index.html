@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula — Diplomado de Rociadores Automáticos | ILFIS Ubuntu</title>
+<link rel="icon" href="../logo-nuevo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --fondo:#0e1117; --panel:#161b26; --campo:#1e2433; --borde:#2a3144;
+  --texto:#e2e8f4; --texto2:#8b95b0; --marino:#16213e; --rojo:#c0392b;
+  --azul:#3b82f6; --azul2:#1d4ed8; --verde:#4ade80; --ambar:#fbbf24; --rojoTxt:#f87171;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--fondo);color:var(--texto);font-family:'DM Sans',sans-serif;min-height:100vh;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ── Header oficial ── */
+header{background:var(--marino);border-bottom:2px solid var(--rojo);padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.logo-box{background:#fff;border-radius:8px;padding:4px 8px;display:flex;align-items:center;}
+.logo-box img{height:34px;display:block;}
+.head-tit{flex:1;min-width:220px;}
+.head-tit .l1{font-size:.72rem;letter-spacing:2.5px;color:#9fb0d0;font-weight:700;}
+.head-tit .l2{font-size:1.02rem;font-weight:700;}
+.head-tit .l3{font-size:.72rem;color:#9fb0d0;}
+.head-right{display:flex;align-items:center;gap:10px;}
+.volver{color:#9fb0d0;text-decoration:none;font-size:.8rem;border:1px solid #2a3a5e;border-radius:6px;padding:6px 10px;}
+.volver:hover{color:#fff;border-color:#3b82f6;}
+.user-chip{font-size:.72rem;color:var(--texto2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-salir{background:none;border:1px solid var(--borde);color:var(--texto2);border-radius:6px;padding:6px 10px;font-size:.75rem;cursor:pointer;font-family:inherit;}
+.btn-salir:hover{color:#fff;border-color:var(--rojo);}
+
+/* ── Pantallas de estado ── */
+.pantalla{max-width:560px;margin:60px auto;background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:34px;text-align:center;display:none;}
+.pantalla h2{font-size:1.15rem;margin-bottom:10px;}
+.pantalla p{font-size:.88rem;color:var(--texto2);line-height:1.55;margin-bottom:16px;}
+.btn{display:inline-block;background:var(--azul);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;}
+.btn:hover{background:var(--azul2);}
+.btn-rojo{background:var(--rojo);}
+.btn-rojo:hover{background:#a93226;}
+.btn-sec{background:var(--campo);border:1px solid var(--borde);color:var(--texto);}
+.btn-sec:hover{background:#252c3f;}
+.spinner{width:34px;height:34px;border:3px solid var(--borde);border-top-color:var(--rojo);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 14px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── Layout aula ── */
+#aula{display:none;max-width:1400px;margin:0 auto;padding:14px;gap:14px;grid-template-columns:330px 1fr;}
+@media(min-width:900px){#aula{display:none;grid-template-columns:330px 1fr;}#aula.on{display:grid;}}
+@media(max-width:899px){#aula.on{display:flex;flex-direction:column;}}
+
+/* Barra superior de progreso */
+#barraTop{grid-column:1/-1;background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+#barraTop .tit{font-weight:700;font-size:.95rem;}
+.prog-wrap{flex:1;min-width:160px;height:10px;background:var(--campo);border-radius:6px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--rojo),#e74c3c);width:0%;transition:width .4s;}
+.prog-txt{font-size:.78rem;color:var(--texto2);}
+.btn-notas{background:var(--marino);border:1px solid #2a3a5e;color:var(--texto);border-radius:8px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-notas:hover{border-color:var(--azul);}
+
+/* Sidebar temario */
+#temario{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:10px;overflow-y:auto;max-height:calc(100vh - 190px);align-self:start;}
+@media(max-width:899px){#temario{max-height:44vh;}}
+.sem{border:1px solid var(--borde);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--campo);}
+.sem-cab{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;}
+.sem-cab:hover{background:#232a3d;}
+.sem-cab .st{font-size:.82rem;font-weight:700;flex:1;}
+.sem-cab .fechas{font-size:.66rem;color:var(--texto2);font-family:'JetBrains Mono',monospace;}
+.sem-abierta .sem-cab .st::before{content:"● ";color:var(--verde);}
+.sem-cerrada .sem-cab .st::before{content:"🔒 ";}
+.sem-lecs{display:none;border-top:1px solid var(--borde);}
+.sem.exp .sem-lecs{display:block;}
+.sem-cab .flecha{color:var(--texto2);font-size:.7rem;transition:transform .2s;}
+.sem.exp .flecha{transform:rotate(90deg);}
+.lec{padding:8px 12px 8px 14px;font-size:.8rem;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid #222839;color:#c3cbde;}
+.lec:last-child{border-bottom:none;}
+.lec:hover{background:#232a3d;}
+.lec.activa{background:#26314d;border-left:3px solid var(--rojo);padding-left:11px;}
+.lec.bloq{opacity:.45;cursor:not-allowed;}
+.lec .ok{color:var(--verde);font-weight:700;}
+.lec .nom{flex:1;line-height:1.3;}
+
+/* Contenido */
+#contenido{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:20px;min-height:420px;}
+#contenido h2{font-size:1.05rem;margin-bottom:4px;}
+.meta{font-size:.75rem;color:var(--texto2);margin-bottom:14px;}
+.video-wrap{position:relative;background:#000;border-radius:10px;overflow:hidden;margin-bottom:10px;}
+video{width:100%;max-height:62vh;display:block;background:#000;}
+.aviso{background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:12px 14px;font-size:.82rem;color:var(--texto2);line-height:1.5;margin:10px 0;}
+.aviso.err{border-color:#7f1d1d;color:var(--rojoTxt);}
+.aviso.okv{border-color:#14532d;color:var(--verde);}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;margin:0 0 8px 0;color:var(--texto);text-decoration:none;}
+.chip:hover{border-color:var(--azul);}
+.chip.static{cursor:default;}
+.chip.static:hover{border-color:var(--borde);}
+.badge{font-size:.6rem;font-weight:700;border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;}
+.badge.pdf{background:#7f1d1d;color:#fecaca;}
+.badge.doc{background:#1e3a8a;color:#bfdbfe;}
+.badge.xls{background:#14532d;color:#bbf7d0;}
+.badge.dwg{background:#78350f;color:#fde68a;}
+.prog-video{font-size:.78rem;color:var(--texto2);margin-top:6px;}
+.ok90{color:var(--verde);font-weight:700;}
+
+/* Quiz */
+.preg{margin:0 0 18px 0;padding-bottom:14px;border-bottom:1px solid var(--borde);}
+.preg .enun{font-size:.9rem;font-weight:600;margin-bottom:10px;line-height:1.45;}
+.preg .pts{font-weight:400;color:var(--texto2);font-size:.75rem;}
+.opcion{display:flex;align-items:flex-start;gap:9px;background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:9px 12px;font-size:.85rem;cursor:pointer;margin-bottom:7px;line-height:1.4;}
+.opcion:hover{border-color:var(--azul);}
+.opcion input{margin-top:3px;accent-color:var(--rojo);}
+textarea{width:100%;max-width:560px;background:var(--campo);border:1px solid var(--borde);border-radius:8px;color:var(--texto);font-family:inherit;font-size:.85rem;padding:10px;resize:vertical;}
+textarea:focus{outline:none;border-color:var(--azul);}
+
+/* Notas */
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{background:var(--marino);text-align:left;padding:9px 10px;font-size:.72rem;letter-spacing:.5px;border-bottom:2px solid var(--rojo);}
+td{padding:8px 10px;border-bottom:1px solid var(--borde);vertical-align:top;}
+td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap;}
+.est{font-size:.7rem;font-weight:700;border-radius:5px;padding:3px 8px;white-space:nowrap;}
+.est.pendiente{background:#1e2433;color:var(--texto2);}
+.est.enviado{background:#1e3a8a;color:#bfdbfe;}
+.est.publicado{background:#14532d;color:#bbf7d0;}
+.est.sin_entrega{background:#7f1d1d;color:#fecaca;}
+
+footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
+  <div class="head-tit">
+    <div class="l1">UBUNTU · PLATAFORMA INTERACTIVA ASISTIDA POR IA</div>
+    <div class="l2">Aula — Diplomado de Rociadores Automáticos</div>
+    <div class="l3">Cronograma oficial en hora de Lima (UTC-5) · un intento por cuestionario</div>
+  </div>
+  <div class="head-right">
+    <span class="user-chip" id="userChip"></span>
+    <button class="btn-salir" id="btnSalir" style="display:none;" onclick="salir()">Salir</button>
+    <a class="volver" href="../">← Volver a UBUNTU</a>
+  </div>
+</header>
+
+<!-- Estados -->
+<div class="pantalla" id="pCargando" style="display:block;"><div class="spinner"></div><p>Cargando el aula…</p></div>
+
+<div class="pantalla" id="pLogin">
+  <h2>Inicia sesión para entrar al aula</h2>
+  <p>Usa la misma cuenta con la que entras a ILFIS Ubuntu.</p>
+  <button class="btn btn-rojo" onclick="loginGoogle()">Entrar con Google</button>
+  <p style="margin-top:14px;">¿Usas correo y contraseña? <a href="../" style="color:var(--azul);">Inicia sesión en la plataforma</a> y vuelve aquí.</p>
+  <div class="aviso err" id="loginErr" style="display:none;"></div>
+</div>
+
+<div class="pantalla" id="pSinMatricula">
+  <h2>🔒 No tienes matrícula activa en este diplomado</h2>
+  <p id="matriculaMsg">Para entrar al aula necesitas una matrícula vigente del Diplomado de Rociadores Automáticos.</p>
+  <a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>
+  <p style="margin-top:12px;">¿Ya la activaste o te acaban de dar acceso? <a href="#" onclick="reintentarMatricula();return false;" style="color:var(--azul);">Vuelve a intentar</a> (refresca tu matrícula automáticamente).</p>
+</div>
+
+<div class="pantalla" id="pError">
+  <h2>⚠ No pude cargar el aula</h2>
+  <p id="errorMsg"></p>
+  <button class="btn btn-sec" onclick="location.reload()">Reintentar</button>
+</div>
+
+<!-- Aula -->
+<div id="aula">
+  <div id="barraTop">
+    <span class="tit">🎓 Mi avance</span>
+    <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt mono" id="progTxt">0 / 0</span>
+    <button class="btn-notas" onclick="verNotas()">📊 Mis notas</button>
+  </div>
+  <div id="temario"></div>
+  <div id="contenido">
+    <h2>Bienvenido al aula</h2>
+    <div class="meta">Selecciona una lección en el temario para comenzar.</div>
+    <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios cierran el domingo 00:00 de su semana y las notas se publican el lunes siguiente a las 12:00.</div>
+  </div>
+</div>
+
+<footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad · ILFIS Ubuntu</footer>
+
+<script>
+// ═══════════════ CONFIG ═══════════════
+const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+const CURSO = "rociadores";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
+  authDomain:        "ilfis-ubuntu.firebaseapp.com",
+  projectId:         "ilfis-ubuntu",
+  storageBucket:     "ilfis-ubuntu.firebasestorage.app",
+  messagingSenderId: "986363919942",
+  appId:             "1:986363919942:web:438195736e93511eafd447"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+// ═══════════════ ESTADO ═══════════════
+let usuario = null;
+let estructura = null;          // respuesta de GET /estructura
+let hechas = new Set();         // ids de lecciones completadas (Firestore)
+let totalLecs = 0;
+let lecActiva = null;           // {sem, leccion}
+let notasCache = null;
+
+const ICO = { video:"🎬", manual:"📄", quiz:"📝", tarea:"📤" };
+const $ = id => document.getElementById(id);
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// ═══════════════ HELPERS ═══════════════
+function pantalla(id){
+  ["pCargando","pLogin","pSinMatricula","pError"].forEach(p => $(p).style.display = (p===id ? "block" : "none"));
+  $("aula").classList.toggle("on", id === "aula");
+}
+
+async function api(path, opts={}){
+  const t = await usuario.getIdToken();
+  const r = await fetch(API + path, {
+    ...opts,
+    headers: { "Authorization": "Bearer " + t, "Content-Type": "application/json", ...(opts.headers||{}) }
+  });
+  let data = null;
+  try { data = await r.json(); } catch(e){ /* respuesta sin JSON */ }
+  if(!r.ok){
+    const err = new Error((data && data.detail) ? data.detail : ("Error " + r.status));
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+function fmtLima(iso, conHora){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  const opts = { timeZone:"America/Lima", day:"2-digit", month:"2-digit", year:"numeric" };
+  if(conHora){ opts.hour = "2-digit"; opts.minute = "2-digit"; opts.hour12 = false; }
+  return new Intl.DateTimeFormat("es-PE", opts).format(d);
+}
+
+// ═══════════════ AUTH ═══════════════
+async function loginGoogle(){
+  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  catch(e){
+    if(e.code !== "auth/popup-closed-by-user"){
+      $("loginErr").textContent = "No pude iniciar sesión. Intenta de nuevo.";
+      $("loginErr").style.display = "block";
+    }
+  }
+}
+async function salir(){ await auth.signOut(); location.reload(); }
+
+async function reintentarMatricula(){
+  // Fuerza un token nuevo para que lleguen los custom claims recién otorgados
+  try{ if(usuario) await usuario.getIdToken(true); }catch(e){}
+  location.reload();
+}
+
+auth.onAuthStateChanged(async user => {
+  usuario = user;
+  if(!user){
+    $("userChip").textContent = "";
+    $("btnSalir").style.display = "none";
+    pantalla("pLogin");
+    return;
+  }
+  $("userChip").textContent = user.email || "";
+  $("btnSalir").style.display = "inline-block";
+  pantalla("pCargando");
+  await cargarAula();
+});
+
+// ═══════════════ CARGA INICIAL ═══════════════
+async function cargarAula(){
+  try{
+    const [est, prog] = await Promise.all([
+      api(`/api/cursos/${CURSO}/estructura`),
+      api(`/api/progreso/${CURSO}`)
+    ]);
+    estructura = est;
+    hechas = new Set(Object.keys(prog.lecciones || {}));
+    totalLecs = est.semanas.reduce((a,w) => a + w.lecciones.length, 0);
+    renderTemario();
+    renderProgreso();
+    pantalla("aula");
+  }catch(e){
+    if(e.status === 403){
+      $("matriculaMsg").textContent = e.message;
+      pantalla("pSinMatricula");
+    }else if(e.status === 401){
+      pantalla("pLogin");
+    }else{
+      $("errorMsg").textContent = e.message || "Error de conexión.";
+      pantalla("pError");
+    }
+  }
+}
+
+// ═══════════════ TEMARIO (sidebar) ═══════════════
+function renderTemario(){
+  const cont = $("temario");
+  cont.innerHTML = "";
+  // expandir por defecto: la última semana abierta
+  let ultimaAbierta = 0;
+  estructura.semanas.forEach(w => { if(w.abierta) ultimaAbierta = w.sem; });
+
+  estructura.semanas.forEach(w => {
+    const d = document.createElement("div");
+    d.className = "sem " + (w.abierta ? "sem-abierta" : "sem-cerrada") + (w.sem === ultimaAbierta ? " exp" : "");
+    const fechas = w.abierta
+      ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}`
+      : `abre lun ${fmtLima(w.abre)}`;
+    d.innerHTML = `<div class="sem-cab" onclick="this.parentElement.classList.toggle('exp')">
+        <span class="st">${esc(w.titulo)}</span>
+        <span class="fechas">${fechas}</span>
+        <span class="flecha">▶</span>
+      </div><div class="sem-lecs"></div>`;
+    const zona = d.querySelector(".sem-lecs");
+    w.lecciones.forEach(l => {
+      const f = document.createElement("div");
+      const comp = hechas.has(l.id);
+      const bloq = !w.abierta;
+      f.className = "lec" + (bloq ? " bloq" : "") + (lecActiva && lecActiva.leccion.id === l.id ? " activa" : "");
+      f.innerHTML = `<span>${comp ? '<span class="ok">✓</span>' : (bloq ? "🔒" : ICO[l.tipo] || "•")}</span><span class="nom">${esc(l.titulo)}</span>`;
+      if(!bloq) f.onclick = () => abrirLeccion(w, l);
+      zona.appendChild(f);
+    });
+    cont.appendChild(d);
+  });
+}
+
+function renderProgreso(){
+  const n = hechas.size;
+  const pct = totalLecs ? Math.round(n / totalLecs * 100) : 0;
+  $("progFill").style.width = pct + "%";
+  $("progTxt").textContent = `${n} / ${totalLecs} lecciones · ${pct}%`;
+}
+
+// ═══════════════ PROGRESO ═══════════════
+async function marcarCompletada(leccionId){
+  if(hechas.has(leccionId)) return;
+  hechas.add(leccionId);           // optimista
+  renderTemario(); renderProgreso();
+  try{
+    await api("/api/progreso", { method:"POST", body: JSON.stringify({ curso: CURSO, leccion_id: leccionId }) });
+  }catch(e){
+    console.warn("No se guardó el avance:", e.message);
+  }
+}
+
+// ═══════════════ LECCIONES ═══════════════
+function abrirLeccion(w, l){
+  lecActiva = { sem: w.sem, leccion: l, semana: w };
+  renderTemario();
+  const c = $("contenido");
+  if(l.tipo === "video")       return lecVideo(w, l, c);
+  if(l.tipo === "manual")      return lecManual(w, l, c);
+  if(l.tipo === "tarea")       return lecTarea(w, l, c);
+  if(l.tipo === "quiz")        return lecQuiz(w, l, c);
+}
+
+function cab(w, l){
+  return `<h2>${ICO[l.tipo]||""} ${esc(l.titulo)}</h2><div class="meta">${esc(w.titulo)}</div>`;
+}
+
+// ── Video ──
+async function lecVideo(w, l, c){
+  c.innerHTML = cab(w, l) + `
+    <div class="video-wrap"><video id="player" controls controlsList="nodownload" oncontextmenu="return false;" playsinline></video></div>
+    <div class="prog-video" id="progVideo">${hechas.has(l.id) ? '<span class="ok90">✓ Lección completada</span>' : "Se marca como completada al ver el 90% del video."}</div>
+    <div class="aviso err" id="vidErr" style="display:none;"></div>`;
+  const player = $("player");
+  let maxVisto = 0;
+  const idLec = l.id;
+  player.addEventListener("timeupdate", () => {
+    if(!player.duration) return;
+    maxVisto = Math.max(maxVisto, player.currentTime);
+    const pct = Math.round(maxVisto / player.duration * 100);
+    if(hechas.has(idLec)) return;
+    if(pct >= 90){
+      $("progVideo").innerHTML = `Visto: <span class="ok90">${pct}% ✓ completada</span>`;
+      marcarCompletada(idLec);
+    } else {
+      $("progVideo").textContent = `Visto: ${pct}% (se completa al 90%)`;
+    }
+  });
+  player.addEventListener("error", () => {
+    if(!player.getAttribute("src")) return;
+    const e = $("vidErr");
+    e.textContent = "⚠ El video no cargó. Verifica tu conexión o que tu matrícula siga vigente; si persiste, escribe a soporte.";
+    e.style.display = "block";
+  });
+  try{
+    const t = await usuario.getIdToken(true);
+    player.src = `${API}/api/cursos/${CURSO}/clase/${l.clase}/stream?token=${t}`;
+    player.load();
+  }catch(e){
+    $("vidErr").textContent = "⚠ No pude preparar el video: " + e.message;
+    $("vidErr").style.display = "block";
+  }
+}
+
+// ── Manual (PDF) ──
+function lecManual(w, l, c){
+  c.innerHTML = cab(w, l) + `
+    <span class="chip" onclick="abrirPDF()">📄 Abrir el manual completo (PDF protegido)</span>
+    <div class="aviso">El manual se abre en una pestaña nueva. Es el material oficial de estudio de todo el diplomado.</div>
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}')" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
+}
+
+async function abrirPDF(){
+  try{
+    const t = await usuario.getIdToken(true);
+    window.open(`${API}/api/cursos/${CURSO}/pdf/stream?token=${t}`, "_blank");
+  }catch(e){ alert("No pude abrir el PDF: " + e.message); }
+}
+
+// ── Tarea ──
+function badgeDe(n){
+  if(/\.dwg$/i.test(n)) return '<span class="badge dwg">DWG</span>';
+  if(/\.docx?$/i.test(n)) return '<span class="badge doc">DOC</span>';
+  if(/\.xlsx?$/i.test(n)) return '<span class="badge xls">XLS</span>';
+  return '<span class="badge pdf">PDF</span>';
+}
+function lecTarea(w, l, c){
+  const archivos = (l.archivos || []);
+  const lista = archivos.length
+    ? archivos.map(n => `<span class="chip static">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))}</span>`).join("<br>")
+    : '<div class="aviso">Esta semana no tiene archivos de tarea.</div>';
+  c.innerHTML = cab(w, l) + `
+    <div style="margin-bottom:10px;">${lista}</div>
+    <div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}')" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Revisada":"Marcar como revisada"}</button>`;
+}
+
+// ── Quiz ──
+async function lecQuiz(w, l, c){
+  c.innerHTML = cab(w, l) + '<div class="aviso">Cargando cuestionario…</div>';
+  let q;
+  try{
+    q = await api(`/api/cursos/${CURSO}/cuestionario/${encodeURIComponent(l.quizId)}`);
+  }catch(e){
+    c.innerHTML = cab(w, l) + `<div class="aviso err">⚠ ${esc(e.message)}</div>`;
+    return;
+  }
+
+  if(q.ya_respondido){
+    const pub = fmtLima(q.publicacion_notas, true);
+    c.innerHTML = cab(w, l) + `
+      <div class="aviso okv">✓ Respuestas registradas${q.intento && q.intento.enviado ? " el " + fmtLima(q.intento.enviado, true) : ""}. Se permite un solo intento.</div>
+      <div class="aviso">Tu nota se publica el lunes ${pub} (hora de Lima). La verás en <b>📊 Mis notas</b>.</div>
+      <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mis notas</button>`;
+    marcarCompletada(l.id);
+    return;
+  }
+
+  if(!q.abierto){
+    c.innerHTML = cab(w, l) + `
+      <div class="aviso err">El plazo para responder cerró el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima). Este cuestionario queda con nota 0 por no presentarse.</div>
+      <button class="btn btn-sec" onclick="verNotas()">📊 Ver Mis notas</button>`;
+    return;
+  }
+
+  // Formulario
+  let html = cab(w, l) + `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
+  (q.preguntas || []).forEach((p, qi) => {
+    html += `<div class="preg"><div class="enun">${qi+1}. ${esc(p.enunciado)} <span class="pts">(${p.puntos||0} pts${p.tipo==="seleccion_multiple" ? " · marca todas las correctas" : ""}${(p.tipo==="respuesta_corta"||p.tipo==="respuesta_abierta") ? " · calificación manual" : ""})</span></div>`;
+    if(p.tipo === "opcion_multiple"){
+      (p.opciones||[]).forEach((o, oi) => {
+        html += `<label class="opcion"><input type="radio" name="q_${qi}" value="${oi}"><span>${esc(o.texto)}</span></label>`;
+      });
+    } else if(p.tipo === "seleccion_multiple"){
+      (p.opciones||[]).forEach((o, oi) => {
+        html += `<label class="opcion"><input type="checkbox" name="q_${qi}_${oi}" value="${oi}"><span>${esc(o.texto)}</span></label>`;
+      });
+    } else {
+      html += `<textarea id="q_${qi}" rows="3" placeholder="Escribe tu respuesta…"></textarea>`;
+    }
+    html += `</div>`;
+  });
+  html += `<button class="btn btn-rojo" id="btnEnviar" onclick="enviarQuiz()">Enviar respuestas (intento único)</button>
+           <div class="aviso err" id="quizErr" style="display:none;"></div>`;
+  c.innerHTML = html;
+  // guardar contexto del quiz activo
+  _quizActivo = { quizId: l.quizId, leccionId: l.id, preguntas: q.preguntas || [], w, l };
+}
+
+let _quizActivo = null;
+
+async function enviarQuiz(){
+  if(!_quizActivo) return;
+  const { quizId, leccionId, preguntas } = _quizActivo;
+
+  const respuestas = {};
+  let sinResponder = 0;
+  preguntas.forEach((p, qi) => {
+    if(p.tipo === "opcion_multiple"){
+      const m = document.querySelector(`input[name="q_${qi}"]:checked`);
+      respuestas[qi] = m ? parseInt(m.value, 10) : null;
+      if(!m) sinResponder++;
+    } else if(p.tipo === "seleccion_multiple"){
+      const marcadas = [];
+      (p.opciones||[]).forEach((o, oi) => {
+        const cb = document.querySelector(`input[name="q_${qi}_${oi}"]`);
+        if(cb && cb.checked) marcadas.push(oi);
+      });
+      respuestas[qi] = marcadas;
+      if(!marcadas.length) sinResponder++;
+    } else {
+      const el = $("q_" + qi);
+      respuestas[qi] = el ? el.value.trim() : "";
+      if(!respuestas[qi]) sinResponder++;
+    }
+  });
+
+  let msg = "Vas a enviar tus respuestas. Solo se permite UN intento y no podrás cambiarlas.";
+  if(sinResponder > 0) msg = `Tienes ${sinResponder} pregunta(s) sin responder. ` + msg;
+  if(!confirm(msg + "\n\n¿Enviar ahora?")) return;
+
+  const btn = $("btnEnviar");
+  btn.disabled = true; btn.textContent = "Enviando…";
+  try{
+    const r = await api(`/api/cursos/${CURSO}/cuestionario/${encodeURIComponent(quizId)}/intento`, {
+      method:"POST", body: JSON.stringify({ respuestas })
+    });
+    marcarCompletada(leccionId);
+    notasCache = null;
+    $("contenido").innerHTML = cab(_quizActivo.w, _quizActivo.l) + `
+      <div class="aviso okv">✓ ${esc(r.mensaje || "Respuestas registradas.")}</div>
+      <div class="aviso">Tu nota estará visible desde el ${fmtLima(r.nota_visible_desde, true)} (hora de Lima) en <b>📊 Mis notas</b>.</div>
+      <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mis notas</button>`;
+  }catch(e){
+    if(e.status === 409){
+      $("contenido").innerHTML = cab(_quizActivo.w, _quizActivo.l) + `<div class="aviso okv">✓ Este cuestionario ya fue enviado antes (un solo intento).</div>`;
+      marcarCompletada(leccionId);
+    }else{
+      const el = $("quizErr");
+      el.textContent = "⚠ " + e.message;
+      el.style.display = "block";
+      btn.disabled = false; btn.textContent = "Enviar respuestas (intento único)";
+    }
+  }
+}
+
+// ═══════════════ MIS NOTAS ═══════════════
+async function verNotas(){
+  lecActiva = null;
+  renderTemario();
+  const c = $("contenido");
+  c.innerHTML = `<h2>📊 Mis notas</h2><div class="meta">Cuestionarios del diplomado · las notas se publican el lunes 12:00 (hora de Lima) de la semana siguiente</div><div class="aviso">Cargando…</div>`;
+  try{
+    if(!notasCache) notasCache = await api(`/api/cursos/${CURSO}/notas`);
+  }catch(e){
+    c.innerHTML = `<h2>📊 Mis notas</h2><div class="aviso err">⚠ ${esc(e.message)}</div>`;
+    return;
+  }
+  const filas = notasCache.notas.map(n => {
+    let nota = "—", extra = "";
+    if(n.estado === "publicado"){
+      nota = `${n.puntaje} / ${n.sobre}`;
+      if(n.pendiente_manual) extra = `<div style="font-size:.68rem;color:var(--ambar);">+ preguntas de texto por calificar</div>`;
+    }
+    if(n.estado === "sin_entrega") nota = `0 / ${n.sobre}`;
+    const etiquetas = { pendiente:"Pendiente", enviado:"Enviado ✓", publicado:"Publicada", sin_entrega:"Sin entrega" };
+    return `<tr>
+      <td class="num">S${n.semana}</td>
+      <td>${esc(n.titulo)}<div style="font-size:.66rem;color:var(--texto2);">${n.estado==="enviado" ? "nota el " + fmtLima(n.publicacion, true) : ""}</div></td>
+      <td><span class="est ${n.estado}">${etiquetas[n.estado] || n.estado}</span></td>
+      <td class="num">${nota}${extra}</td>
+    </tr>`;
+  }).join("");
+  c.innerHTML = `<h2>📊 Mis notas</h2>
+    <div class="meta">Cuestionarios del diplomado · zona horaria oficial: Lima (UTC-5)</div>
+    <table><thead><tr><th>Sem.</th><th>Cuestionario</th><th>Estado</th><th style="text-align:right;">Nota</th></tr></thead>
+    <tbody>${filas}</tbody></table>
+    <div class="aviso" style="margin-top:14px;">“Sin entrega” significa que el cuestionario cerró sin recibir tus respuestas (nota 0). Las preguntas de texto se califican manualmente y pueden sumar puntos adicionales a tu nota publicada.</div>`;
+}
+</script>
+</body>
+</html>
