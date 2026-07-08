@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plataforma Educativa — ILFIS Ubuntu</title>
+<link rel="icon" href="../logo-nuevo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#0e1117; --panel:#161b26; --campo:#1e2433; --borde:#2a3144;
+  --texto:#e2e8f4; --texto2:#8b95b0; --navy:#16213e; --rojo:#c0392b;
+  --azul:#3b82f6; --azul2:#1d4ed8; --verde:#4ade80;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans','Segoe UI',Arial,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;}
+
+header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.logo-box{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
+.logo-box img{height:32px;display:block;}
+.tit{flex:1;min-width:220px;}
+.tit .l1{font-size:.72rem;letter-spacing:2.5px;color:#9fb0d0;font-weight:700;}
+.tit .l2{font-size:1.05rem;font-weight:700;}
+.tit .l3{font-size:.72rem;color:#9fb0d0;}
+.volver{color:#9fb0d0;text-decoration:none;font-size:.8rem;border:1px solid #2a3a5e;border-radius:6px;padding:6px 10px;}
+.volver:hover{color:#fff;border-color:var(--azul);}
+
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#0e1117 100%);border-bottom:1px solid var(--borde);text-align:center;padding:44px 24px 54px;}
+.hero h1{font-size:26px;margin-bottom:10px;color:#fff;}
+.hero p{font-size:15px;color:#9fb0d0;max-width:680px;margin:0 auto;line-height:1.6;}
+
+.contenedor{max-width:1000px;margin:-26px auto 40px;padding:0 24px;}
+
+.dif{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:16px 20px;margin-bottom:24px;font-size:.85rem;color:var(--texto2);line-height:1.7;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.dif b{color:var(--texto);}
+
+.grilla{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+@media(max-width:760px){.grilla{grid-template-columns:1fr;}}
+.card{background:var(--panel);border:1px solid var(--borde);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+.card.activa{border-color:var(--rojo);box-shadow:0 0 0 1px var(--rojo);}
+.banda{height:88px;display:flex;align-items:center;justify-content:center;font-size:38px;background:linear-gradient(135deg,#c0392b,#7c2318);}
+.banda.gris{background:linear-gradient(135deg,#1a1f2e,#2a3144);}
+.cuerpo{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:8px;}
+.pill{display:inline-block;font-size:10.5px;padding:3px 10px;border-radius:12px;font-weight:600;margin-right:5px;}
+.pill.abierta{background:rgba(46,168,111,.15);color:var(--verde);}
+.pill.pronto{background:#242b3d;color:var(--texto2);}
+.card h3{font-size:16px;line-height:1.35;}
+.datos{font-size:12.5px;color:#a7b1c7;line-height:1.7;flex:1;}
+.btn{display:block;text-align:center;font-size:14px;padding:11px 16px;border-radius:8px;font-weight:600;text-decoration:none;}
+.btn.rojo{background:var(--rojo);color:#fff;}
+.btn.rojo:hover{background:#d9483a;}
+.btn.outline{background:transparent;color:#7fb0f9;border:1px solid var(--borde);}
+.btn.outline:hover{background:var(--campo);}
+
+.franja{background:var(--panel);border:1px solid var(--borde);border-radius:12px;margin-top:26px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--texto2);}
+footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-top:1px solid var(--borde);margin-top:34px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
+  <div class="tit">
+    <div class="l1">UBUNTU · ILFIS</div>
+    <div class="l2">Plataforma Educativa</div>
+    <div class="l3">Clases tutorizadas y evaluadas · con certificación</div>
+  </div>
+  <a class="volver" href="../">← Volver a UBUNTU</a>
+</header>
+
+<div class="hero">
+  <h1>Diplomados con tutoría, evaluaciones y notas</h1>
+  <p>Este es el sistema formal de estudios de ILFIS: cronograma semanal, cuestionarios calificados, publicación de notas, avance registrado y acompañamiento de expertos. Distinto de Clases Premium, donde solo ves las clases grabadas libremente, sin evaluaciones.</p>
+</div>
+
+<div class="contenedor">
+
+  <div class="dif">
+    <b>¿Cómo funciona?</b> Cada cohorte inicia un lunes. Las semanas se desbloquean automáticamente (lunes 00:00, hora de Lima), los cuestionarios cierran el domingo 00:00 de su semana — con un solo intento — y las notas se publican el lunes siguiente a las 12:00. Tu avance queda guardado en tu cuenta.
+  </div>
+
+  <div class="grilla">
+
+    <div class="card activa">
+      <div class="banda">💧</div>
+      <div class="cuerpo">
+        <div><span class="pill abierta">● Cohorte inicia lunes 13/07/2026</span></div>
+        <h3>Diplomado de Rociadores Automáticos</h3>
+        <div class="datos">🎬 49 clases · 📝 35 cuestionarios calificados · 📄 manual completo · 🗓 13 semanas<br>👨‍🏫 Tutoría de expertos ILFIS · 📊 libreta de notas en línea</div>
+        <a class="btn rojo" href="../diplomado-rociadores/">🎓 Entrar al aula</a>
+        <a class="btn outline" href="https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" target="_blank" rel="noopener">Información y matrícula</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="banda gris">🧮</div>
+      <div class="cuerpo">
+        <div><span class="pill pronto">Próxima incorporación</span></div>
+        <h3>Diplomado Especializado en Cálculos Hidráulicos</h3>
+        <div class="datos">El siguiente programa en sumarse a la Plataforma Educativa, con el mismo sistema de cronograma, evaluaciones y notas.</div>
+        <a class="btn outline" href="https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/" target="_blank" rel="noopener">Información del programa</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="franja">
+    <div>¿Quieres ver toda la oferta académica de ILFIS (incluidos los programas por incorporarse)?</div>
+    <a class="btn outline" href="../catalogo/" style="min-width:220px;">Ver catálogo completo →</a>
+  </div>
+
+</div>
+
+<footer>
+  ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad<br>
+  contacto@ilfislatinoamerica.com
+</footer>
+
+</body>
+</html>
