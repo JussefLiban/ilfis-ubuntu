@@ -171,6 +171,9 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 
 <!-- Aula -->
 <div id="aula">
+  <div id="bannerPrueba" style="display:none;grid-column:1/-1;background:#3b2a08;border:1px solid var(--ambar);border-radius:10px;padding:10px 14px;font-size:.8rem;color:var(--ambar);">
+    🧪 <b>MODO PRUEBA</b> — estás viendo el aula con fecha simulada: <span id="fechaSimulada" class="mono"></span>. Los alumnos ven la fecha real. Quita <span class="mono">?prueba=</span> de la URL para volver.
+  </div>
   <div id="barraTop">
     <span class="tit">🎓 Mi avance</span>
     <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
@@ -218,6 +221,11 @@ const $ = id => document.getElementById(id);
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 // ═══════════════ HELPERS ═══════════════
+// RELOJ DE PRUEBAS: abre el aula con ?prueba=2026-07-14T13:00 para verla con
+// fecha simulada. Solo funciona si este navegador tiene guardada la clave
+// admin de la Zona Intranet — para alumnos normales el servidor lo ignora.
+const FECHA_PRUEBA = new URLSearchParams(location.search).get("prueba");
+
 function pantalla(id){
   ["pCargando","pLogin","pSinMatricula","pError"].forEach(p => $(p).style.display = (p===id ? "block" : "none"));
   $("aula").classList.toggle("on", id === "aula");
@@ -225,10 +233,12 @@ function pantalla(id){
 
 async function api(path, opts={}){
   const t = await usuario.getIdToken();
-  const r = await fetch(API + path, {
-    ...opts,
-    headers: { "Authorization": "Bearer " + t, "Content-Type": "application/json", ...(opts.headers||{}) }
-  });
+  const headers = { "Authorization": "Bearer " + t, "Content-Type": "application/json", ...(opts.headers||{}) };
+  if(FECHA_PRUEBA){
+    const k = localStorage.getItem("ilfis_admin_key");
+    if(k){ headers["X-Fecha-Prueba"] = FECHA_PRUEBA; headers["X-Admin-Key"] = k; }
+  }
+  const r = await fetch(API + path, { ...opts, headers });
   let data = null;
   try { data = await r.json(); } catch(e){ /* respuesta sin JSON */ }
   if(!r.ok){
@@ -291,6 +301,10 @@ async function cargarAula(){
     totalLecs = est.semanas.reduce((a,w) => a + w.lecciones.length, 0);
     renderTemario();
     renderProgreso();
+    if(est.modo_prueba){
+      $("bannerPrueba").style.display = "block";
+      $("fechaSimulada").textContent = String(est.ahora).slice(0,16).replace("T"," ");
+    }
     pantalla("aula");
   }catch(e){
     if(e.status === 403){
