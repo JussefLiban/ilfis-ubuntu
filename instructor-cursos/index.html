@@ -57,6 +57,14 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
 .pill{font-size:.68rem;font-weight:700;border-radius:5px;padding:3px 8px;white-space:nowrap;}
 .pill.manual{background:rgba(251,191,36,.15);color:var(--ambar);}
 .pill.ok{background:#14532d;color:#bbf7d0;}
+.ent-save{font-size:.72rem;font-weight:700;margin-left:6px;}
+.ent-save.ok{color:#bbf7d0;} .ent-save.err{color:#fecaca;}
+input[type=number],input[type=text]{background:var(--campo);border:1px solid var(--borde);color:var(--texto);border-radius:6px;padding:5px 7px;font-size:.78rem;font-family:inherit;}
+textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto);border-radius:6px;padding:6px 8px;font-size:.78rem;font-family:inherit;resize:vertical;}
+.calif-box{margin-top:14px;padding:12px 14px;border:1px solid var(--rojo);border-radius:10px;background:rgba(192,57,43,.06);}
+.calif-tit{font-weight:700;font-size:.85rem;margin-bottom:8px;}
+.calif-row{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;}
+.calif-row label{font-size:.74rem;color:var(--texto2);}
 .aviso{background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:12px 14px;font-size:.8rem;color:var(--texto2);line-height:1.5;margin:12px 0;}
 .aviso.err2{border-color:#7f1d1d;color:var(--rojoTxt);}
 
@@ -94,6 +102,7 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
   <div class="barra">
     <span class="tab sel" id="tabQ" onclick="verTab('q')">Por cuestionario</span>
     <span class="tab" id="tabA" onclick="verTab('a')">Por alumno</span>
+    <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
@@ -115,6 +124,7 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
 let R = null;      // resumen
+let E = null;      // entregas de tareas
 let tab = "q";
 
 const $ = id => document.getElementById(id);
@@ -161,6 +171,9 @@ async function cargar(inicial){
   $("stIntentos").textContent = R.intentos.length;
   const sel = $("selQuiz");
   sel.innerHTML = R.quizzes.map(q => `<option value="${esc(q.quizId)}">S${q.semana} · ${esc(q.titulo)}</option>`).join("");
+  // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
+  try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
+  catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
   verTab(tab);
 }
 
@@ -168,8 +181,11 @@ function verTab(t){
   tab = t;
   $("tabQ").classList.toggle("sel", t === "q");
   $("tabA").classList.toggle("sel", t === "a");
+  $("tabE").classList.toggle("sel", t === "e");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
-  if(t === "q") renderQuiz(); else renderAlumnos();
+  if(t === "q") renderQuiz();
+  else if(t === "a") renderAlumnos();
+  else renderEntregas();
 }
 
 function renderQuiz(){
@@ -180,7 +196,7 @@ function renderQuiz(){
   $("tabla").querySelector("tbody").innerHTML = rows.map(x => `
     <tr>
       <td>${esc(x.email || x.uid)}</td>
-      <td class="num">${x.puntaje} / ${x.sobre}</td>
+      <td class="num">${x.es_encuesta ? "encuesta" : (x.nota !== undefined && x.nota !== null ? `${x.nota} / 100` : `${x.puntaje} / ${x.sobre}`)}</td>
       <td>${x.pendiente_manual ? `<span class="pill manual">⚠ ${x.sobre_manual} pts por calificar</span>` : `<span class="pill ok">—</span>`}</td>
       <td>${fmtLima(x.enviado)}</td>
       <td><button class="btn mini" onclick="verIntento('${esc(x.uid)}','${esc(x.quiz_id)}','${esc(x.email)}')">Ver respuestas</button></td>
@@ -218,6 +234,60 @@ function renderAlumnos(){
     `<tr><td colspan="5" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con avance</td></tr>`;
 }
 
+// ── Entregas de tareas ──
+function fmtSize(n){ n=n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1024).toFixed(0)+" KB"; return (n/1048576).toFixed(1)+" MB"; }
+
+function renderEntregas(){
+  const tb = $("tabla");
+  tb.querySelector("thead").innerHTML =
+    `<tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th style="text-align:right;">Nota</th><th>Comentario</th><th></th></tr>`;
+  const rows = (E && E.entregas) ? E.entregas : [];
+  tb.querySelector("tbody").innerHTML = rows.map(x => {
+    const files = (x.archivos||[]).length
+      ? x.archivos.map(a => `<button class="btn mini" onclick="descargarEntrega('${esc(x.uid)}',${x.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)} <span style="color:var(--texto2);">(${fmtSize(a.size)})</span></button>`).join("<br>")
+      : '<span style="color:var(--texto2);">— sin archivos —</span>';
+    const key = `${esc(x.uid)}-${x.semana}`;
+    return `<tr>
+      <td>${esc(x.email||x.uid)}</td>
+      <td class="num">${x.semana}</td>
+      <td>${files}</td>
+      <td class="num"><input id="entN-${key}" type="number" min="0" max="100" value="${x.nota!=null?esc(x.nota):""}" placeholder="—" style="width:62px;"></td>
+      <td><input id="entC-${key}" type="text" value="${esc(x.comentario||"")}" placeholder="comentario para el alumno" style="width:100%;min-width:150px;"></td>
+      <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="guardarNotaEntrega('${esc(x.uid)}',${x.semana})">Guardar</button> <span class="ent-save" id="entS-${key}"></span></td>
+    </tr>`;
+  }).join("") ||
+    `<tr><td colspan="6" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
+}
+
+async function descargarEntrega(uid, sem, nombre){
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/archivo/${encodeURIComponent(nombre)}`, { headers:{ "X-Admin-Key": clave } });
+    if(!r.ok){ let d=null; try{ d=await r.json(); }catch(e){} throw new Error(d&&d.detail?d.detail:("Error "+r.status)); }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }catch(e){ alert("No pude descargar: " + e.message); }
+}
+
+async function guardarNotaEntrega(uid, sem){
+  const key = `${uid}-${sem}`;
+  const notaStr = ($(`entN-${key}`).value || "").trim();
+  const com = ($(`entC-${key}`).value || "").trim();
+  const msg = $(`entS-${key}`);
+  if(msg){ msg.textContent = "…"; msg.className = "ent-save"; }
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/nota`, {
+      method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" },
+      body: JSON.stringify({ nota: notaStr === "" ? null : Number(notaStr), comentario: com })
+    });
+    let d=null; try{ d=await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
+    if(msg){ msg.textContent = "✓ guardada"; msg.className = "ent-save ok"; }
+  }catch(e){ if(msg){ msg.textContent = "⚠ " + e.message; msg.className = "ent-save err"; } }
+}
+
 async function verIntento(uid, quizId, email){
   $("detTit").textContent = "Cargando…";
   $("detSub").textContent = "";
@@ -228,18 +298,54 @@ async function verIntento(uid, quizId, email){
   catch(e){ $("detTit").textContent = "⚠ " + e.message; return; }
   const it = d.intento, det = it.detalle || [];
   $("detTit").textContent = `${it.email || email} — ${quizId}`;
-  $("detSub").textContent = `Nota automática ${it.puntaje}/${it.sobre} · enviado ${fmtLima(it.enviado_lima)} · S${it.semana}`;
+  const notaTxt = (it.nota !== undefined && it.nota !== null) ? `Nota ${it.nota}/100 (bruto ${it.puntaje}/${it.sobre})` : `Nota automática ${it.puntaje}/${it.sobre}`;
+  $("detSub").textContent = `${notaTxt} · enviado ${fmtLima(it.enviado_lima)} · S${it.semana}`;
   $("detCuerpo").innerHTML = d.preguntas.map(p => {
     const r = det.find(x => x.i === p.i) || {};
     let cuerpo = "";
     if(p.tipo === "opcion_multiple" || p.tipo === "seleccion_multiple"){
       cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Correcta</span>' : '<span class="c-mal">✗ Incorrecta</span>'} · respuesta marcada: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span> · ${p.puntos} pts</div>`;
+    } else if(p.tipo === "vf_filas" || p.tipo === "emparejar" || p.tipo === "clasificar"){
+      cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Completa</span>' : `<span class="${(r.aciertos||0)>0 ? 'c-ok' : 'c-mal'}">${r.aciertos||0} de ${r.de||"?"} filas correctas</span>`} · ${r.obtenidos!==undefined && r.obtenidos!==null ? r.obtenidos : 0} de ${p.puntos} pts (proporcional) · respuesta: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span></div>`;
+    } else if(p.tipo === "cuadricula"){
+      cuerpo = `<div style="color:var(--texto2);font-size:.75rem;">Encuesta · respuesta: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span></div>`;
     } else {
       cuerpo = `<div style="margin-bottom:5px;color:var(--ambar);font-size:.72rem;">📝 Calificación manual · ${p.puntos} pts</div>
                 <div class="resp-texto">${esc(r.respuesta || "(sin respuesta)")}</div>`;
+      if(p.respuesta_modelo){
+        cuerpo += `<div style="margin-top:6px;padding:8px 10px;border:1px dashed var(--borde);border-radius:7px;font-size:.75rem;color:var(--texto2);"><b>Respuesta modelo / notas del solucionario:</b><br>${esc(p.respuesta_modelo).replace(/\n/g,"<br>")}</div>`;
+      }
     }
-    return `<div class="preg-det"><div class="en">${p.i+1}. ${esc(p.enunciado)}</div>${cuerpo}</div>`;
+    const num = (p.num !== undefined && p.num !== null) ? p.num : (p.i + 1);
+    return `<div class="preg-det"><div class="en">${num}. ${esc(p.enunciado)}</div>${cuerpo}</div>`;
   }).join("");
+  const gm = `<div class="calif-box">
+    <div class="calif-tit">✍ Calificar / mensaje al alumno</div>
+    <div class="calif-row">
+      <label style="flex:0 0 auto;">Nota manual (0–100)<br><input id="calNota" type="number" min="0" max="100" value="${it.nota_manual!=null?esc(it.nota_manual):""}" placeholder="—" style="width:90px;"></label>
+      <label style="flex:1 1 auto;">Mensaje para el alumno<br><textarea id="calMsg" rows="2" placeholder="Comentario, corrección, felicitación…" style="width:100%;">${esc(it.mensaje_docente||"")}</textarea></label>
+    </div>
+    <button class="btn rojo mini" onclick="guardarCalifManual()">Guardar calificación</button>
+    <span class="ent-save" id="calMsgOut"></span>
+    <div style="color:var(--texto2);font-size:.72rem;margin-top:5px;">La nota manual, si la pones, es la que verá el alumno (reemplaza la automática). El mensaje aparece junto a su nota.</div>
+  </div>`;
+  $("detCuerpo").innerHTML += gm;
+  window._cal = { uid, quizId };
+}
+
+async function guardarCalifManual(){
+  const out = $("calMsgOut");
+  const notaStr = ($("calNota").value || "").trim();
+  const body = { nota: notaStr === "" ? null : Number(notaStr), mensaje: ($("calMsg").value || "").trim() };
+  if(out){ out.textContent = "…"; out.className = "ent-save"; }
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/intento/${encodeURIComponent(window._cal.uid)}/${encodeURIComponent(window._cal.quizId)}/calificar`, {
+      method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" }, body: JSON.stringify(body) });
+    let d=null; try{ d=await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
+    if(out){ out.textContent = "✓ guardada"; out.className = "ent-save ok"; }
+    await cargar(false);
+  }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
 }
 
 if(clave){

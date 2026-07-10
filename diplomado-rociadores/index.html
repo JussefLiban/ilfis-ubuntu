@@ -114,6 +114,19 @@ video{width:100%;max-height:62vh;display:block;background:#000;}
 .opcion input{margin-top:3px;accent-color:var(--rojo);}
 textarea{width:100%;max-width:560px;background:var(--campo);border:1px solid var(--borde);border-radius:8px;color:var(--texto);font-family:inherit;font-size:.85rem;padding:10px;resize:vertical;}
 textarea:focus{outline:none;border-color:var(--azul);}
+.ctx{background:var(--campo);border:1px solid var(--borde);border-left:3px solid var(--azul);border-radius:8px;padding:9px 12px;margin:0 0 10px 0;font-size:.8rem;line-height:1.5;}
+.ctx b{font-size:.72rem;letter-spacing:.4px;color:var(--texto2);text-transform:uppercase;}
+.ctx ul{margin:5px 0 0 0;padding-left:18px;}
+.tab-q{width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:8px;max-width:680px;}
+.tab-q th{background:var(--marino);padding:6px 9px;font-size:.7rem;border-bottom:2px solid var(--rojo);text-align:center;}
+.tab-q th:first-child{text-align:left;}
+.tab-q td{padding:6px 9px;border-bottom:1px solid var(--borde);vertical-align:top;}
+.tab-q td.cen{text-align:center;white-space:nowrap;}
+.tab-q input[type=radio]{accent-color:var(--rojo);transform:scale(1.15);cursor:pointer;}
+.sel-par{background:var(--campo);border:1px solid var(--borde);border-radius:7px;color:var(--texto);font-family:inherit;font-size:.82rem;padding:5px 8px;cursor:pointer;}
+.sel-par:focus{outline:none;border-color:var(--azul);}
+.chip.dl{cursor:pointer;}
+.chip.dl:hover{border-color:var(--rojo);}
 
 /* Notas */
 table{width:100%;border-collapse:collapse;font-size:.82rem;}
@@ -125,6 +138,33 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
 .est.enviado{background:#1e3a8a;color:#bfdbfe;}
 .est.publicado{background:#14532d;color:#bbf7d0;}
 .est.sin_entrega{background:#7f1d1d;color:#fecaca;}
+
+/* Entrega de tareas (subida) */
+.entrega-box{margin:14px 0;padding:12px 14px;border:1px solid var(--borde);border-radius:9px;background:#141a28;}
+.ent-title{font-weight:700;font-size:.92rem;margin-bottom:8px;}
+.ent-file{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;margin-bottom:6px;background:#1a2233;border:1px solid var(--borde);border-radius:6px;font-size:.82rem;}
+.ent-size{color:var(--texto2);font-size:.74rem;}
+.ent-del{background:#7f1d1d;color:#fecaca;border:none;border-radius:5px;width:24px;height:24px;cursor:pointer;font-weight:700;line-height:1;}
+.ent-del:hover{background:#991b1b;}
+.ent-empty{color:var(--texto2);font-size:.8rem;margin-bottom:8px;}
+.ent-up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.ent-up input[type=file]{font-size:.78rem;color:var(--texto2);max-width:100%;}
+.btn.sm{padding:7px 12px;font-size:.8rem;}
+.ent-hint{font-size:.72rem;color:var(--texto2);margin-top:6px;line-height:1.4;}
+.ent-msg{font-size:.8rem;margin-top:8px;min-height:1em;}
+.ent-msg.ok{color:#bbf7d0;} .ent-msg.err{color:#fecaca;}
+.ent-nota{margin-top:10px;padding:8px 10px;background:#14532d;color:#dcfce7;border-radius:6px;font-size:.82rem;}
+
+/* Formulario de datos del alumno */
+.perfil-form{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin:14px 0;max-width:640px;}
+.perfil-form label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--texto2);}
+.perfil-form .req{color:#8b95b0;font-weight:400;font-size:.72rem;}
+.perfil-form input,.perfil-form select{background:var(--campo,#1a2233);border:1px solid var(--borde);border-radius:7px;color:var(--texto,#e2e8f4);font-family:inherit;font-size:.86rem;padding:9px 10px;width:100%;}
+.perfil-form input:focus,.perfil-form select:focus{outline:none;border-color:var(--azul);}
+.perfil-form .tel-row{display:flex;gap:8px;}
+.perfil-form .tel-row select{flex:0 0 auto;max-width:52%;}
+.perfil-form .tel-row input{flex:1 1 auto;}
+@media(max-width:560px){.perfil-form{grid-template-columns:1fr;}}
 
 footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 </style>
@@ -174,10 +214,19 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
   <div id="bannerPrueba" style="display:none;grid-column:1/-1;background:#3b2a08;border:1px solid var(--ambar);border-radius:10px;padding:10px 14px;font-size:.8rem;color:var(--ambar);">
     🧪 <b>MODO PRUEBA</b> — estás viendo el aula con fecha simulada: <span id="fechaSimulada" class="mono"></span>. Los alumnos ven la fecha real. Quita <span class="mono">?prueba=</span> de la URL para volver.
   </div>
+  <div id="bannerPerfil" style="display:none;grid-column:1/-1;background:#0e2438;border:1px solid var(--azul);border-radius:10px;padding:10px 14px;font-size:.82rem;color:#bfe0ff;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span>📋 Completa tus datos para tu <b>certificado</b> (nombre, país, fecha de nacimiento…). Puedes entrar y hacerlo cuando quieras.</span>
+    <button class="btn-notas" onclick="abrirPerfil()">Completar ahora</button>
+    <span style="cursor:pointer;opacity:.7;margin-left:auto;" onclick="document.getElementById('bannerPerfil').style.display='none'" title="Más tarde">✕</span>
+  </div>
+  <div id="bannerDocente" style="display:none;grid-column:1/-1;background:#0e2e1a;border:1px solid #22c55e;border-radius:10px;padding:10px 14px;font-size:.82rem;color:#bbf7d0;">
+    🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar y dejar mensajes usa el <b>panel de instructor</b>.
+  </div>
   <div id="barraTop">
     <span class="tit">🎓 Mi avance</span>
     <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
     <span class="prog-txt mono" id="progTxt">0 / 0</span>
+    <button class="btn-notas" onclick="abrirPerfil()">📋 Mis datos</button>
     <button class="btn-notas" onclick="verNotas()">📊 Mis notas</button>
   </div>
   <div id="temario"></div>
@@ -305,7 +354,9 @@ async function cargarAula(){
       $("bannerPrueba").style.display = "block";
       $("fechaSimulada").textContent = String(est.ahora).slice(0,16).replace("T"," ");
     }
+    if(est.rol === "docente"){ $("bannerDocente").style.display = "block"; }
     pantalla("aula");
+    cargarPerfil();
   }catch(e){
     if(e.status === 403){
       $("matriculaMsg").textContent = e.message;
@@ -447,13 +498,169 @@ function badgeDe(n){
 }
 function lecTarea(w, l, c){
   const archivos = (l.archivos || []);
+  const descargable = !!(estructura && estructura.tareas_descargables);
   const lista = archivos.length
-    ? archivos.map(n => `<span class="chip static">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))}</span>`).join("<br>")
+    ? archivos.map(n => descargable
+        ? `<span class="chip dl" onclick="descargarTarea(${w.sem}, '${esc(n).replace(/'/g,"&#39;")}')" title="Descargar">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))} ⬇</span>`
+        : `<span class="chip static">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))}</span>`).join("<br>")
     : '<div class="aviso">Esta semana no tiene archivos de tarea.</div>';
+  const nota = descargable
+    ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo. Los PDF de evaluación son las preguntas: respóndelas en el cuestionario de esta misma semana (el número de cada pregunta del cuestionario corresponde al PDF).</div>'
+    : '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
   c.innerHTML = cab(w, l) + `
     <div style="margin-bottom:10px;">${lista}</div>
-    <div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>
+    ${nota}
+    <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>
     <button class="btn" onclick="marcarCompletada('${esc(l.id)}')" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Revisada":"Marcar como revisada"}</button>`;
+  cargarEntrega(w.sem);
+}
+
+async function descargarTarea(sem, nombre){
+  try{
+    const t = await usuario.getIdToken(true);
+    window.open(`${API}/api/cursos/${CURSO}/tarea/${sem}/${encodeURIComponent(nombre)}?token=${t}`, "_blank");
+  }catch(e){ alert("No pude descargar el archivo: " + e.message); }
+}
+
+// ── Entrega de trabajos (subida a Cloud Storage) ──
+function fmtSize(n){ n=n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1024).toFixed(0)+" KB"; return (n/1048576).toFixed(1)+" MB"; }
+
+async function apiForm(path, formData){
+  const t = await usuario.getIdToken();
+  const headers = { "Authorization": "Bearer " + t };
+  if(FECHA_PRUEBA){ const k = localStorage.getItem("ilfis_admin_key"); if(k){ headers["X-Fecha-Prueba"]=FECHA_PRUEBA; headers["X-Admin-Key"]=k; } }
+  const r = await fetch(API + path, { method:"POST", headers, body: formData });
+  let data=null; try{ data = await r.json(); }catch(e){}
+  if(!r.ok){ const err=new Error((data&&data.detail)?data.detail:("Error "+r.status)); err.status=r.status; throw err; }
+  return data;
+}
+
+async function cargarEntrega(sem){
+  const box = $("entregaBox");
+  if(!box) return;
+  let e;
+  try{ e = await api(`/api/cursos/${CURSO}/entrega/${sem}`); }
+  catch(err){ box.innerHTML = `<div class="aviso err">No pude cargar tu entrega: ${esc(err.message)}</div>`; return; }
+  if(!e.habilitado){ box.innerHTML = `<div class="ent-title">📤 Tu entrega</div><div class="aviso">La entrega de trabajos en línea estará disponible muy pronto.</div>`; return; }
+  const files = (e.archivos||[]);
+  const filasArch = files.length
+    ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span>${e.puede_subir?`<button class="ent-del" title="Quitar" onclick="borrarEntrega(${sem}, '${esc(a.nombre).replace(/'/g,"&#39;")}')">✕</button>`:""}</div>`).join("")
+    : `<div class="ent-empty">Aún no has subido ningún archivo.</div>`;
+  let ctrl;
+  if(e.puede_subir){
+    ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}"><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
+      <div class="ent-hint">Máx ${e.max_mb} MB · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
+  } else {
+    ctrl = `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`;
+  }
+  const calif = e.calificado
+    ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>`
+    : "";
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}`;
+}
+
+async function subirEntrega(sem){
+  const inp = $(`entFile-${sem}`), msg = $(`entMsg-${sem}`), btn = $(`entBtn-${sem}`);
+  if(!inp || !inp.files || !inp.files.length){ if(msg){msg.className="ent-msg err"; msg.textContent="Elige un archivo primero.";} return; }
+  if(btn){ btn.disabled=true; btn.textContent="Subiendo…"; }
+  try{
+    const fd = new FormData(); fd.append("archivo", inp.files[0]);
+    await apiForm(`/api/cursos/${CURSO}/entrega/${sem}`, fd);
+    await cargarEntrega(sem);
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.textContent="Subir entregable"; }
+    if(msg){ msg.className="ent-msg err"; msg.textContent="No se pudo subir: " + e.message; }
+  }
+}
+
+async function borrarEntrega(sem, nombre){
+  if(!confirm(`¿Quitar "${nombre}" de tu entrega?`)) return;
+  try{
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(nombre)}`, { method:"DELETE" });
+    await cargarEntrega(sem);
+  }catch(e){ alert("No se pudo quitar: " + e.message); }
+}
+
+// ── Datos del alumno para el certificado ──
+let perfilCache = null;
+
+// [nombre, código telefónico] — foco en Latinoamérica + países comunes
+const PAISES = [["Alemania","49"],["Argentina","54"],["Belice","501"],["Bolivia","591"],
+  ["Brasil","55"],["Canadá","1"],["Chile","56"],["Colombia","57"],["Costa Rica","506"],
+  ["Cuba","53"],["Ecuador","593"],["El Salvador","503"],["España","34"],["Estados Unidos","1"],
+  ["Francia","33"],["Guatemala","502"],["Guinea Ecuatorial","240"],["Haití","509"],
+  ["Honduras","504"],["Italia","39"],["México","52"],["Nicaragua","505"],["Panamá","507"],
+  ["Paraguay","595"],["Perú","51"],["Portugal","351"],["Puerto Rico","1"],["Reino Unido","44"],
+  ["República Dominicana","1"],["Uruguay","598"],["Venezuela","58"]];
+
+function opcionesPais(sel){
+  return `<option value=""${sel?"":" selected"} disabled>— Selecciona —</option>` +
+    PAISES.map(([n]) => `<option${n===sel?" selected":""}>${n}</option>`).join("");
+}
+function opcionesCod(sel){
+  return PAISES.map(([n,c]) => `<option value="+${c}"${("+"+c)===sel?" selected":""}>${n} (+${c})</option>`).join("");
+}
+
+async function cargarPerfil(){
+  try{
+    const r = await api(`/api/cursos/perfil`);
+    perfilCache = r.perfil || {};
+    const b = $("bannerPerfil");
+    if(b) b.style.display = r.completo ? "none" : "flex";
+  }catch(e){ /* no bloquea el aula */ }
+}
+
+async function abrirPerfil(){
+  const c = $("contenido");
+  if(!perfilCache){
+    try{ const r = await api(`/api/cursos/perfil`); perfilCache = r.perfil || {}; }
+    catch(e){ perfilCache = {}; }
+  }
+  const p = perfilCache || {};
+  c.innerHTML = `<h2>📋 Mis datos para el certificado</h2>
+    <div class="meta">Estos datos se usan solo para emitir tu diploma. No son obligatorios para entrar al aula; complétalos cuando quieras.</div>
+    <div class="perfil-form">
+      <label>Nombre completo <span class="req">(tal cual irá en el certificado)</span>
+        <input id="pfNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos"></label>
+      <label>Fecha de nacimiento
+        <input id="pfNac" type="date" value="${esc(p.fecha_nacimiento||"")}"></label>
+      <label>País de nacimiento
+        <select id="pfNacimiento">${opcionesPais(p.pais_nacimiento||"")}</select></label>
+      <label>País de residencia
+        <select id="pfResid">${opcionesPais(p.pais_residencia||"")}</select></label>
+      <label>Teléfono
+        <div class="tel-row">
+          <select id="pfCod">${opcionesCod(p.telefono_cod||"+51")}</select>
+          <input id="pfTel" type="tel" maxlength="30" value="${esc(p.telefono||"")}" placeholder="Número">
+        </div></label>
+      <label>Correo
+        <input type="email" value="${esc(p.email||(usuario&&usuario.email)||"")}" disabled style="opacity:.6;"></label>
+    </div>
+    <div class="ent-msg" id="pfMsg"></div>
+    <button class="btn" id="pfBtn" onclick="guardarPerfilForm()">Guardar mis datos</button>`;
+}
+
+async function guardarPerfilForm(){
+  const msg = $("pfMsg"), btn = $("pfBtn");
+  const body = {
+    nombre_certificado: $("pfNombre").value.trim(),
+    fecha_nacimiento: $("pfNac").value || null,
+    pais_nacimiento: $("pfNacimiento").value,
+    pais_residencia: $("pfResid").value,
+    telefono_cod: $("pfCod").value,
+    telefono: $("pfTel").value.trim()
+  };
+  if(btn){ btn.disabled = true; btn.textContent = "Guardando…"; }
+  try{
+    const r = await api(`/api/cursos/perfil`, { method:"POST", body: JSON.stringify(body) });
+    perfilCache = { ...body, email: (perfilCache&&perfilCache.email)||(usuario&&usuario.email)||"" };
+    if(msg){ msg.className = "ent-msg ok"; msg.textContent = r.completo ? "✓ Datos guardados. ¡Listo para tu certificado!" : "✓ Guardado. Para el certificado faltan: nombre, fecha de nacimiento y ambos países."; }
+    const b = $("bannerPerfil"); if(b) b.style.display = r.completo ? "none" : "flex";
+    if(btn){ btn.disabled = false; btn.textContent = "Guardar mis datos"; }
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = "Guardar mis datos"; }
+    if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo guardar: " + e.message; }
+  }
 }
 
 // ── Quiz ──
@@ -487,7 +694,22 @@ async function lecQuiz(w, l, c){
   // Formulario
   let html = cab(w, l) + `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
   (q.preguntas || []).forEach((p, qi) => {
-    html += `<div class="preg"><div class="enun">${qi+1}. ${esc(p.enunciado)} <span class="pts">(${p.puntos||0} pts${p.tipo==="seleccion_multiple" ? " · marca todas las correctas" : ""}${(p.tipo==="respuesta_corta"||p.tipo==="respuesta_abierta") ? " · calificación manual" : ""})</span></div>`;
+    // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
+    const num = (p.num !== undefined && p.num !== null) ? p.num : (qi + 1);
+    const soloNum = String(p.enunciado||"").trim() === String(num);
+    const enun = soloNum
+      ? `Pregunta ${num} <span class="pts">(el enunciado está en el documento PDF de esta evaluación)</span>`
+      : `${num}. ${esc(p.enunciado)}`;
+    const pistas = [];
+    pistas.push(`${p.puntos||0} pts`);
+    if(p.tipo === "seleccion_multiple") pistas.push("marca todas las correctas");
+    if(p.tipo === "vf_filas") pistas.push("marca V o F en cada fila · puntaje proporcional");
+    if(p.tipo === "emparejar" || p.tipo === "clasificar") pistas.push("elige una letra por fila · puntaje proporcional");
+    if(p.tipo === "respuesta_corta" || p.tipo === "respuesta_abierta") pistas.push("calificación manual del instructor");
+    html += `<div class="preg"><div class="enun">${enun} <span class="pts">(${pistas.join(" · ")})</span></div>`;
+    (p.contexto || []).forEach(cx => {
+      html += `<div class="ctx"><b>${esc(cx.titulo||"")}</b><ul>${(cx.items||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`;
+    });
     if(p.tipo === "opcion_multiple"){
       (p.opciones||[]).forEach((o, oi) => {
         html += `<label class="opcion"><input type="radio" name="q_${qi}" value="${oi}"><span>${esc(o.texto)}</span></label>`;
@@ -496,8 +718,33 @@ async function lecQuiz(w, l, c){
       (p.opciones||[]).forEach((o, oi) => {
         html += `<label class="opcion"><input type="checkbox" name="q_${qi}_${oi}" value="${oi}"><span>${esc(o.texto)}</span></label>`;
       });
+    } else if(p.tipo === "vf_filas"){
+      html += `<table class="tab-q"><thead><tr><th>Afirmación</th><th>V</th><th>F</th></tr></thead><tbody>`;
+      (p.filas||[]).forEach((f, fi) => {
+        html += `<tr><td>${esc(f.texto)}</td>
+          <td class="cen"><input type="radio" name="q_${qi}_f${fi}" value="V"></td>
+          <td class="cen"><input type="radio" name="q_${qi}_f${fi}" value="F"></td></tr>`;
+      });
+      html += `</tbody></table>`;
+    } else if(p.tipo === "emparejar" || p.tipo === "clasificar"){
+      const der = p.opciones_derecha || [];
+      html += `<div class="ctx"><b>Opciones</b><ul>${der.map(d=>`<li><b>${esc(d.letra)}.</b> ${esc(d.texto)}</li>`).join("")}</ul></div>`;
+      html += `<table class="tab-q"><tbody>`;
+      (p.items||[]).forEach((it, ii) => {
+        const sel = `<select class="sel-par" id="q_${qi}_i${ii}"><option value="">—</option>${der.map(d=>`<option value="${esc(d.letra)}">${esc(d.letra)}</option>`).join("")}</select>`;
+        html += `<tr><td>${it.num!=null?esc(String(it.num))+". ":""}${esc(it.texto)}</td><td class="cen">${sel}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+    } else if(p.tipo === "cuadricula"){
+      const cols = p.columnas || [];
+      html += `<table class="tab-q"><thead><tr><th></th>${cols.map(cn=>`<th>${esc(cn)}</th>`).join("")}</tr></thead><tbody>`;
+      (p.filas||[]).forEach((f, fi) => {
+        const nombreFila = (typeof f === "string") ? f : (f.texto || "");
+        html += `<tr><td>${esc(nombreFila)}</td>${cols.map((cn,ci)=>`<td class="cen"><input type="radio" name="q_${qi}_f${fi}" value="${ci}"></td>`).join("")}</tr>`;
+      });
+      html += `</tbody></table>`;
     } else {
-      html += `<textarea id="q_${qi}" rows="3" placeholder="Escribe tu respuesta…"></textarea>`;
+      html += `<textarea id="q_${qi}" rows="4" placeholder="Escribe tu respuesta con tus propias palabras…"></textarea>`;
     }
     html += `</div>`;
   });
@@ -529,6 +776,27 @@ async function enviarQuiz(){
       });
       respuestas[qi] = marcadas;
       if(!marcadas.length) sinResponder++;
+    } else if(p.tipo === "vf_filas"){
+      const arr = (p.filas||[]).map((f, fi) => {
+        const m = document.querySelector(`input[name="q_${qi}_f${fi}"]:checked`);
+        return m ? m.value : null;
+      });
+      respuestas[qi] = arr;
+      if(arr.some(v => v === null)) sinResponder++;
+    } else if(p.tipo === "emparejar" || p.tipo === "clasificar"){
+      const arr = (p.items||[]).map((it, ii) => {
+        const el = $(`q_${qi}_i${ii}`);
+        return (el && el.value) ? el.value : null;
+      });
+      respuestas[qi] = arr;
+      if(arr.some(v => v === null)) sinResponder++;
+    } else if(p.tipo === "cuadricula"){
+      const arr = (p.filas||[]).map((f, fi) => {
+        const m = document.querySelector(`input[name="q_${qi}_f${fi}"]:checked`);
+        return m ? parseInt(m.value, 10) : null;
+      });
+      respuestas[qi] = arr;
+      if(arr.some(v => v === null)) sinResponder++;
     } else {
       const el = $("q_" + qi);
       respuestas[qi] = el ? el.value.trim() : "";
@@ -577,26 +845,38 @@ async function verNotas(){
     c.innerHTML = `<h2>📊 Mis notas</h2><div class="aviso err">⚠ ${esc(e.message)}</div>`;
     return;
   }
+  const aprob = notasCache.aprobatoria || 60;
   const filas = notasCache.notas.map(n => {
     let nota = "—", extra = "";
-    if(n.estado === "publicado"){
-      nota = `${n.puntaje} / ${n.sobre}`;
+    if(n.es_encuesta){
+      nota = "";
+    } else if(n.estado === "publicado"){
+      const v = (n.nota !== undefined && n.nota !== null) ? n.nota : n.puntaje;
+      const color = v >= aprob ? "var(--verde)" : "var(--rojo)";
+      nota = `<span style="color:${color};font-weight:700;">${v}</span> / 100`;
       if(n.pendiente_manual) extra = `<div style="font-size:.68rem;color:var(--ambar);">+ preguntas de texto por calificar</div>`;
+      if(n.mensaje_docente) extra += `<div style="font-size:.7rem;color:var(--azul);margin-top:3px;text-align:left;">💬 ${esc(n.mensaje_docente)}</div>`;
+    } else if(n.estado === "sin_entrega"){
+      nota = `<span style="color:var(--rojo);font-weight:700;">0</span> / 100`;
     }
-    if(n.estado === "sin_entrega") nota = `0 / ${n.sobre}`;
     const etiquetas = { pendiente:"Pendiente", enviado:"Enviado ✓", publicado:"Publicada", sin_entrega:"Sin entrega" };
+    const etiqueta = n.es_encuesta ? (n.estado === "enviado" ? "Encuesta ✓" : "Encuesta") : (etiquetas[n.estado] || n.estado);
     return `<tr>
       <td class="num">S${n.semana}</td>
-      <td>${esc(n.titulo)}<div style="font-size:.66rem;color:var(--texto2);">${n.estado==="enviado" ? "nota el " + fmtLima(n.publicacion, true) : ""}</div></td>
-      <td><span class="est ${n.estado}">${etiquetas[n.estado] || n.estado}</span></td>
+      <td>${esc(n.titulo)}<div style="font-size:.66rem;color:var(--texto2);">${(!n.es_encuesta && n.estado==="enviado") ? "nota el " + fmtLima(n.publicacion, true) : ""}</div></td>
+      <td><span class="est ${n.es_encuesta ? "pendiente" : n.estado}">${etiqueta}</span></td>
       <td class="num">${nota}${extra}</td>
     </tr>`;
   }).join("");
+  const final = (notasCache.nota_final_parcial !== undefined)
+    ? `<div class="aviso" style="margin-top:10px;"><b>Nota final parcial (ponderada): ${notasCache.nota_final_parcial} / 100</b> — calculada sobre el ${notasCache.peso_evaluado}% del diplomado ya evaluado.</div>`
+    : "";
   c.innerHTML = `<h2>📊 Mis notas</h2>
-    <div class="meta">Cuestionarios del diplomado · zona horaria oficial: Lima (UTC-5)</div>
+    <div class="meta">Cuestionarios del diplomado · zona horaria oficial: Lima (UTC-5) · nota aprobatoria: ${aprob}/100</div>
     <table><thead><tr><th>Sem.</th><th>Cuestionario</th><th>Estado</th><th style="text-align:right;">Nota</th></tr></thead>
     <tbody>${filas}</tbody></table>
-    <div class="aviso" style="margin-top:14px;">“Sin entrega” significa que el cuestionario cerró sin recibir tus respuestas (nota 0). Las preguntas de texto se califican manualmente y pueden sumar puntos adicionales a tu nota publicada.</div>`;
+    ${final}
+    <div class="aviso" style="margin-top:14px;">Toda evaluación vale 100 puntos (si trae puntos extra, son bonus con tope en 100). “Sin entrega” significa que el cuestionario cerró sin recibir tus respuestas (nota 0). Las preguntas de texto se califican manualmente y pueden sumar puntos adicionales a tu nota publicada.</div>`;
 }
 </script>
 </body>
