@@ -93,8 +93,10 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
 
 <div class="pantalla" id="pClave">
   <h2>🔐 Acceso de instructor</h2>
+  <p style="color:var(--texto2);font-size:.85rem;margin-bottom:16px;">Docentes: entra con la cuenta de Google con la que dictas tu curso. Administración: usa tu clave.</p>
+  <div style="margin-bottom:18px;"><button class="btn rojo" onclick="entrarGoogle()">Entrar con Google (docente)</button></div>
   <input type="password" id="inpClave" placeholder="Clave de administración" onkeydown="if(event.key==='Enter')entrar()">
-  <div style="margin-top:14px;"><button class="btn rojo" onclick="entrar()">Entrar</button></div>
+  <div style="margin-top:12px;"><button class="btn gris" onclick="entrar()">Entrar con clave</button></div>
   <div class="err" id="claveErr"></div>
 </div>
 
@@ -103,6 +105,7 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <span class="tab sel" id="tabQ" onclick="verTab('q')">Por cuestionario</span>
     <span class="tab" id="tabA" onclick="verTab('a')">Por alumno</span>
     <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
+    <span class="tab" id="tabD" onclick="verTab('d')" style="display:none;">Docentes</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
@@ -120,12 +123,26 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
-let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
+const firebaseConfig = {
+  apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
+  authDomain:        "ilfis-ubuntu.firebaseapp.com",
+  projectId:         "ilfis-ubuntu",
+  storageBucket:     "ilfis-ubuntu.firebasestorage.app",
+  messagingSenderId: "986363919942",
+  appId:             "1:986363919942:web:438195736e93511eafd447"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+let usuario = null;   // docente logueado con Google (si aplica)
+let clave = localStorage.getItem("ilfis_admin_key") || null;  // clave de administración (intranet)
 let R = null;      // resumen
 let E = null;      // entregas de tareas
 let tab = "q";
+let _autoIntentado = false;
 
 const $ = id => document.getElementById(id);
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -136,8 +153,15 @@ function fmtLima(iso){
   }catch(e){ return String(iso).slice(0,16); }
 }
 
+async function authHeaders(extra){
+  const h = Object.assign({}, extra || {});
+  if(usuario){ try{ h["Authorization"] = "Bearer " + await usuario.getIdToken(); }catch(e){} }
+  if(clave){ h["X-Admin-Key"] = clave; }
+  return h;
+}
+
 async function api(path){
-  const r = await fetch(API + path, { headers: { "X-Admin-Key": clave } });
+  const r = await fetch(API + path, { headers: await authHeaders() });
   let data = null;
   try{ data = await r.json(); }catch(e){}
   if(!r.ok){
@@ -174,6 +198,9 @@ async function cargar(inicial){
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
   try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
   catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
+  // La gestión de docentes solo la ve administración
+  $("tabD").style.display = R.es_admin ? "inline-block" : "none";
+  if(tab === "d" && !R.es_admin) tab = "q";
   verTab(tab);
 }
 
@@ -182,10 +209,12 @@ function verTab(t){
   $("tabQ").classList.toggle("sel", t === "q");
   $("tabA").classList.toggle("sel", t === "a");
   $("tabE").classList.toggle("sel", t === "e");
+  $("tabD").classList.toggle("sel", t === "d");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
-  else renderEntregas();
+  else if(t === "e") renderEntregas();
+  else renderDocentes();
 }
 
 function renderQuiz(){
@@ -247,10 +276,11 @@ function renderEntregas(){
       ? x.archivos.map(a => `<button class="btn mini" onclick="descargarEntrega('${esc(x.uid)}',${x.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)} <span style="color:var(--texto2);">(${fmtSize(a.size)})</span></button>`).join("<br>")
       : '<span style="color:var(--texto2);">— sin archivos —</span>';
     const key = `${esc(x.uid)}-${x.semana}`;
+    const notaAl = x.mensaje_alumno ? `<div style="margin-top:6px;color:#7fb0f9;font-size:.72rem;">💬 alumno: ${esc(x.mensaje_alumno)}</div>` : "";
     return `<tr>
       <td>${esc(x.email||x.uid)}</td>
       <td class="num">${x.semana}</td>
-      <td>${files}</td>
+      <td>${files}${notaAl}</td>
       <td class="num"><input id="entN-${key}" type="number" min="0" max="100" value="${x.nota!=null?esc(x.nota):""}" placeholder="—" style="width:62px;"></td>
       <td><input id="entC-${key}" type="text" value="${esc(x.comentario||"")}" placeholder="comentario para el alumno" style="width:100%;min-width:150px;"></td>
       <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="guardarNotaEntrega('${esc(x.uid)}',${x.semana})">Guardar</button> <span class="ent-save" id="entS-${key}"></span></td>
@@ -261,7 +291,7 @@ function renderEntregas(){
 
 async function descargarEntrega(uid, sem, nombre){
   try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/archivo/${encodeURIComponent(nombre)}`, { headers:{ "X-Admin-Key": clave } });
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/archivo/${encodeURIComponent(nombre)}`, { headers: await authHeaders() });
     if(!r.ok){ let d=null; try{ d=await r.json(); }catch(e){} throw new Error(d&&d.detail?d.detail:("Error "+r.status)); }
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
@@ -269,6 +299,52 @@ async function descargarEntrega(uid, sem, nombre){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }catch(e){ alert("No pude descargar: " + e.message); }
+}
+
+// ── Gestión de docentes (solo administración) ──
+async function renderDocentes(){
+  const tb = $("tabla");
+  tb.querySelector("thead").innerHTML = `<tr><th>Correo del docente</th><th></th></tr>`;
+  tb.querySelector("tbody").innerHTML = `<tr><td colspan="2" style="padding:16px;color:var(--texto2);">Cargando…</td></tr>`;
+  let d;
+  try{ d = await api("/api/cursos/rociadores/admin/docentes"); }
+  catch(e){ tb.querySelector("tbody").innerHTML = `<tr><td colspan="2" style="padding:16px;color:var(--rojoTxt);">⚠ ${esc(e.message)}</td></tr>`; return; }
+  const alta = `<tr>
+    <td><input type="email" id="docNuevo" placeholder="correo@ejemplo.com del docente" style="min-width:260px;" onkeydown="if(event.key==='Enter')addDocente()"></td>
+    <td style="text-align:right;white-space:nowrap;"><button class="btn rojo mini" onclick="addDocente()">Dar de alta</button> <span class="ent-save" id="docMsg"></span></td>
+  </tr>`;
+  const rows = (d.docentes||[]).map(em => `<tr>
+    <td>${esc(em)}</td>
+    <td style="text-align:right;"><button class="btn mini" onclick="removeDocente('${esc(em).replace(/'/g,"&#39;")}')">Quitar</button></td>
+  </tr>`).join("");
+  const fijos = (d.fijos_por_config||[]).map(em => `<tr><td>${esc(em)} <span style="color:var(--texto2);font-size:.7rem;">· fijo por configuración</span></td><td></td></tr>`).join("");
+  const vacio = (!rows && !fijos) ? `<tr><td colspan="2" style="padding:14px;color:var(--texto2);">Aún no hay docentes dados de alta.</td></tr>` : "";
+  tb.querySelector("tbody").innerHTML = alta + rows + fijos + vacio;
+}
+
+async function addDocente(){
+  const inp = $("docNuevo"), out = $("docMsg");
+  const email = (inp.value || "").trim();
+  if(!email){ return; }
+  if(out){ out.className = "ent-save"; out.textContent = "…"; }
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/docentes`, {
+      method:"POST", headers: await authHeaders({ "Content-Type":"application/json" }), body: JSON.stringify({ email }) });
+    let dd=null; try{ dd = await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(dd&&dd.detail?dd.detail:("Error "+r.status));
+    renderDocentes();
+  }catch(e){ if(out){ out.className = "ent-save err"; out.textContent = "⚠ " + e.message; } }
+}
+
+async function removeDocente(email){
+  if(!confirm(`¿Quitar el acceso docente de ${email}?`)) return;
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/admin/docentes/${encodeURIComponent(email)}`, {
+      method:"DELETE", headers: await authHeaders() });
+    let dd=null; try{ dd = await r.json(); }catch(e){}
+    if(!r.ok) throw new Error(dd&&dd.detail?dd.detail:("Error "+r.status));
+    renderDocentes();
+  }catch(e){ alert("No se pudo quitar: " + e.message); }
 }
 
 async function guardarNotaEntrega(uid, sem){
@@ -348,11 +424,35 @@ async function guardarCalifManual(){
   }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
 }
 
-if(clave){
-  cargar(true).catch(e => {
-    if(e.status === 401){ clave = null; }
-    else { const el = $("claveErr"); el.textContent = "⚠ " + e.message; el.style.display = "block"; }
-  });
+// Auto-entrada: si ya hay sesión de Google (p.ej. el docente venía del aula) o
+// una clave de administración guardada, carga el panel sin pedir nada.
+auth.onAuthStateChanged(async user => {
+  usuario = user;
+  if(_autoIntentado) return;
+  _autoIntentado = true;
+  if(user){
+    try{ await cargar(true); }
+    catch(e){ usuario = null; }   // la cuenta no es docente/admin: se queda en la pantalla de acceso
+  } else if(clave){
+    cargar(true).catch(e => { if(e.status === 401){ clave = null; } });
+  }
+});
+
+async function entrarGoogle(){
+  $("claveErr").style.display = "none";
+  try{
+    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    usuario = auth.currentUser;
+    await cargar(true);
+  }catch(e){
+    if(e.code === "auth/popup-closed-by-user") return;
+    usuario = null;
+    const el = $("claveErr");
+    el.textContent = (e.status === 401)
+      ? "Tu cuenta de Google no tiene acceso de docente a este curso."
+      : "No pude iniciar sesión con Google. Intenta de nuevo.";
+    el.style.display = "block";
+  }
 }
 </script>
 </body>
