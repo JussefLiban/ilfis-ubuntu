@@ -57,6 +57,20 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
 .pill{font-size:.68rem;font-weight:700;border-radius:5px;padding:3px 8px;white-space:nowrap;}
 .pill.manual{background:rgba(251,191,36,.15);color:var(--ambar);}
 .pill.ok{background:#14532d;color:#bbf7d0;}
+.pill.aldia{background:rgba(74,222,128,.14);color:#4ade80;}
+.pill.medio{background:rgba(217,160,56,.16);color:#eec36a;}
+.pill.riesgo{background:rgba(192,57,43,.2);color:#f87171;}
+.pill.tarea{background:rgba(59,130,246,.15);color:#7fb0f9;}
+.pill.texto{background:rgba(251,191,36,.15);color:var(--ambar);}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.kpi{background:var(--panel);border:1px solid var(--borde);border-radius:10px;padding:14px 16px;}
+.kpi.click{cursor:pointer;} .kpi.click:hover{border-color:var(--azul);}
+.kpi .num{font-size:1.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.1;}
+.kpi .lbl{font-size:.72rem;color:var(--texto2);margin-top:3px;}
+.kpi.pend .num{color:#eec36a;} .kpi.alerta .num{color:#f87171;}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr);}}
+.tab .cnt{display:inline-block;background:rgba(255,255,255,.14);border-radius:9px;font-size:.66rem;padding:1px 6px;margin-left:4px;font-family:'JetBrains Mono',monospace;}
 .ent-save{font-size:.72rem;font-weight:700;margin-left:6px;}
 .ent-save.ok{color:#bbf7d0;} .ent-save.err{color:#fecaca;}
 input[type=number],input[type=text]{background:var(--campo);border:1px solid var(--borde);color:var(--texto);border-radius:6px;padding:5px 7px;font-size:.78rem;font-family:inherit;}
@@ -104,13 +118,21 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
   <div class="barra">
     <span class="tab sel" id="tabQ" onclick="verTab('q')">Por cuestionario</span>
     <span class="tab" id="tabA" onclick="verTab('a')">Por alumno</span>
+    <span class="tab" id="tabC" onclick="verTab('cola')">Cola de calificación<span class="cnt" id="colaCnt" style="display:none;">0</span></span>
     <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
+    <button class="btn gris mini" id="btnExport" onclick="exportarNotas()" style="display:none;">⬇ Exportar notas (Excel)</button>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
   </div>
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="num" id="kAct">0</div><div class="lbl">Alumnos activos</div></div>
+    <div class="kpi pend click" onclick="verTab('cola')"><div class="num" id="kPend">0</div><div class="lbl">Pendientes de calificar</div></div>
+    <div class="kpi"><div class="num" id="kAvance">0%</div><div class="lbl">Avance promedio</div></div>
+    <div class="kpi alerta click" onclick="verTab('a')"><div class="num" id="kRez">0</div><div class="lbl">Alumnos rezagados</div></div>
+  </div>
   <div class="tabla-wrap"><table id="tabla"><thead></thead><tbody></tbody></table></div>
-  <div class="aviso">Solo lectura. Las preguntas de texto (respuesta corta/abierta) no se autocalifican: ábrelas con "Ver respuestas" para calificarlas a mano. La nota que ve el alumno se publica automáticamente el lunes 12:00 (hora de Lima).</div>
+  <div class="aviso">Las preguntas de texto (respuesta corta/abierta) y las entregas de tareas no se autocalifican: revísalas en la pestaña <b>Cola de calificación</b>. El <b>Estado</b> se calcula por la última actividad del alumno: Al día (≤3 días), Atención (4–7), Rezagado (>7). La nota que ve el alumno se publica automáticamente el lunes 12:00 (hora de Lima).</div>
 </div>
 
 <div class="overlay" id="modalDet" onclick="if(event.target===this)this.classList.remove('abierto')">
@@ -197,6 +219,7 @@ async function cargar(inicial){
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
   try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
   catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
+  actualizarKPIs();
   verTab(tab);
 }
 
@@ -204,11 +227,121 @@ function verTab(t){
   tab = t;
   $("tabQ").classList.toggle("sel", t === "q");
   $("tabA").classList.toggle("sel", t === "a");
+  $("tabC").classList.toggle("sel", t === "cola");
   $("tabE").classList.toggle("sel", t === "e");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
+  $("btnExport").style.display = t === "a" ? "inline-block" : "none";
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
+  else if(t === "cola") renderCola();
   else renderEntregas();
+}
+
+// ── Cálculo compartido (KPIs, tabla de alumnos y export usan lo mismo) ──
+const APROB = () => (R && R.aprobatoria != null) ? R.aprobatoria : 60;
+
+function maxTs(a, b){
+  if(!b) return a;
+  if(!a) return b;
+  return (new Date(b) > new Date(a)) ? b : a;
+}
+function notaEfectiva(x){
+  if(x.es_encuesta) return null;
+  if(x.nota_manual != null) return x.nota_manual;
+  if(x.nota != null) return x.nota;
+  if(x.sobre) return Math.round((x.puntaje || 0) / x.sobre * 100);
+  return null;
+}
+function diasDesde(ts){
+  if(!ts) return null;
+  const ahora = (R && R.ahora) ? new Date(R.ahora) : new Date();
+  return Math.floor((ahora - new Date(ts)) / 86400000);
+}
+function txtDias(d){
+  if(d == null) return "—";
+  if(d <= 0) return "hoy";
+  if(d === 1) return "ayer";
+  return "hace " + d + " días";
+}
+function estadoDe(d){
+  if(d == null) return { cls:"riesgo", txt:"Sin actividad" };
+  if(d <= 3)   return { cls:"aldia",  txt:"Al día" };
+  if(d <= 7)   return { cls:"medio",  txt:"Atención" };
+  return { cls:"riesgo", txt:"Rezagado" };
+}
+
+// Agrega por alumno cruzando progreso + intentos + entregas
+function computeAlumnos(){
+  const byUid = {};
+  const ensure = (uid, email) => {
+    const r = byUid[uid] = byUid[uid] || { uid, email: email || uid, comp:0, total:(R.total_lecciones||0),
+      enviados:0, aprobados:0, calificados:0, sumaNota:0, manual:0, lastTs:null };
+    if(email && (!r.email || r.email === uid)) r.email = email;
+    return r;
+  };
+  (R.progreso || []).forEach(p => {
+    const r = ensure(p.uid, p.email);
+    r.comp = p.completadas; r.total = p.total || r.total;
+    r.lastTs = maxTs(r.lastTs, p.actualizado);
+  });
+  (R.intentos || []).forEach(x => {
+    const r = ensure(x.uid, x.email);
+    r.enviados++;
+    r.lastTs = maxTs(r.lastTs, x.enviado);
+    if(x.pendiente_manual) r.manual++;
+    const n = notaEfectiva(x);
+    if(!x.es_encuesta && n != null){ r.calificados++; r.sumaNota += n; if(n >= APROB()) r.aprobados++; }
+  });
+  ((E && E.entregas) || []).forEach(en => {
+    const r = ensure(en.uid, en.email);
+    (en.archivos || []).forEach(a => r.lastTs = maxTs(r.lastTs, a.subido));
+    r.lastTs = maxTs(r.lastTs, en.actualizado);
+  });
+  const arr = Object.values(byUid).map(r => {
+    r.avance = r.total ? Math.round(r.comp / r.total * 100) : 0;
+    r.promedio = r.calificados ? Math.round(r.sumaNota / r.calificados) : null;
+    r.dias = diasDesde(r.lastTs);
+    r.estado = estadoDe(r.dias);
+    return r;
+  });
+  arr.sort((a, b) => (a.email || "").localeCompare(b.email || ""));
+  return arr;
+}
+
+// Todo lo que falta calificar: preguntas de texto + entregas sin nota
+function computeCola(){
+  const cola = [];
+  (R.intentos || []).forEach(x => {
+    if(x.pendiente_manual){
+      cola.push({ tipo:"texto", uid:x.uid, email:x.email, quiz_id:x.quiz_id,
+        actividad: (x.titulo || x.quiz_id) + " — " + (x.sobre_manual || 0) + " pts de texto por calificar",
+        cuando: x.enviado });
+    }
+  });
+  ((E && E.entregas) || []).forEach(en => {
+    if((en.archivos || []).length && en.nota == null){
+      cola.push({ tipo:"tarea", uid:en.uid, email:en.email, semana:en.semana,
+        actividad: "Tarea de la Semana " + en.semana + " — " + en.archivos.length + " archivo(s)",
+        cuando: (en.archivos[0] || {}).subido, entrega: en });
+    }
+  });
+  cola.sort((a, b) => new Date(a.cuando || 0) - new Date(b.cuando || 0)); // más antiguo primero
+  return cola;
+}
+
+function actualizarKPIs(){
+  if(!R) return;
+  const alumnos = computeAlumnos();
+  const cola = computeCola();
+  $("kAct").textContent = alumnos.length;
+  $("kPend").textContent = cola.length;
+  const conAvance = alumnos.filter(a => a.total);
+  const avg = conAvance.length ? Math.round(conAvance.reduce((s,a)=>s+a.avance,0) / conAvance.length) : 0;
+  $("kAvance").textContent = avg + "%";
+  $("kRez").textContent = alumnos.filter(a => a.estado.cls === "riesgo").length;
+  const badge = $("colaCnt");
+  badge.textContent = cola.length;
+  badge.style.display = cola.length ? "inline-block" : "none";
 }
 
 function renderQuiz(){
@@ -228,33 +361,70 @@ function renderQuiz(){
 }
 
 function renderAlumnos(){
-  const porUid = {};
-  R.intentos.forEach(x => {
-    const r = porUid[x.uid] = porUid[x.uid] || { email: x.email, n: 0, p: 0, s: 0, manual: 0 };
-    r.n++; r.p += (x.puntaje||0); r.s += (x.sobre||0); if(x.pendiente_manual) r.manual++;
-  });
-  const alumnos = R.progreso.map(p => ({
-    email: p.email || p.uid, comp: p.completadas, total: p.total,
-    ...(porUid[p.uid] || { n:0, p:0, s:0, manual:0 })
-  }));
-  // alumnos con intentos pero sin doc de progreso
-  Object.keys(porUid).forEach(uid => {
-    if(!R.progreso.some(p => p.uid === uid)){
-      alumnos.push({ email: porUid[uid].email || uid, comp: 0, total: R.total_lecciones, ...porUid[uid] });
-    }
-  });
-  alumnos.sort((a,b) => (a.email||"").localeCompare(b.email||""));
+  const alumnos = computeAlumnos();
+  const ap = APROB();
   $("tabla").querySelector("thead").innerHTML =
-    `<tr><th>Alumno</th><th style="text-align:right;">Avance</th><th style="text-align:right;">Cuestionarios enviados</th><th style="text-align:right;">Puntaje auto acumulado</th><th>Pendientes de calificar</th></tr>`;
-  $("tabla").querySelector("tbody").innerHTML = alumnos.map(a => `
+    `<tr><th>Alumno</th><th style="text-align:right;">Avance</th><th>Último acceso</th><th style="text-align:right;">Cuestionarios</th><th style="text-align:right;">Promedio</th><th>Pendientes</th><th>Estado</th></tr>`;
+  $("tabla").querySelector("tbody").innerHTML = alumnos.map(a => {
+    const prom = a.promedio == null ? '<span style="color:var(--texto2);">—</span>'
+      : `<b style="color:${a.promedio >= ap ? 'var(--verde)' : 'var(--rojoTxt)'};">${a.promedio}</b> / 100`;
+    return `
     <tr>
       <td>${esc(a.email)}</td>
-      <td class="num">${a.comp} / ${a.total} (${a.total ? Math.round(a.comp/a.total*100) : 0}%)</td>
-      <td class="num">${a.n}</td>
-      <td class="num">${a.p} / ${a.s}</td>
-      <td>${a.manual ? `<span class="pill manual">⚠ ${a.manual} cuestionario(s)</span>` : `<span class="pill ok">—</span>`}</td>
-    </tr>`).join("") ||
-    `<tr><td colspan="5" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con avance</td></tr>`;
+      <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
+      <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
+      <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
+      <td class="num">${prom}</td>
+      <td>${a.manual ? `<span class="pill manual">⚠ ${a.manual}</span>` : `<span class="pill ok">—</span>`}</td>
+      <td><span class="pill ${a.estado.cls}">${a.estado.txt}</span></td>
+    </tr>`; }).join("") ||
+    `<tr><td colspan="7" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con actividad</td></tr>`;
+}
+
+// ── Cola de calificación ──
+function renderCola(){
+  const cola = computeCola();
+  $("tabla").querySelector("thead").innerHTML =
+    `<tr><th>Tipo</th><th>Alumno</th><th>Actividad</th><th>Entregado (Lima)</th><th>Acción</th></tr>`;
+  $("tabla").querySelector("tbody").innerHTML = cola.map(c => {
+    let accion;
+    if(c.tipo === "texto"){
+      accion = `<button class="btn mini primario" onclick="verIntento('${esc(c.uid)}','${esc(c.quiz_id)}','${esc(c.email)}')">Revisar respuesta</button>`;
+    } else {
+      const dl = (c.entrega.archivos || []).map(a =>
+        `<button class="btn mini" onclick="descargarEntrega('${esc(c.uid)}',${c.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)}</button>`).join(" ");
+      accion = `${dl} <button class="btn mini rojo" onclick="verTab('e')">Calificar</button>`;
+    }
+    const pill = c.tipo === "texto"
+      ? `<span class="pill texto">Texto</span>` : `<span class="pill tarea">Tarea</span>`;
+    return `<tr>
+      <td>${pill}</td>
+      <td>${esc(c.email || c.uid)}</td>
+      <td>${esc(c.actividad)}</td>
+      <td style="white-space:nowrap;color:var(--texto2);">${fmtLima(c.cuando)}</td>
+      <td style="white-space:nowrap;">${accion}</td>
+    </tr>`; }).join("") ||
+    `<tr><td colspan="5" style="text-align:center;color:var(--verde);padding:22px;">✓ No hay nada pendiente de calificar</td></tr>`;
+}
+
+// ── Exportar notas (CSV con BOM y separador ; — Excel lo abre en columnas) ──
+function exportarNotas(){
+  const alumnos = computeAlumnos();
+  const cab = ["Alumno","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
+               "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
+  const q = s => `"${String(s == null ? "" : s).replace(/"/g,'""')}"`;
+  const filas = alumnos.map(a => [
+    a.email, a.avance, a.comp, a.total, txtDias(a.dias),
+    a.enviados, a.aprobados, (a.promedio == null ? "" : a.promedio), a.manual, a.estado.txt
+  ].map(q).join(";"));
+  const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
+  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const hoy = new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Lima"}).format(new Date()); // YYYY-MM-DD
+  const a = document.createElement("a");
+  a.href = url; a.download = `notas_rociadores_${hoy}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 // ── Entregas de tareas ──
@@ -309,6 +479,10 @@ async function guardarNotaEntrega(uid, sem){
     let d=null; try{ d=await r.json(); }catch(e){}
     if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
     if(msg){ msg.textContent = "✓ guardada"; msg.className = "ent-save ok"; }
+    // Refleja la nota en memoria para que la cola/KPIs se actualicen sin recargar
+    const en = (E && E.entregas || []).find(x => x.uid === uid && x.semana === sem);
+    if(en){ en.nota = (notaStr === "" ? null : Number(notaStr)); en.comentario = com; }
+    actualizarKPIs();
   }catch(e){ if(msg){ msg.textContent = "⚠ " + e.message; msg.className = "ent-save err"; } }
 }
 

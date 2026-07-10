@@ -71,6 +71,16 @@ select:focus{outline:none;border-color:var(--azul);}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid var(--azul);border-radius:10px;padding:12px 20px;font-size:.85rem;display:none;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.6);}
 #toast.err{border-color:var(--rojo);color:var(--rojoTxt);}
 .nota-pie{font-size:.72rem;color:var(--texto2);margin-top:12px;line-height:1.6;}
+
+.doc-sec{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:16px 18px;margin-top:16px;}
+.doc-sec h3{font-size:.92rem;margin-bottom:4px;}
+.doc-form{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.doc-form input{flex:1;min-width:240px;}
+.doc-lista{display:flex;flex-wrap:wrap;gap:8px;}
+.doc-chip{display:inline-flex;align-items:center;gap:8px;background:var(--campo);border:1px solid #14532d;color:var(--verde);border-radius:6px;padding:5px 10px;font-size:.78rem;font-family:'JetBrains Mono',monospace;}
+.doc-chip.fijo{border-color:var(--borde);color:var(--texto2);}
+.doc-chip .x{cursor:pointer;color:var(--texto2);font-weight:700;}
+.doc-chip .x:hover{color:var(--rojoTxt);}
 </style>
 </head>
 <body>
@@ -113,6 +123,21 @@ select:focus{outline:none;border-color:var(--azul);}
   <div class="nota-pie">
     ➕ en un curso = extender 30 días · ✕ = revocar (pide confirmación). Tras dar u extender una matrícula, el alumno debe refrescar su sesión (el aula tiene el botón "Vuelve a intentar", o cerrar sesión y entrar de nuevo).<br>
     Los cursos con aula virtual (hoy: <b>rociadores</b>) usan estas mismas matrículas para videos, cuestionarios y notas.
+  </div>
+
+  <div class="doc-sec">
+    <h3>👨‍🏫 Docentes del Diplomado de Rociadores</h3>
+    <p class="nota-pie" style="margin-top:2px;">
+      El correo que des de alta tendrá <b>acceso docente</b> a Rociadores: al entrar al aula con su
+      Google ve el curso completo sin fechas, califica y deja mensajes. Ningún alumno ve este acceso.
+      Solo administración gestiona esta lista.
+    </p>
+    <div class="doc-form">
+      <input type="text" id="docEmail" placeholder="correo@ejemplo.com del docente" onkeydown="if(event.key==='Enter')altaDocente()">
+      <button class="btn mini" onclick="altaDocente()">Dar de alta</button>
+    </div>
+    <div id="docLista" class="doc-lista"><span class="sin">Cargando…</span></div>
+    <p class="nota-pie">Los correos con 🔒 vienen de la configuración del servidor (variable <span class="mono">DOCENTES_ROCIADORES</span> o <span class="mono">ADMIN_EMAILS</span>) y no se quitan desde aquí.</p>
   </div>
 </div>
 
@@ -168,6 +193,7 @@ async function entrar(){
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
+    cargarDocentes();
   }catch(e){
     clave = null;
     const el = $("claveErr");
@@ -252,12 +278,47 @@ async function revocar(idx, curso){
   }catch(e){ toast("⚠ " + e.message, true); }
 }
 
+// ── Docentes (por curso; hoy solo Rociadores tiene aula) ──
+const CURSO_DOC = "rociadores";
+
+async function cargarDocentes(){
+  try{
+    const d = await api(`/api/cursos/${CURSO_DOC}/admin/docentes`);
+    const fijos = (d.fijos_por_config || []).map(em =>
+      `<span class="doc-chip fijo" title="Fijado por la configuración del servidor">${esc(em)} 🔒</span>`).join("");
+    const gest = (d.docentes || []).map(em =>
+      `<span class="doc-chip">${esc(em)} <span class="x" title="Quitar acceso docente" onclick="bajaDocente('${esc(em).replace(/'/g,"&#39;")}')">✕</span></span>`).join("");
+    $("docLista").innerHTML = (fijos + gest) || '<span class="sin">— aún no hay docentes —</span>';
+  }catch(e){ $("docLista").innerHTML = `<span class="sin">⚠ ${esc(e.message)}</span>`; }
+}
+
+async function altaDocente(){
+  const email = ($("docEmail").value || "").trim();
+  if(!email) return;
+  try{
+    await api(`/api/cursos/${CURSO_DOC}/admin/docentes`, { method:"POST", body: JSON.stringify({ email }) });
+    $("docEmail").value = "";
+    toast(`✓ ${email} ahora tiene acceso docente`);
+    cargarDocentes();
+  }catch(e){ toast("⚠ " + e.message, true); }
+}
+
+async function bajaDocente(email){
+  if(!confirm(`¿Quitar el acceso docente de ${email}?`)) return;
+  try{
+    await api(`/api/cursos/${CURSO_DOC}/admin/docentes/${encodeURIComponent(email)}`, { method:"DELETE" });
+    toast(`✓ Acceso docente quitado a ${email}`);
+    cargarDocentes();
+  }catch(e){ toast("⚠ " + e.message, true); }
+}
+
 // ── Arranque: si hay clave en la sesión de la pestaña, entrar directo ──
 if(clave){
   cargarAlumnos(true).then(() => {
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
+    cargarDocentes();
   }).catch(() => { clave = null; });  // clave inválida: pide de nuevo sin borrar la de intranet
 }
 </script>
