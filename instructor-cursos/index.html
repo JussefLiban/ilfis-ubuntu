@@ -105,7 +105,6 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <span class="tab sel" id="tabQ" onclick="verTab('q')">Por cuestionario</span>
     <span class="tab" id="tabA" onclick="verTab('a')">Por alumno</span>
     <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
-    <span class="tab" id="tabD" onclick="verTab('d')" style="display:none;">Docentes</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
@@ -198,9 +197,6 @@ async function cargar(inicial){
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
   try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
   catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
-  // La gestión de docentes solo la ve administración
-  $("tabD").style.display = R.es_admin ? "inline-block" : "none";
-  if(tab === "d" && !R.es_admin) tab = "q";
   verTab(tab);
 }
 
@@ -209,12 +205,10 @@ function verTab(t){
   $("tabQ").classList.toggle("sel", t === "q");
   $("tabA").classList.toggle("sel", t === "a");
   $("tabE").classList.toggle("sel", t === "e");
-  $("tabD").classList.toggle("sel", t === "d");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
-  else if(t === "e") renderEntregas();
-  else renderDocentes();
+  else renderEntregas();
 }
 
 function renderQuiz(){
@@ -299,52 +293,6 @@ async function descargarEntrega(uid, sem, nombre){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }catch(e){ alert("No pude descargar: " + e.message); }
-}
-
-// ── Gestión de docentes (solo administración) ──
-async function renderDocentes(){
-  const tb = $("tabla");
-  tb.querySelector("thead").innerHTML = `<tr><th>Correo del docente</th><th></th></tr>`;
-  tb.querySelector("tbody").innerHTML = `<tr><td colspan="2" style="padding:16px;color:var(--texto2);">Cargando…</td></tr>`;
-  let d;
-  try{ d = await api("/api/cursos/rociadores/admin/docentes"); }
-  catch(e){ tb.querySelector("tbody").innerHTML = `<tr><td colspan="2" style="padding:16px;color:var(--rojoTxt);">⚠ ${esc(e.message)}</td></tr>`; return; }
-  const alta = `<tr>
-    <td><input type="email" id="docNuevo" placeholder="correo@ejemplo.com del docente" style="min-width:260px;" onkeydown="if(event.key==='Enter')addDocente()"></td>
-    <td style="text-align:right;white-space:nowrap;"><button class="btn rojo mini" onclick="addDocente()">Dar de alta</button> <span class="ent-save" id="docMsg"></span></td>
-  </tr>`;
-  const rows = (d.docentes||[]).map(em => `<tr>
-    <td>${esc(em)}</td>
-    <td style="text-align:right;"><button class="btn mini" onclick="removeDocente('${esc(em).replace(/'/g,"&#39;")}')">Quitar</button></td>
-  </tr>`).join("");
-  const fijos = (d.fijos_por_config||[]).map(em => `<tr><td>${esc(em)} <span style="color:var(--texto2);font-size:.7rem;">· fijo por configuración</span></td><td></td></tr>`).join("");
-  const vacio = (!rows && !fijos) ? `<tr><td colspan="2" style="padding:14px;color:var(--texto2);">Aún no hay docentes dados de alta.</td></tr>` : "";
-  tb.querySelector("tbody").innerHTML = alta + rows + fijos + vacio;
-}
-
-async function addDocente(){
-  const inp = $("docNuevo"), out = $("docMsg");
-  const email = (inp.value || "").trim();
-  if(!email){ return; }
-  if(out){ out.className = "ent-save"; out.textContent = "…"; }
-  try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/docentes`, {
-      method:"POST", headers: await authHeaders({ "Content-Type":"application/json" }), body: JSON.stringify({ email }) });
-    let dd=null; try{ dd = await r.json(); }catch(e){}
-    if(!r.ok) throw new Error(dd&&dd.detail?dd.detail:("Error "+r.status));
-    renderDocentes();
-  }catch(e){ if(out){ out.className = "ent-save err"; out.textContent = "⚠ " + e.message; } }
-}
-
-async function removeDocente(email){
-  if(!confirm(`¿Quitar el acceso docente de ${email}?`)) return;
-  try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/docentes/${encodeURIComponent(email)}`, {
-      method:"DELETE", headers: await authHeaders() });
-    let dd=null; try{ dd = await r.json(); }catch(e){}
-    if(!r.ok) throw new Error(dd&&dd.detail?dd.detail:("Error "+r.status));
-    renderDocentes();
-  }catch(e){ alert("No se pudo quitar: " + e.message); }
 }
 
 async function guardarNotaEntrega(uid, sem){
