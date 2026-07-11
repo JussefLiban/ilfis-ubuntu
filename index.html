@@ -673,6 +673,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="admin-tabs">
         <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
         <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+        <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes · Plataforma Educativa</button>
       </div>
       <!-- Sección Recaudación -->
       <div class="admin-section active" id="admin-sec-recaud">
@@ -681,6 +682,19 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <!-- Sección Alumnos -->
       <div class="admin-section" id="admin-sec-alumnos">
         <div id="admin-alumnos-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Docentes (Plataforma Educativa) -->
+      <div class="admin-section" id="admin-sec-docentes">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Autoriza a un <b style="color:#fff;">instructor</b> por el correo con el que inicia sesión (Google).
+          Con eso podrá entrar a su panel de instructor del <b style="color:#fff;">Diplomado de Rociadores</b>
+          (ver avance, calificar, revisar entregas). Ningún alumno ve este acceso. Es aparte de las Clases Premium.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <input type="email" id="admin-doc-email" placeholder="correo@ejemplo.com del instructor" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;" onkeydown="if(event.key==='Enter')adminAltaDocente()">
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminAltaDocente()">Dar permiso</button>
+        </div>
+        <div id="admin-doc-content"><div class="admin-loading">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -3166,6 +3180,58 @@ function adminShowTab(name, btn) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('admin-sec-' + name).classList.add('active');
+  if (name === 'docentes') adminCargarDocentes();
+}
+
+// ── Docentes / Plataforma Educativa (autorizar instructores por correo) ──
+function _adminEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function adminCargarDocentes() {
+  const box = document.getElementById('admin-doc-content');
+  if (!box) return;
+  box.innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    const fijos = (d.fijos_por_config || []).map(em =>
+      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #2a2a5a;color:#8899aa;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} 🔒</span>`).join('');
+    const gest = (d.docentes || []).map(em =>
+      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #14532d;color:#4ade80;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} <span style="cursor:pointer;color:#8899aa;font-weight:700;" title="Quitar acceso" onclick="adminQuitarDocente('${_adminEsc(em).replace(/'/g,'&#39;')}')">&times;</span></span>`).join('');
+    box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:9px;">' +
+      ((fijos + gest) || '<span style="color:#8899aa;font-size:0.82rem;">— aún no hay instructores autorizados —</span>') +
+      '</div><p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;">Los correos con 🔒 vienen de la configuración del servidor y no se quitan desde aquí.</p>';
+  } catch(e) {
+    box.innerHTML = '<div class="admin-loading" style="color:#e87272;">Error: ' + e.message + '</div>';
+  }
+}
+
+async function adminAltaDocente() {
+  const inp = document.getElementById('admin-doc-email');
+  const email = (inp.value || '').trim();
+  if (!email) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    inp.value = '';
+    adminCargarDocentes();
+  } catch(e) { alert('No pude autorizar: ' + e.message); }
+}
+
+async function adminQuitarDocente(email) {
+  if (!confirm('¿Quitar el acceso de instructor a ' + email + '?')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes/quitar', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    adminCargarDocentes();
+  } catch(e) { alert('No pude quitar: ' + e.message); }
 }
 
 async function adminCargar() {
