@@ -133,12 +133,15 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .btn-admin-enter:hover { background: #a93226; }
 .admin-err { color: #e87272; font-size: 0.82rem; margin-top: 8px; display: none; }
 .admin-wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 50px; }
-.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; flex-wrap: wrap; align-items: flex-end; }
-.admin-group { display: flex; flex-direction: column; gap: 3px; padding: 0 16px 0 14px; border-left: 1px solid #2a2a5a; }
-.admin-group:first-child { border-left: none; padding-left: 0; }
-.admin-group-lbl { font-size: 0.6rem; letter-spacing: 1.3px; text-transform: uppercase; color: #6a7a9a; font-weight: 700; padding-left: 20px; }
-.admin-group-tabs { display: flex; gap: 0; }
-.admin-group-tabs:empty::after { content: "—"; color: #4a5a7a; font-size: 0.8rem; padding: 9px 20px; }
+.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; }
+.admin-group { display: flex; }
+.admin-group-tabs { display: flex; gap: 0; flex-wrap: wrap; }
+.admin-worlds { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.admin-world { flex: 1; min-width: 180px; text-align: left; cursor: pointer; background: #0f1830; border: 1px solid #2a2a5a; border-radius: 12px; padding: 12px 15px; display: flex; flex-direction: column; gap: 3px; font-family: inherit; }
+.admin-world .aw-name { font-weight: 700; font-size: 0.98rem; color: #fff; }
+.admin-world .aw-desc { font-size: 0.72rem; color: #8899aa; }
+.admin-world:hover { border-color: #3a4a6a; }
+.admin-world.active { border-color: #c0392b; box-shadow: 0 0 0 1px #c0392b; background: #16213e; }
 .admin-tab { padding: 9px 20px; font-size: 0.85rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .admin-tab.active { color: #fff; border-bottom-color: #c0392b; }
 .admin-section { display: none; }
@@ -675,20 +678,31 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <span style="font-size:1rem;color:#fff;font-weight:600;"><i class="ti ti-shield-lock" style="color:#c0392b;margin-right:8px;" aria-hidden="true"></i>Panel Intranet ILFIS</span>
         <button class="btn-refresh-cuenta" onclick="adminCargar()"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button>
       </div>
+      <div class="admin-worlds">
+        <button class="admin-world" data-area="general" onclick="adminShowArea('general', this)">
+          <span class="aw-name">General de la plataforma</span>
+          <span class="aw-desc">Opiniones y consumo de todo ILFIS Ubuntu</span>
+        </button>
+        <button class="admin-world active" data-area="premium" onclick="adminShowArea('premium', this)">
+          <span class="aw-name">Clases Premium</span>
+          <span class="aw-desc">Videos + PDF, sin evaluación</span>
+        </button>
+        <button class="admin-world" data-area="educativa" onclick="adminShowArea('educativa', this)">
+          <span class="aw-name">Plataforma Educativa</span>
+          <span class="aw-desc">Diplomados con tutoría y notas</span>
+        </button>
+      </div>
       <div class="admin-tabs">
-        <div class="admin-group">
-          <span class="admin-group-lbl">General de la plataforma</span>
+        <div class="admin-group" data-area="general" style="display:none;">
           <div class="admin-group-tabs" id="admin-tabs-general"></div>
         </div>
-        <div class="admin-group">
-          <span class="admin-group-lbl">Clases Premium</span>
+        <div class="admin-group" data-area="premium">
           <div class="admin-group-tabs">
             <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
             <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
           </div>
         </div>
-        <div class="admin-group">
-          <span class="admin-group-lbl">Plataforma Educativa</span>
+        <div class="admin-group" data-area="educativa" style="display:none;">
           <div class="admin-group-tabs">
             <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
           </div>
@@ -3200,6 +3214,18 @@ function adminShowTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('admin-sec-' + name).classList.add('active');
   if (name === 'docentes') adminCargarDocentes();
+}
+
+// Cambia de "mundo"/área (General · Clases Premium · Plataforma Educativa)
+function adminShowArea(area, btn) {
+  document.querySelectorAll('.admin-world').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.admin-group[data-area]').forEach(function(g){
+    g.style.display = (g.dataset.area === area) ? '' : 'none';
+  });
+  var grp = document.querySelector('.admin-group[data-area="' + area + '"]');
+  var first = grp ? grp.querySelector('.admin-tab') : null;
+  if (first) first.click();  // activa la primera pestaña del área (muestra su sección)
 }
 
 // ── Docentes / Plataforma Educativa (autorizar instructores por correo) ──
