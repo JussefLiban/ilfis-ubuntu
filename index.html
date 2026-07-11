@@ -687,6 +687,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <span class="aw-name">Clases Premium</span>
           <span class="aw-desc">Videos + PDF, sin evaluación</span>
         </button>
+        <button class="admin-world" data-area="aplicativos" onclick="adminShowArea('aplicativos', this)">
+          <span class="aw-name">Aplicativos</span>
+          <span class="aw-desc">Calcula con Ubuntu (calculadoras)</span>
+        </button>
         <button class="admin-world" data-area="educativa" onclick="adminShowArea('educativa', this)">
           <span class="aw-name">Plataforma Educativa</span>
           <span class="aw-desc">Diplomados con tutoría y notas</span>
@@ -700,6 +704,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <div class="admin-group-tabs">
             <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
             <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+          </div>
+        </div>
+        <div class="admin-group" data-area="aplicativos" style="display:none;">
+          <div class="admin-group-tabs">
+            <button class="admin-tab" onclick="adminShowTab('apprecaud', this)">Recaudación por aplicativo</button>
           </div>
         </div>
         <div class="admin-group" data-area="educativa" style="display:none;">
@@ -728,6 +737,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminAltaDocente()">Dar permiso</button>
         </div>
         <div id="admin-doc-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Aplicativos (Calcula con Ubuntu) -->
+      <div class="admin-section" id="admin-sec-apprecaud">
+        <div id="admin-app-content"><div class="admin-loading">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -3181,6 +3194,8 @@ const ADMIN_NAMES = {
   ipmagua:           "IPM Base Agua",
   calculador:        "Calculador Hidráulico Integral",
 };
+// "Calcula con Ubuntu" (aplicativos/calculadoras) — NO son Clases Premium; van en su propia área.
+const APP_KEYS = ['calculador'];
 let _adminAlumnos    = [];
 let _adminModalUid   = null;
 let _adminModalEmail = null;
@@ -3289,6 +3304,7 @@ async function adminCargar() {
     _adminAlumnos = data.alumnos || [];
     adminRenderRecaud();
     adminRenderAlumnos();
+    adminRenderAplicativos();
   } catch(e) {
     document.getElementById('admin-recaud-content').innerHTML  = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
     document.getElementById('admin-alumnos-content').innerHTML = '';
@@ -3305,7 +3321,7 @@ function adminRenderRecaud() {
     }
   }
   const PRECIO = 000;
-  const cursos = Object.entries(conteo).sort((a,b) => b[1] - a[1]);
+  const cursos = Object.entries(conteo).filter(([k]) => !APP_KEYS.includes(k)).sort((a,b) => b[1] - a[1]);
   const total  = cursos.reduce((s, [,n]) => s + n, 0);
   const html   = cursos.map(([k, n]) => `
     <div class="rc-card">
@@ -3321,6 +3337,37 @@ function adminRenderRecaud() {
       <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
     </div>`;
   document.getElementById('admin-recaud-content').innerHTML = `<div class="recaud-grid">${html}</div>`;
+}
+
+// Aplicativos (Calcula con Ubuntu): recaudación/accesos de las calculadoras, aparte de Premium.
+function adminRenderAplicativos() {
+  const box = document.getElementById('admin-app-content');
+  if (!box) return;
+  const ahora  = new Date();
+  const conteo = {};
+  APP_KEYS.forEach(k => conteo[k] = 0);
+  for (const u of _adminAlumnos) {
+    for (const [curso, exp] of Object.entries(u.cursos_activos || {})) {
+      if (APP_KEYS.includes(curso) && new Date(exp) > ahora) conteo[curso] = (conteo[curso] || 0) + 1;
+    }
+  }
+  const PRECIO = 000;
+  const items = Object.entries(conteo).sort((a,b) => b[1] - a[1]);
+  const total = items.reduce((s, [,n]) => s + n, 0);
+  const html  = items.map(([k, n]) => `
+    <div class="rc-card">
+      <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
+      <div class="rc-num">${n}</div>
+      <div class="rc-sub">usuarios activos</div>
+      <div class="rc-monto">$${n * PRECIO}</div>
+    </div>`).join('') + `
+    <div class="rc-card" style="border-color:#2a7a4a;">
+      <div class="rc-nombre" style="color:#5dcc85;font-weight:700;">TOTAL</div>
+      <div class="rc-num">${total}</div>
+      <div class="rc-sub">usuarios activos</div>
+      <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
+    </div>`;
+  box.innerHTML = `<div class="recaud-grid">${html}</div>`;
 }
 
 function adminRenderAlumnos() {
