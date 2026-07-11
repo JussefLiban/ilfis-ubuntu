@@ -709,6 +709,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="admin-group" data-area="aplicativos" style="display:none;">
           <div class="admin-group-tabs">
             <button class="admin-tab" onclick="adminShowTab('apprecaud', this)">Recaudación por aplicativo</button>
+            <button class="admin-tab" onclick="adminShowTab('appsusc', this)">Suscriptores</button>
           </div>
         </div>
         <div class="admin-group" data-area="educativa" style="display:none;">
@@ -743,6 +744,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="admin-section" id="admin-sec-apprecaud">
         <div id="admin-app-content"><div class="admin-loading">Cargando...</div></div>
       </div>
+      <!-- Sección Suscriptores de Aplicativos (accesos al Calculador Integral) -->
+      <div class="admin-section" id="admin-sec-appsusc">
+        <div id="admin-appsusc-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
       <!-- Sección Cohorte (Plataforma Educativa) -->
       <div class="admin-section" id="admin-sec-cohorte">
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
@@ -764,15 +769,10 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 <!-- Modal Dar Acceso -->
 <div class="admin-modal-bg" id="admin-modal-dar">
   <div class="admin-modal">
-    <h3>Dar acceso a curso</h3>
+    <h3 id="admin-modal-dar-titulo">Dar acceso a curso</h3>
     <p style="font-size:0.8rem;color:#7a8a9a;margin-bottom:14px;" id="admin-modal-dar-nombre"></p>
-    <select id="admin-modal-dar-curso">
-      <option value="rociadores">Diplomado de Rociadores Automáticos</option>
-      <option value="hidraulicos">Diplomado Especializado en Cálculos Hidráulicos</option>
-      <option value="bombas">Diplomado de Bombas Contra Incendios</option>
-      <option value="mercancias">Diplomado de Protección de Mercancías</option>
-      <option value="alarmas">Diplomado de Detección y Alarmas de Incendios</option>
-    </select>
+    <!-- Las opciones se llenan por JS según el área (Premium = cursos; Aplicativos = calculadoras) -->
+    <select id="admin-modal-dar-curso"></select>
     <div class="admin-modal-btns">
       <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
       <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarDar()">Dar 30 días de acceso</button>
@@ -3211,6 +3211,9 @@ const ADMIN_NAMES = {
 };
 // "Calcula con Ubuntu" (aplicativos/calculadoras) — NO son Clases Premium; van en su propia área.
 const APP_KEYS = ['calculador'];
+// Cursos Premium conocidos (para el selector de "Dar acceso"). Para FILTRAR listas, Premium es
+// "todo lo que no es aplicativo": así una llave legada/desconocida sigue visible y revocable.
+const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !APP_KEYS.includes(k));
 let _adminAlumnos    = [];
 let _adminModalUid   = null;
 let _adminModalEmail = null;
@@ -3345,6 +3348,7 @@ async function adminQuitarDocente(email) {
 async function adminCargar() {
   document.getElementById('admin-recaud-content').innerHTML  = '<div class="admin-loading">Cargando...</div>';
   document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
+  document.getElementById('admin-appsusc-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
   try {
     const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) { throw new Error('Error ' + r.status); }
@@ -3353,9 +3357,12 @@ async function adminCargar() {
     adminRenderRecaud();
     adminRenderAlumnos();
     adminRenderAplicativos();
+    adminRenderAppSuscriptores();
   } catch(e) {
     document.getElementById('admin-recaud-content').innerHTML  = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
     document.getElementById('admin-alumnos-content').innerHTML = '';
+    document.getElementById('admin-app-content').innerHTML     = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
+    document.getElementById('admin-appsusc-content').innerHTML = '';
   }
 }
 
@@ -3418,15 +3425,19 @@ function adminRenderAplicativos() {
   box.innerHTML = `<div class="recaud-grid">${html}</div>`;
 }
 
-function adminRenderAlumnos() {
+// Lista de accesos de UN producto: solo muestra (y gestiona) las suscripciones cuyas llaves
+// pertenecen a ese producto. Así el Calculador no se cuela en Clases Premium y viceversa.
+function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
   const ahora = new Date();
   if (!_adminAlumnos.length) {
-    document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">No hay alumnos registrados.</div>';
+    box.innerHTML = '<div class="admin-loading">No hay usuarios registrados.</div>';
     return;
   }
   const filas = _adminAlumnos.map(u => {
     const cursos  = u.cursos_activos || {};
-    const keys    = Object.keys(cursos);
+    const keys    = Object.keys(cursos).filter(perteneceProducto);
     const badgesHtml = keys.length === 0
       ? '<span class="cbadge cb-none">Sin suscripción</span>'
       : keys.map(k => {
@@ -3447,15 +3458,24 @@ function adminRenderAlumnos() {
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
-        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}')">Dar acceso</button>
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}','${area}')">Dar acceso</button>
       </td>
     </tr>`;
   }).join('');
-  document.getElementById('admin-alumnos-content').innerHTML = `
+  box.innerHTML = `
     <table class="admin-table">
-      <thead><tr><th>Alumno</th><th>Suscripciones</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>${etiqueta}</th><th>Suscripciones</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
+}
+
+// Clases Premium → término "Alumno"; Aplicativos → término "Suscriptor" (misma estructura).
+// Premium filtra "todo lo que no es aplicativo" para que llaves legadas sigan gestionables.
+function adminRenderAlumnos() {
+  _adminRenderAccesos('admin-alumnos-content', k => !APP_KEYS.includes(k), 'Alumno', 'premium');
+}
+function adminRenderAppSuscriptores() {
+  _adminRenderAccesos('admin-appsusc-content', k => APP_KEYS.includes(k), 'Suscriptor', 'aplicativos');
 }
 
 async function adminExtender(uid, curso) {
@@ -3484,9 +3504,15 @@ async function adminRevocar(uid, curso, email) {
   } catch(e) { alert('Error: ' + e.message); }
 }
 
-function adminAbrirDar(uid, email, nombre) {
+function adminAbrirDar(uid, email, nombre, area) {
   _adminModalUid   = uid;
   _adminModalEmail = email;
+  // El modal solo ofrece los productos del área desde donde se abrió (Premium ≠ Aplicativos).
+  const keys = (area === 'aplicativos') ? APP_KEYS : PREMIUM_KEYS;
+  const tit  = document.getElementById('admin-modal-dar-titulo');
+  if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo' : 'Dar acceso a curso';
+  document.getElementById('admin-modal-dar-curso').innerHTML =
+    keys.map(k => `<option value="${k}">${ADMIN_NAMES[k]||k}</option>`).join('');
   document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
   document.getElementById('admin-modal-dar').classList.add('visible');
 }
