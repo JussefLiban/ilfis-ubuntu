@@ -133,7 +133,12 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 .btn-admin-enter:hover { background: #a93226; }
 .admin-err { color: #e87272; font-size: 0.82rem; margin-top: 8px; display: none; }
 .admin-wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 50px; }
-.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; }
+.admin-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a5a; margin-bottom: 22px; flex-wrap: wrap; align-items: flex-end; }
+.admin-group { display: flex; flex-direction: column; gap: 3px; padding: 0 16px 0 14px; border-left: 1px solid #2a2a5a; }
+.admin-group:first-child { border-left: none; padding-left: 0; }
+.admin-group-lbl { font-size: 0.6rem; letter-spacing: 1.3px; text-transform: uppercase; color: #6a7a9a; font-weight: 700; padding-left: 20px; }
+.admin-group-tabs { display: flex; gap: 0; }
+.admin-group-tabs:empty::after { content: "—"; color: #4a5a7a; font-size: 0.8rem; padding: 9px 20px; }
 .admin-tab { padding: 9px 20px; font-size: 0.85rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .admin-tab.active { color: #fff; border-bottom-color: #c0392b; }
 .admin-section { display: none; }
@@ -671,9 +676,23 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <button class="btn-refresh-cuenta" onclick="adminCargar()"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button>
       </div>
       <div class="admin-tabs">
-        <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
-        <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
-        <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes · Plataforma Educativa</button>
+        <div class="admin-group">
+          <span class="admin-group-lbl">General de la plataforma</span>
+          <div class="admin-group-tabs" id="admin-tabs-general"></div>
+        </div>
+        <div class="admin-group">
+          <span class="admin-group-lbl">Clases Premium</span>
+          <div class="admin-group-tabs">
+            <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
+            <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+          </div>
+        </div>
+        <div class="admin-group">
+          <span class="admin-group-lbl">Plataforma Educativa</span>
+          <div class="admin-group-tabs">
+            <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
+          </div>
+        </div>
       </div>
       <!-- Sección Recaudación -->
       <div class="admin-section active" id="admin-sec-recaud">

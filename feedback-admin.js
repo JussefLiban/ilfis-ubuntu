@@ -45,7 +45,8 @@
   function stat(n,l){ return '<div class="fbv-stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
 
   function inyectar(){
-    var tabs = document.querySelector('.admin-tabs');
+    // Preferir el area "General" del panel; si no existe, caer al contenedor plano (nunca desaparece).
+    var tabs = document.getElementById('admin-tabs-general') || document.querySelector('.admin-tabs');
     var ref  = document.getElementById('admin-sec-alumnos');
     if(!tabs || !ref || document.getElementById('admin-sec-feedback')) return;
     inyectarCSS();
