@@ -714,6 +714,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="admin-group" data-area="educativa" style="display:none;">
           <div class="admin-group-tabs">
             <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
+            <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
           </div>
         </div>
       </div>
@@ -741,6 +742,20 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <!-- Sección Aplicativos (Calcula con Ubuntu) -->
       <div class="admin-section" id="admin-sec-apprecaud">
         <div id="admin-app-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Cohorte (Plataforma Educativa) -->
+      <div class="admin-section" id="admin-sec-cohorte">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Fecha de inicio de la cohorte del <b style="color:#fff;">Diplomado de Rociadores</b>. Debe ser un <b style="color:#fff;">lunes</b>.
+          Al cambiarla se <b style="color:#fff;">recalcula todo el calendario del aula</b> (apertura de semanas, cierres, publicación de notas). Solo el superadmin.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <label style="font-size:0.8rem;color:#8899aa;">Inicio de cohorte:</label>
+          <input type="date" id="admin-cohorte-fecha" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminSetCohorte()">Guardar</button>
+          <span id="admin-cohorte-msg" style="font-size:0.8rem;"></span>
+        </div>
+        <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;"></div>
       </div>
     </div>
   </div>
@@ -3229,6 +3244,39 @@ function adminShowTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('admin-sec-' + name).classList.add('active');
   if (name === 'docentes') adminCargarDocentes();
+  if (name === 'cohorte') adminCargarCohorte();
+}
+
+// ── Cohorte (fecha de inicio del diplomado; solo superadmin) ──
+async function adminCargarCohorte() {
+  const info = document.getElementById('admin-cohorte-info');
+  const inp = document.getElementById('admin-cohorte-fecha');
+  if (info) info.textContent = 'Cargando…';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    if (inp) inp.value = d.fecha_inicio || '';
+    if (info) info.textContent = 'Fecha actual del calendario: ' + (d.fecha_inicio || '—') + ' · (por defecto en código: ' + (d.por_defecto || '—') + ')';
+  } catch(e) { if (info) info.textContent = '⚠ ' + e.message; }
+}
+
+async function adminSetCohorte() {
+  const inp = document.getElementById('admin-cohorte-fecha');
+  const msg = document.getElementById('admin-cohorte-msg');
+  const fecha = (inp.value || '').trim();
+  if (!fecha) { if (msg) { msg.textContent = '⚠ elige una fecha'; msg.style.color = '#e6a23c'; } return; }
+  if (msg) { msg.textContent = '…'; msg.style.color = '#8899aa'; }
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/cohorte', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha_inicio: fecha }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    if (msg) { msg.textContent = '✓ guardada'; msg.style.color = '#4ade80'; }
+    adminCargarCohorte();
+  } catch(e) { if (msg) { msg.textContent = '⚠ ' + e.message; msg.style.color = '#f87171'; } }
 }
 
 // Cambia de "mundo"/área (General · Clases Premium · Plataforma Educativa)
