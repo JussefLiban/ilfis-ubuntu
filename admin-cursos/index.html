@@ -120,12 +120,15 @@ select:focus{outline:none;border-color:var(--azul);}
 
 <script>
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
-const CURSOS = ["rociadores","hidraulicos","bombas","mercancias","alarmas","hidraulicabasica","montantes","ipmagua","calculador"];
+const CURSOS = ["rociadores","hidraulicos","bombas","mercancias","alarmas","hidraulicabasica","montantes","ipmagua"];
 const NOMBRE = {
   rociadores:"Rociadores", hidraulicos:"Cálc. Hidráulicos", bombas:"Bombas",
   mercancias:"Mercancías", alarmas:"Alarmas", hidraulicabasica:"Hidráulica Básica",
-  montantes:"Montantes", ipmagua:"IPM Agua", calculador:"Calculador Premium"
+  montantes:"Montantes", ipmagua:"IPM Agua"
 };
+// El Calculador es del producto Aplicativos (Calcula con Ubuntu), NO Clases Premium:
+// aquí no se muestra ni se gestiona (se administra en el área Aplicativos del Intranet).
+const APP_KEYS = ["calculador"];
 
 let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
 let alumnos = [];
@@ -191,9 +194,9 @@ async function cargarAlumnos(silencioso){
 
 function activos(a){
   const ahora = new Date();
-  return Object.entries(a.cursos_activos || {}).map(([c, exp]) => ({
-    curso: c, exp, vigente: new Date(exp) > ahora
-  }));
+  return Object.entries(a.cursos_activos || {})
+    .filter(([c]) => !APP_KEYS.includes(c))
+    .map(([c, exp]) => ({ curso: c, exp, vigente: new Date(exp) > ahora }));
 }
 
 function renderTabla(){
