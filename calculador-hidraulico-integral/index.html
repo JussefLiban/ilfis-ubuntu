@@ -743,193 +743,12 @@ function construir(dxf,tol){
   const sueltas=nodos.filter(n=>n.deg===1);
   return {tubos,nodos,roc,txt,sueltas};
 }
-// Gradiente conjugado precondicionado (Jacobi), SIN armar la matriz (A se aplica vía matvec). Para resolver los anillos
-// del método simultáneo de forma DISPERSA: en una parrilla grande, armar/resolver la matriz LxL densa colgaba el navegador.
-function _cg(matvec,diag,b,n,tol,maxit){ const x=new Float64Array(n); let r=Float64Array.from(b); const z=new Float64Array(n); for(let i=0;i<n;i++)z[i]=r[i]/diag[i]; let p=Float64Array.from(z);
-  let rz=0; for(let i=0;i<n;i++)rz+=r[i]*z[i]; let bn=0; for(let i=0;i<n;i++)bn+=b[i]*b[i]; bn=Math.sqrt(bn)||1;
-  for(let it=0; it<maxit; it++){ const Ap=matvec(p); let pAp=0; for(let i=0;i<n;i++)pAp+=p[i]*Ap[i]; if(Math.abs(pAp)<1e-300)break; const al=rz/pAp;
-    for(let i=0;i<n;i++){ x[i]+=al*p[i]; r[i]-=al*Ap[i]; } let rn=0; for(let i=0;i<n;i++)rn+=r[i]*r[i]; rn=Math.sqrt(rn); if(rn/bn<tol)break;
-    for(let i=0;i<n;i++)z[i]=r[i]/diag[i]; let rz2=0; for(let i=0;i<n;i++)rz2+=r[i]*z[i]; const be=rz2/rz; rz=rz2; for(let i=0;i<n;i++)p[i]=z[i]+be*p[i]; }
-  return x; }
-function solve(net,o){
-  const {tubos,nodos}=net,src=o.src;
-  const _t0=performance.now(), _DEADLINE=8000; let _aborted=false;   // GUARDIÁN: tope de tiempo (ms). Si un dato absurdo dispara la fricción, el cálculo se detiene en vez de congelar el navegador. No afecta cálculos que convergen antes del tope.
-  const Preq=Math.pow(o.qRemote/o.K,2);   // presión que da el caudal de diseño en el rociador más remoto (estilo SHC: sin forzar piso; el aviso de <7 psi se muestra en el panel)
-  const adj={};nodos.forEach(n=>adj[n.id]=[]);
-  tubos.forEach((t,i)=>{adj[t.na.id].push({n:t.nb.id,i});adj[t.nb.id].push({n:t.na.id,i});});
-  const par={},parP={},ord=[];par[src.id]=null;
-  {const q=[src.id],s={};s[src.id]=1;while(q.length){const u=q.shift();ord.push(u);for(const e of adj[u])if(!s[e.n]){s[e.n]=1;par[e.n]=u;parP[e.n]=e.i;q.push(e.n);}}}
-  const sub={};for(let i=ord.length-1;i>=0;i--){const u=ord[i];sub[u]=[u];for(const e of adj[u])if(par[e.n]===u)sub[u]=sub[u].concat(sub[e.n]);}
-  const pathLen={};pathLen[src.id]=0;ord.forEach(u=>{if(u!==src.id)pathLen[u]=pathLen[par[u]]+tubos[parP[u]].len;});
-  // ÁREA DE DISEÑO = rociadores marcados "Abiertos" en el plano (alcanzables desde la fuente)
-  const flowing=new Set(nodos.filter(n=>n.open&&pathLen[n.id]!==undefined).map(n=>n.id));
-  if(flowing.size===0)return {error:true};
-  function lossPipe(i,Q){return perFt(Q,tubos[i].C,tubos[i].id)*(tubos[i].len+(tubos[i].Leq||0));} // fricción por (largo + longitud equivalente de accesorios)
-  // BUILD 28 · ELEVACIÓN (global): cada nodo del sistema está a una misma altura sobre la fuente.
-  // elev[id] = presión (psi) que cuesta subir hasta ese nodo. Global => constante para todos menos la fuente.
-  // Estructura POR-NODO lista para fuentes futuras (montantes por clic / cota Z del 3D).
-  const elevGlobal=o.elevGlobalPsi||0;
-  // por nodo: si tiene override puntual, manda sobre la global (la fuente siempre en 0)
-  const elev={};nodos.forEach(n=>elev[n.id]=(n.id===src.id)?0:((n.elevManual&&isFinite(n.elevOverridePsi))?n.elevOverridePsi:elevGlobal));
-  // BUILD 28 · ACCESORIOS (Auto desde geometría) -> longitud equivalente por tubo (t.Leq).
-  // Regla confirmada con Jussef: codo en cada cambio de dirección; tee con giro en cada arranque de ramal
-  // Y en cada salida de rociador; el paso recto NO cuenta; el montante de elevación = 2 codos.
-  // 'ninguno' => Leq=0 => cálculo idéntico al previo (sin accesorios).
-  tubos.forEach(t=>{t.Leq=0;t.acc={e90:0,e45:0,tee:0};});
-  // GANCHO PARRILLA: accesorios FIJOS por tubo (la troncal lleva su propio contador: codos/compuerta/check/mariposa)
-  tubos.forEach(t=>{ if(t.accFijo){ for(var _k in t.accFijo){ var _n=+t.accFijo[_k]||0; if(_n>0 && typeof accLeqV==='function'){ t.Leq+=accLeqV(_k,t.nom,t.C,t.id)*_n; if(t.acc[_k]!=null)t.acc[_k]+=_n; } } } });
-  if(o.accesorios==='auto'){
-    const posOf={};nodos.forEach(n=>posOf[n.id]=[n.x,n.y]);
-    const dirVec=(aId,bId)=>{const a=posOf[aId],b=posOf[bId],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1;return [dx/L,dy/L];};
-    const angBetween=(d1,d2)=>{let c=d1[0]*d2[0]+d1[1]*d2[1];c=Math.max(-1,Math.min(1,c));return Math.acos(c)*180/Math.PI;};
-    const childrenOf={};nodos.forEach(n=>childrenOf[n.id]=[]);
-    ord.forEach(v=>{if(par[v]!=null)childrenOf[par[v]].push(v);});
-    const addFit=(pi,kind)=>{const t=tubos[pi];t.Leq+=accLeq(kind,t.nom,t.C,t.id);t.acc[kind]++;};
-    ord.forEach(u=>{
-      const kids=childrenOf[u]||[];if(par[u]==null||kids.length===0)return;
-      const inDir=dirVec(par[u],u), deg=(adj[u]||[]).length;
-      if(deg===2){                                   // codo: un solo tubo de salida -> según el ángulo del giro
-        const v=kids[0],ang=angBetween(inDir,dirVec(u,v));
-        if(ang>=67.5)addFit(parP[v],'e90'); else if(ang>=22.5)addFit(parP[v],'e45');
-      } else {                                        // derivación: el ramal recto (giro <22.5°) sigue sin pieza; cada ramal que gira ≥22.5° = tee con giro
-        kids.forEach(v=>{if(angBetween(inDir,dirVec(u,v))>=22.5)addFit(parP[v],'tee');});
-      }
-    });
-    // NOTA (corregido 2026-06-12): NO se cuenta tee por cada rociador. El agua que recorre el ramal pasa de
-    // FRENTE (paso recto) por las tees de los rociadores; solo gira la fracción que sale a cada rociador.
-    // Cargar una "tee con giro" al tramo que lleva el caudal acumulado inflaba presión y caudal. La tee con
-    // giro se cuenta solo donde el flujo dobla de verdad: arranque de ramal (bloque de derivación de arriba).
-    if(elevGlobal>0){                                                  // montante de elevación = 2 codos en el tubo principal de la fuente
-      const k0=childrenOf[src.id]||[];
-      if(k0.length){let mv=k0[0],bn=-1;k0.forEach(v=>{const nn=tubos[parP[v]].nom||0;if(nn>bn){bn=nn;mv=v;}});addFit(parP[mv],'e90');addFit(parP[mv],'e90');}
-    }
-  }
-  // ===== BUILD 28 · MANGUERAS — el caudal interior se reparte entre las mangueras colocadas y recorre los tubos hasta la bomba =====
-  const mang=o.mang||{tipo:'sin'};
-  const hoseNodes=(mang.tipo==='interior'&&Array.isArray(mang.hoseNodes))?mang.hoseNodes:[];
-  const perNode=hoseNodes.length?((mang.interior||0)/hoseNodes.length):0;   // reparte el interior (0/50/100) entre los puntos
-  const pipeAdd={};                                                  // tubo -> caudal interior extra que carga (camino nodo→bomba)
-  hoseNodes.forEach(nid=>{ if(nid!=null && nid!==src.id && par[nid]!==undefined){
-    let u=nid; while(u!=null && u!==src.id){ const _pi=parP[u]; pipeAdd[_pi]=(pipeAdd[_pi]||0)+((tubos[_pi].na.id===par[u])?perNode:-perNode); u=par[u]; } } });   // signo por orientación real del tubo (a->b)
-  // ===== HARDY CROSS · DETECCIÓN DE ANILLOS =====
-  // Cuerdas = tubos que NO son arista del árbol pero conectan dos nodos alcanzados (cierran un lazo).
-  const enArbol=new Set(); ord.forEach(u=>{ if(parP[u]!=null) enArbol.add(parP[u]); });
-  const cuerdas=[]; tubos.forEach((t,i)=>{ if(!enArbol.has(i) && par[t.na.id]!==undefined && par[t.nb.id]!==undefined) cuerdas.push(i); });
-  function _caminoRaiz(x){ const p=[]; let g=0; while(x!=null){ p.push(x); x=par[x]; if(++g>1e5)break; } return p; }   // [x, par(x), ..., src]
-  // Un lazo por cuerda: la cuerda (na->nb) + el camino en el árbol de nb a na. s=+1 si el lazo recorre el tubo EN su dirección de referencia.
-  const lazos = cuerdas.map(function(ci){
-    const t=tubos[ci], a=t.na.id, b=t.nb.id;
-    const pa=_caminoRaiz(a), pb=_caminoRaiz(b);
-    const idxA=new Map(); pa.forEach((n,k)=>idxA.set(n,k));
-    let ib=0, lca=null; for(ib=0; ib<pb.length; ib++){ if(idxA.has(pb[ib])){ lca=pb[ib]; break; } }
-    const ia=idxA.get(lca);
-    const seg=[{i:ci,s:+1}];                                   // cuerda traversada na->nb (su ref a->b)
-    for(let k=0;k<ib;k++){ const v=pb[k], _pi=parP[v]; seg.push({i:_pi, s:(tubos[_pi].na.id===v)?+1:-1}); }        // tramo v->par(v): signo por orientación REAL del tubo
-    for(let k=ia-1;k>=0;k--){ const v=pa[k], _pi=parP[v]; seg.push({i:_pi, s:(tubos[_pi].na.id===par[v])?+1:-1}); } // tramo par(v)->v: signo por orientación REAL del tubo
-    return seg;
-  });
-  // incidencia tubo -> lazos (para armar el Jacobiano del método simultáneo)
-  const pipeLoops={}; lazos.forEach(function(lz,k){ lz.forEach(function(sg){ (pipeLoops[sg.i]||(pipeLoops[sg.i]=[])).push({k:k,s:sg.s}); }); });
-  // Reparte el caudal: árbol (cuerdas en 0) + corrección de Hardy Cross por lazo. Sin lazos => idéntico al solver de árbol.
-  let _warm=null;   // arranque en caliente del solver de anillos (persiste entre llamadas dentro de un mismo solve)
-  function distribuir(qmap){
-    const Q={}; ord.forEach(u=>{ if(u===src.id)return; let s=0; for(const n of sub[u]) s+=(qmap[n]||0); const _pi=parP[u]; Q[_pi]=(tubos[_pi].na.id===par[u])?s:-s; });   // flujo de árbol FIRMADO según la orientación del tubo (fuente->rociador)
-    for(const pi in pipeAdd) Q[pi]=(Q[pi]||0)+pipeAdd[pi];
-    cuerdas.forEach(ci=>{ if(Q[ci]==null) Q[ci]=0; });
-    if(lazos.length){
-      // MÉTODO SIMULTÁNEO + DISPERSO (2026-06-14): resuelve TODOS los anillos a la vez por ronda (Newton sobre las
-      // ecuaciones de lazo), y cada sistema lo resuelve con gradiente conjugado DISPERSO (sin armar la matriz LxL) +
-      // ARRANQUE EN CALIENTE entre llamadas. Reduce EXACTAMENTE al Hardy Cross clásico con un solo anillo => cero regresión.
-      const L=lazos.length;
-      const acc=(_warm&&_warm.length===L)?_warm.slice():new Array(L).fill(0);
-      lazos.forEach(function(lz,k){ if(acc[k]) for(const sg of lz) Q[sg.i]=(Q[sg.i]||0)+sg.s*acc[k]; });   // arranque en caliente
-      for(let it=0; it<80; it++){
-        if((it&15)===0 && performance.now()-_t0>_DEADLINE){_aborted=true;break;}   // GUARDIÁN tiempo (anillos)
-        const sl={}, g={}; let gmax=0;
-        for(const pi in pipeLoops){ const qi=Q[pi]||0, aq=Math.abs(qi), hf=lossPipe(+pi,aq);
-          sl[pi]=Math.sign(qi)*hf; const gi= aq>1e-9 ? (1.852*hf/aq) : 0; g[pi]=gi; if(gi>gmax)gmax=gi; }   // pérdida con signo y derivada (Hazen-Williams n=1.852)
-        const reg=gmax*1e-10+1e-15;
-        const F=new Float64Array(L); lazos.forEach(function(lz,k){ let f=0; for(const sg of lz) f+=sg.s*(sl[sg.i]||0); F[k]=-f; });   // -residuo de cada lazo
-        const diag=new Float64Array(L); for(let k=0;k<L;k++)diag[k]=reg;
-        for(const pi in pipeLoops){ const arr=pipeLoops[pi], gi=g[pi]||0; if(!gi)continue; for(let a=0;a<arr.length;a++) diag[arr[a].k]+=gi; }   // diagonal del Jacobiano (precondicionador)
-        const matvec=function(v){ const w=new Float64Array(L);
-          for(const pi in pipeLoops){ const arr=pipeLoops[pi], gi=g[pi]||0; if(!gi)continue; let t=0; for(let a=0;a<arr.length;a++) t+=arr[a].s*v[arr[a].k]; t*=gi; for(let a=0;a<arr.length;a++) w[arr[a].k]+=arr[a].s*t; }
-          for(let k=0;k<L;k++) w[k]+=reg*v[k]; return w; };
-        const x=_cg(matvec,diag,F,L,1e-4,4*L);   // J·ΔQ = -F resuelto disperso (Newton inexacto: tol 1e-4 basta)
-        let maxd=0;
-        lazos.forEach(function(lz,k){ const dq=x[k]; acc[k]+=dq; if(Math.abs(dq)>maxd)maxd=Math.abs(dq); for(const sg of lz) Q[sg.i]=(Q[sg.i]||0)+sg.s*dq; });
-        if(maxd<1e-7) break;
-      }
-      _warm=acc;
-    }
-    const pipeQ={}; tubos.forEach((t,i)=>{ pipeQ[i]=Math.abs(Q[i]||0); });
-    const pl={}; pl[src.id]=0; ord.forEach(u=>{ if(u===src.id)return; const i=parP[u], qi=Q[i]||0; const _fpu=(tubos[i].na.id===par[u])?qi:-qi; pl[u]=pl[par[u]] + Math.sign(_fpu)*lossPipe(i,Math.abs(qi)); });   // caída en sentido fuente->u (corrige tubos invertidos)
-    return {pipeQ:pipeQ, pl:pl};
-  }
-  // ===== SOLVER ROBUSTO (BUILD 28) — reemplaza la iteración global que se descontrolaba con K alto =====
-  // Método de DOS ETAPAS, estable a cualquier factor K (5.6, 8, 11.2, hasta ESFR 25.2):
-  //   1) BALANCE INTERNO con la presión de bomba FIJA: q = K·√(Psrc − pérdidas − elevación), iterado con
-  //      amortiguación adaptativa. A Psrc fija la realimentación es NEGATIVA (más caudal → más fricción →
-  //      menos presión → menos caudal): se autocorrige y converge siempre.
-  //   2) BISECCIÓN de Psrc: sube la presión de bomba solo hasta que el rociador más remoto queda en su
-  //      mínimo (Preq, con piso de 7 psi). La presión disponible en el remoto crece de forma monótona con
-  //      Psrc, así que la bisección es infalible. (La iteración antigua subía Psrc y q en el MISMO lazo:
-  //      realimentación positiva que se disparaba con K alto.)
-  // Resultado IDÉNTICO al solver previo donde aquel convergía (K≈5.6) y físico/estable donde se disparaba.
-  let q={},pipeQ={},pl={};
-  flowing.forEach(id=>q[id]=o.qRemote);
-  const ITMAX=20000, QTOL=1e-10;
-  function innerBalance(Ps){                                          // etapa 1: balance a Psrc fija
-    let relax=0.7, prev=Infinity;
-    for(let it=0;it<ITMAX;it++){
-      if((it&255)===0 && performance.now()-_t0>_DEADLINE){_aborted=true;break;}   // GUARDIÁN tiempo (balance)
-      {const D=distribuir(q); pipeQ=D.pipeQ; pl=D.pl;}   // reparto árbol o Hardy Cross (según haya anillos) + presión por nodo
-      let maxd=0;const tgt={};
-      flowing.forEach(id=>{const h=Ps-pl[id]-elev[id];const qn=o.K*Math.sqrt(Math.max(h,0));tgt[id]=qn;const d=Math.abs(qn-q[id]);if(d>maxd)maxd=d;});
-      if(maxd<QTOL)break;                                            // converge sobre el residuo crudo (no el paso amortiguado)
-      if(maxd>prev)relax=Math.max(relax*0.5,0.01);                   // si oscila, amortigua más
-      prev=maxd;
-      flowing.forEach(id=>{q[id]=q[id]+relax*(tgt[id]-q[id]);});
-    }
-    let minH=Infinity;flowing.forEach(id=>{const h=Ps-pl[id]-elev[id];if(h<minH)minH=h;});
-    return minH;                                                     // presión disponible en el rociador más exigente
-  }
-  let lo=Preq, hi=Preq+50;                                           // etapa 2: bisección de Psrc
-  while(!_aborted && innerBalance(hi)<Preq && hi<Preq+1e8) hi*=2;     // amplía el techo hasta cubrir la demanda
-  for(let b=0;b<120;b++){ if(_aborted)break; const mid=(lo+hi)/2;if(innerBalance(mid)<Preq)lo=mid;else hi=mid;if(hi-lo<1e-7)break;}
-  innerBalance((lo+hi)/2);
-  if(_aborted) return {error:true, timeout:true};                    // GUARDIÁN: se acabó el tiempo => no congela, avisa en pantalla
-  // pinear Psrc con la MISMA fórmula del solver previo (rociador más exigente en Preq exacto) -> cero regresión
-  let mx=-1e18;flowing.forEach(id=>mx=Math.max(mx,pl[id]+elev[id]));let Psrc=Preq+mx;
-  if(!isFinite(Psrc)) return {error:true, insane:true};              // GUARDIÁN: resultado no físico (NaN/Infinito) => avisa en vez de dibujar basura
-  flowing.forEach(id=>q[id]=o.K*Math.sqrt(Math.max(Psrc-pl[id]-elev[id],0)));
-  const _Dfin=distribuir(q); pipeQ=_Dfin.pipeQ;      // reparto final (árbol o Hardy Cross) consistente con los caudales pineados
-  let Rspr=0;for(const n of sub[src.id])Rspr+=(q[n]||0);              // demanda de SOLO rociadores
-  // ===== BUILD 28 · MANGUERAS — árbol de demanda (NFPA 13 · criterio ILFIS) =====
-  // R = rociadores; T = total combinado por riesgo; interior viaja por la red, exterior se suma en la bomba; standpipe es dato
-  let qInt=0, qExt=0, qStand=0, total=Rspr, mangTxt='Sin mangueras';
-  if(mang.tipo==='almacenamiento'){           // ALMACENAMIENTO: la demanda de mangueras SIEMPRE se suma a la de rociadores (no aplica el criterio Total/Parcial). Caudal = el valor del campo.
-    qStand=mang.S||0; total=Rspr+qStand; mangTxt='Almacenamiento: rociadores + caudal de mangueras (suma lo que escribas; vacío = 0)';
-  } else if(mang.tipo==='standpipe'){
-    qStand=mang.S||0;
-    if(mang.proteccion==='parcial'){ total=Rspr+qStand; mangTxt='Standpipe · parcial: rociadores + standpipe'; }
-    else { total=Math.max(Rspr,qStand); mangTxt='Standpipe · total: el mayor entre rociadores y standpipe'; }
-  } else if(mang.tipo==='interior'){
-    qInt=mang.interior||0;
-    if(mang.hidrante==='privado'){ qExt=Math.max(0,(mang.T||0)-qInt); total=Rspr+qInt+qExt; mangTxt='Interior · privado: rociadores + interior + exterior (total combinado)'; }
-    else { total=Rspr+qInt; mangTxt='Interior · público: rociadores + interior (exterior en el hidrante)'; }
-  } else {
-    if(mang.hidrante==='privado'){ qExt=mang.T||0; total=Rspr+qExt; mangTxt='Sin mangueras · privado: rociadores + total combinado'; }
-    else { total=Rspr; mangTxt='Sin mangueras · público: solo rociadores (exterior en el hidrante)'; }
-  }
-  // detalle final: caudal y pérdida por tubo, presión por nodo (fricción + elevación)
-  const plf=_Dfin.pl;   // presión por nodo consistente con el reparto final (pérdida con signo del flujo)
-  tubos.forEach((t,i)=>{t.Q=pipeQ[i]||0;t.Pf=lossPipe(i,t.Q);});
-  nodos.forEach(n=>{n.elevPsi=elev[n.id]||0;n.P=(plf[n.id]!==undefined)?(Psrc-plf[n.id]-elev[n.id]):null; n.q=q[n.id]||0;});
-  const fl=[...flowing];
-  const farId=fl.reduce((a,b)=>pathLen[a]>pathLen[b]?a:b);
-  return {total,Rspr,qInt,qExt,qStand,mangTxt,Psrc,minHeadP:Preq,nAbiertos:flowing.size,flowing,qFar:q[farId],maxQ:Math.max(...tubos.map(t=>t.Q||0),1),warnIrreal:(isFinite(Psrc)&&Psrc>1500)};
-}
+/* ===== MOTOR DE RED MOVIDO AL SERVIDOR ILFIS (2026-07-10) =====
+   Aquí vivía solve() — el solver de la red — con su resolvedor de anillos. Ahora el
+   cálculo se hace en el servidor: el bloque de conexión al final de este archivo
+   instala la versión que llama a la nube. Lo de abajo solo avisa si ese bloque
+   no llegó a cargar. ===== */
+function solve(net,o){ try{ alert('El cálculo se realiza en el servidor ILFIS y no se pudo iniciar la conexión. Recarga la página.'); }catch(e){} return {error:true, servidor:true}; }
 const THEME={
   dark:{bg:null,main:'#3b82f6',ramal:'#8a97a6',so:'#22c55e',sc:'#7d8590',bci:'#ef4444',bs:'#ffffff',tri:'#ffffff',flow:'#9be7ff',dia:'#f0b860',pres:'#c4b5fd',node:'#ffffff',arrow:'#38bdf8',mat:'#f0abfc'},
   light:{bg:'#ffffff',main:'#1d4ed8',ramal:'#475569',so:'#15803d',sc:'#64748b',bci:'#dc2626',bs:'#000000',tri:'#ffffff',flow:'#1d4ed8',dia:'#c2410c',pres:'#7c3aed',node:'#111111',arrow:'#0369a1',mat:'#a21caf'}
@@ -5787,6 +5606,40 @@ window.MC={go:go,numSet:numSet,stepDia:stepDiaPath,addRam:addRam,dupRam:dupRam,d
 
 /* ---------- estado inicial (el boot del Motor arranca en parrilla) ---------- */
 var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.value:'parrilla');
+})();
+</script>
+<script>
+/* ===== CONEXIÓN AL MOTOR EN EL SERVIDOR (anti-piratería) — 2026-07-10 =====
+   Enruta solve() al servidor en la nube: el algoritmo de red ya NO se calcula en el navegador.
+   Reversible: borra este bloque <script> y el calculador vuelve a calcular local.
+   PRUEBA: usa una licencia demo; el pago real (Firebase) se ata después. ===== */
+(function(){
+  var MOTOR_URL = 'https://ilfis-motor-385039307479.southamerica-west1.run.app';
+  var LICENCIA  = 'DEMO-PAGADA-123';
+  function empaquetar(net,o){
+    var idToIdx={}; net.nodos.forEach(function(n,i){ idToIdx[n.id]=i; });
+    var nodos=net.nodos.map(function(n){ return {id:n.id,x:n.x,y:n.y,open:!!n.open,head:!!n.head,elevManual:!!n.elevManual,elevOverridePsi:n.elevOverridePsi}; });
+    var tubos=net.tubos.map(function(t){ return {C:t.C,id:t.id,len:t.len,nom:t.nom,accFijo:t.accFijo||null,naIdx:idToIdx[t.na.id],nbIdx:idToIdx[t.nb.id]}; });
+    var oo={}; for(var k in o){ if(k==='src'){ oo.srcIdx=idToIdx[o.src.id]; } else { try{ oo[k]=JSON.parse(JSON.stringify(o[k])); }catch(e){ oo[k]=o[k]; } } }
+    return {nodos:nodos,tubos:tubos,o:oo};
+  }
+  window.solve = function(net,o){
+    var xhr = new XMLHttpRequest();
+    try { xhr.open('POST', MOTOR_URL + '/calcular', false); } catch(e){ return {error:true, servidor:true}; }
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('x-licencia', LICENCIA);
+    try { xhr.send(JSON.stringify(empaquetar(net,o))); }
+    catch(e){ alert('No pude contactar el servidor de cálculo. Revisa tu conexión a internet.'); return {error:true, red:true}; }
+    if(xhr.status===402){ alert('Necesitas una licencia activa (pago) para calcular.'); return {error:true, pago:true}; }
+    if(xhr.status!==200){ return {error:true, servidor:true, code:xhr.status}; }
+    var r; try { r = JSON.parse(xhr.responseText); } catch(e){ return {error:true, servidor:true}; }
+    if(r.error) return r;
+    if(r.flowing) r.flowing = new Set(r.flowing);
+    if(r.tubos){ net.tubos.forEach(function(t,i){ var rt=r.tubos[i]; if(rt){ t.Q=rt.Q; t.Pf=rt.Pf; t.Leq=rt.Leq; if(rt.acc)t.acc=rt.acc; } }); }
+    if(r.nodos){ var byId={}; net.nodos.forEach(function(n){ byId[n.id]=n; }); r.nodos.forEach(function(rn){ var n=byId[rn.id]; if(n){ n.P=rn.P; n.q=rn.q; n.elevPsi=rn.elevPsi; } }); }
+    return r;
+  };
+  try{ console.log('[ILFIS] Cálculo enrutado al servidor: ' + MOTOR_URL); }catch(e){}
 })();
 </script>
 </body>
