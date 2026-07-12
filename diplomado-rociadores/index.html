@@ -491,41 +491,32 @@ function cab(w, l){
   return `<h2>${ICO[l.tipo]||""} ${esc(l.titulo)}</h2><div class="meta">${esc(w.titulo)}</div>`;
 }
 
-// ── Video ──
-async function lecVideo(w, l, c){
-  c.innerHTML = cab(w, l) + `
-    <div class="video-wrap"><video id="player" controls controlsList="nodownload" oncontextmenu="return false;" playsinline></video></div>
-    <div class="prog-video" id="progVideo">${hechas.has(l.id) ? '<span class="ok90">✓ Lección completada</span>' : "Se marca como completada al ver el 90% del video."}</div>
-    <div class="aviso err" id="vidErr" style="display:none;"></div>`;
-  const player = $("player");
-  let maxVisto = 0;
-  const idLec = l.id;
-  player.addEventListener("timeupdate", () => {
-    if(!player.duration) return;
-    maxVisto = Math.max(maxVisto, player.currentTime);
-    const pct = Math.round(maxVisto / player.duration * 100);
-    if(hechas.has(idLec)) return;
-    if(pct >= 90){
-      $("progVideo").innerHTML = `Visto: <span class="ok90">${pct}% ✓ completada</span>`;
-      marcarCompletada(idLec);
-    } else {
-      $("progVideo").textContent = `Visto: ${pct}% (se completa al 90%)`;
-    }
-  });
-  player.addEventListener("error", () => {
-    if(!player.getAttribute("src")) return;
-    const e = $("vidErr");
-    e.textContent = "⚠ El video no cargó. Verifica tu conexión o que tu matrícula siga vigente; si persiste, escribe a soporte.";
-    e.style.display = "block";
-  });
-  try{
-    const t = await usuario.getIdToken(true);
-    player.src = `${API}/api/cursos/${CURSO}/clase/${l.clase}/stream?token=${t}`;
-    player.load();
-  }catch(e){
-    $("vidErr").textContent = "⚠ No pude preparar el video: " + e.message;
-    $("vidErr").style.display = "block";
+// ── Video ── (reproductor NATIVO de Google Drive incrustado)
+// Se dejó de usar el proxy de Cloud Run: ahora el video se sirve directo desde el
+// CDN de Google (rápido y gratis). El drive_id llega en la estructura SOLO si el alumno
+// está matriculado y la semana está abierta. Como el iframe es de otro dominio no
+// podemos medir el % visto, así que la lección se marca completada con un botón.
+function lecVideo(w, l, c){
+  if(!l.drive_id){
+    c.innerHTML = cab(w, l) + `<div class="aviso err">⚠ Este video aún no está disponible. Si el problema sigue, escribe a soporte.</div>`;
+    return;
   }
+  const done = hechas.has(l.id);
+  c.innerHTML = cab(w, l) + `
+    <div class="video-wrap">
+      <iframe id="player"
+        src="https://drive.google.com/file/d/${esc(l.drive_id)}/preview"
+        allow="autoplay; encrypted-media" allowfullscreen
+        style="width:100%;height:62vh;border:0;display:block;background:#000;"></iframe>
+    </div>
+    <div class="prog-video" id="progVideo">${
+      done ? '<span class="ok90">✓ Lección completada</span>'
+           : `<button class="btn" onclick="videoVisto(this,'${esc(l.id)}')">Marcar como vista</button>`
+    }</div>`;
+}
+function videoVisto(btn, id){
+  marcarCompletada(id);
+  btn.parentNode.innerHTML = '<span class="ok90">✓ Lección completada</span>';
 }
 
 // ── Manual (PDF) ──
