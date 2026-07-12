@@ -79,7 +79,7 @@ select:focus{outline:none;border-color:var(--azul);}
   <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
   <div class="head-tit">
     <div class="l1">UBUNTU · ADMINISTRACIÓN</div>
-    <div class="l2">Matrículas del módulo de cursos</div>
+    <div class="l2">Matrículas de Clases Premium (videos + PDF)</div>
   </div>
   <button class="btn-salir" id="btnSalir" onclick="cerrarSesion()">Cerrar sesión admin</button>
   <a class="volver" href="../">← Volver a UBUNTU</a>
@@ -111,8 +111,8 @@ select:focus{outline:none;border-color:var(--azul);}
     </table>
   </div>
   <div class="nota-pie">
-    ➕ en un curso = extender 30 días · ✕ = revocar (pide confirmación). Tras dar u extender una matrícula, el alumno debe refrescar su sesión (el aula tiene el botón "Vuelve a intentar", o cerrar sesión y entrar de nuevo).<br>
-    Los cursos con aula virtual (hoy: <b>rociadores</b>) usan estas mismas matrículas para videos, cuestionarios y notas.
+    ➕ en un curso = extender 30 días · ✕ = revocar (pide confirmación). Tras dar u extender una matrícula, el alumno debe refrescar su sesión (cerrar sesión y entrar de nuevo).<br>
+    Este panel gestiona SOLO las <b>Clases Premium</b> (videos + PDF, autogestionado). El <b>Diplomado de Rociadores</b> (aula tutorada: cuestionarios, notas, entregas) se matricula aparte, desde el <b>Panel Intranet → Plataforma Educativa</b>: es un acceso independiente del de Premium.
   </div>
 </div>
 
@@ -127,8 +127,9 @@ const NOMBRE = {
   montantes:"Montantes", ipmagua:"IPM Agua"
 };
 // Llaves que NO son Clases Premium y no se muestran ni gestionan aquí: el Calculador es de
-// Aplicativos y 'plataforma' es el acceso general de ILFIS Ubuntu (área General del Intranet).
-const NO_PREMIUM = ["calculador", "plataforma"];
+// Aplicativos, 'plataforma' es el acceso general (área General) y 'diplomado_rociadores' es la
+// llave del Diplomado (área Plataforma Educativa) — el "carnet" separado de las Clases Premium.
+const NO_PREMIUM = ["calculador", "plataforma", "diplomado_rociadores"];
 
 let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
 let alumnos = [];

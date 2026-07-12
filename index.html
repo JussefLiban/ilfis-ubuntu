@@ -3239,17 +3239,19 @@ const ADMIN_NAMES = {
   ipmagua:           "IPM Base Agua",
   calculador:        "Calculador Hidráulico Integral",
   plataforma:        "Plataforma ILFIS Ubuntu",
+  diplomado_rociadores: "Diplomado de Rociadores",
 };
 // "Calcula con Ubuntu" (aplicativos/calculadoras) — NO son Clases Premium; van en su propia área.
 const APP_KEYS = ['calculador'];
 // Llave del producto "Plataforma en sí" (área General). Dormida mientras la plataforma sea gratis
 // (hasta 31/12/2026); no desbloquea Premium/Aplicativos/diplomados.
 const PLATAFORMA_KEY = 'plataforma';
-// Diplomados de la Plataforma Educativa. OJO: hoy el diplomado comparte llave con las Clases
-// Premium homónimas (el "carnet" aún no se separa); al separarlo tendrán llave propia.
-const DIPLOMA_KEYS = ['rociadores'];
+// Diplomados de la Plataforma Educativa. El "carnet" YA está separado (jul 2026): el diplomado tiene
+// su propia llave 'diplomado_rociadores', distinta de la de Clases Premium ('rociadores'). Así un
+// alumno del diplomado NO aparece en Premium y viceversa. (Backend: cursos.py LLAVE_DIPLOMA.)
+const DIPLOMA_KEYS = ['diplomado_rociadores'];
 // Llaves que NO son Clases Premium (viven en su propia área y no deben colarse en Premium).
-const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY];
+const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY, ...DIPLOMA_KEYS];
 // Cursos Premium conocidos (para el selector de "Dar acceso"). Para FILTRAR listas, Premium es
 // "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
 const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
@@ -3691,10 +3693,12 @@ function renderMiCuenta() {
     av.textContent = name.charAt(0).toUpperCase();
   }
 
-  // Cursos activos. Se oculta la llave 'plataforma' (acceso general, dormido y GRATIS hasta
-  // 31/12/2026): no es un producto que el usuario "renueve" ni tiene ficha en CURSOS_INFO.
+  // Cursos activos en "Mis suscripciones". Se ocultan las llaves que NO se auto-renuevan por el
+  // paywall de Clases Premium: 'plataforma' (acceso general, gratis hasta 31/12/2026) y el/los
+  // diplomado(s) (pago EXTERNO vía Odoo; el alumno gestiona su diplomado dentro del aula, no aquí).
+  const OCULTAR_EN_CUENTA = new Set([PLATAFORMA_KEY, ...DIPLOMA_KEYS]);
   const lista = document.getElementById('cuenta-cursos-lista');
-  const keys  = Object.keys(_cursosActivos).filter(k => k !== PLATAFORMA_KEY);
+  const keys  = Object.keys(_cursosActivos).filter(k => !OCULTAR_EN_CUENTA.has(k));
 
   if (keys.length === 0) {
     lista.innerHTML = `<div class="cuenta-empty">
