@@ -373,20 +373,30 @@ async function cargarAula(){
 }
 
 // ═══════════════ TEMARIO (sidebar) ═══════════════
+let _semExp = null;   // semanas expandidas — PERSISTEN entre renders (estilo explorador de Windows)
+function toggleSemana(sem, cab){
+  if(_semExp && _semExp.has(sem)) _semExp.delete(sem); else (_semExp = _semExp || new Set()).add(sem);
+  cab.parentElement.classList.toggle('exp');
+}
 function renderTemario(){
   const cont = $("temario");
   cont.innerHTML = "";
-  // expandir por defecto: la última semana abierta
-  let ultimaAbierta = 0;
-  estructura.semanas.forEach(w => { if(w.abierta) ultimaAbierta = w.sem; });
+  // Expansión persistente: al inicio abrimos la última semana disponible; luego respetamos
+  // lo que el usuario deje abierto (abrir una lección NO cierra su semana).
+  if(_semExp === null){
+    _semExp = new Set();
+    let ult = 0; estructura.semanas.forEach(w => { if(w.abierta) ult = w.sem; });
+    _semExp.add(ult);
+  }
+  if(lecActiva) _semExp.add(lecActiva.sem);   // la semana de la lección activa queda abierta
 
   estructura.semanas.forEach(w => {
     const d = document.createElement("div");
-    d.className = "sem " + (w.abierta ? "sem-abierta" : "sem-cerrada") + (w.sem === ultimaAbierta ? " exp" : "");
+    d.className = "sem " + (w.abierta ? "sem-abierta" : "sem-cerrada") + (_semExp.has(w.sem) ? " exp" : "");
     const fechas = w.abierta
       ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}`
       : `abre lun ${fmtLima(w.abre)}`;
-    d.innerHTML = `<div class="sem-cab" onclick="this.parentElement.classList.toggle('exp')">
+    d.innerHTML = `<div class="sem-cab" onclick="toggleSemana(${w.sem}, this)">
         <span class="st">${esc(w.titulo)}</span>
         <span class="fechas">${fechas}</span>
         <span class="flecha">▶</span>
