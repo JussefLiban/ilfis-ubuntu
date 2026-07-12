@@ -392,15 +392,24 @@ function renderTemario(){
         <span class="flecha">▶</span>
       </div><div class="sem-lecs"></div>`;
     const zona = d.querySelector(".sem-lecs");
-    w.lecciones.forEach(l => {
-      const f = document.createElement("div");
-      const comp = hechas.has(l.id);
-      const bloq = !w.abierta;
-      f.className = "lec" + (bloq ? " bloq" : "") + (lecActiva && lecActiva.leccion.id === l.id ? " activa" : "");
-      f.innerHTML = `<span>${comp ? '<span class="ok">✓</span>' : (bloq ? "🔒" : ICO[l.tipo] || "•")}</span><span class="nom">${esc(l.titulo)}</span>`;
-      if(!bloq) f.onclick = () => abrirLeccion(w, l);
-      zona.appendChild(f);
-    });
+    if(!w.abierta){
+      // Semana cerrada: el alumno NO ve las lecciones ni los títulos de evaluaciones,
+      // solo cuándo se abre. (El servidor tampoco los envía; esto es el respaldo visual.)
+      const p = document.createElement("div");
+      p.className = "lec bloq";
+      p.style.cursor = "default";
+      p.innerHTML = `<span>🔒</span><span class="nom" style="color:var(--texto2);">Se abre el lunes ${fmtLima(w.abre)}. El contenido y las evaluaciones aparecerán aquí ese día.</span>`;
+      zona.appendChild(p);
+    } else {
+      w.lecciones.forEach(l => {
+        const f = document.createElement("div");
+        const comp = hechas.has(l.id);
+        f.className = "lec" + (lecActiva && lecActiva.leccion.id === l.id ? " activa" : "");
+        f.innerHTML = `<span>${comp ? '<span class="ok">✓</span>' : (ICO[l.tipo] || "•")}</span><span class="nom">${esc(l.titulo)}</span>`;
+        f.onclick = () => abrirLeccion(w, l);
+        zona.appendChild(f);
+      });
+    }
     cont.appendChild(d);
   });
 }
