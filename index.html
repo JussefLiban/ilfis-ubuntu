@@ -698,7 +698,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </div>
       <div class="admin-tabs">
         <div class="admin-group" data-area="general" style="display:none;">
-          <div class="admin-group-tabs" id="admin-tabs-general"></div>
+          <div class="admin-group-tabs" id="admin-tabs-general">
+            <button class="admin-tab" onclick="adminShowTab('suscriptores', this)">Suscriptores</button>
+          </div>
         </div>
         <div class="admin-group" data-area="premium">
           <div class="admin-group-tabs">
@@ -714,6 +716,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
         <div class="admin-group" data-area="educativa" style="display:none;">
           <div class="admin-group-tabs">
+            <button class="admin-tab" onclick="adminShowTab('edurecaud', this)">Recaudación por curso</button>
+            <button class="admin-tab" onclick="adminShowTab('edualumnos', this)">Alumnos</button>
             <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
             <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
           </div>
@@ -761,6 +765,32 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <span id="admin-cohorte-msg" style="font-size:0.8rem;"></span>
         </div>
         <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;"></div>
+      </div>
+      <!-- Sección Suscriptores (General de la plataforma) -->
+      <div class="admin-section" id="admin-sec-suscriptores">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Todas las personas <b style="color:#fff;">registradas en ILFIS Ubuntu</b> (con solo iniciar sesión).
+          La plataforma es <b style="color:#fff;">gratis hasta el 31/12/2026</b>: este control de acceso queda
+          listo para cuando sea de pago. Dar o revocar aquí NO toca Clases Premium, Aplicativos ni diplomados.
+        </p>
+        <div id="admin-susc-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Recaudación de Plataforma Educativa (diplomados; pago externo vía Odoo) -->
+      <div class="admin-section" id="admin-sec-edurecaud">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Matrículas activas por <b style="color:#fff;">diplomado</b>. El cobro es <b style="color:#fff;">externo</b>
+          (área comercial / Odoo, sin pasarela): aquí solo se ve cuánta gente tiene acceso vigente.
+        </p>
+        <div id="admin-edurecaud-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Alumnos de Plataforma Educativa (matrícula manual) -->
+      <div class="admin-section" id="admin-sec-edualumnos">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Matrícula <b style="color:#fff;">manual</b>: el área comercial confirma el pago (Odoo / medios externos)
+          y aquí se le da el acceso al diplomado. Mientras no se separe el "carnet", la llave del Diplomado de
+          Rociadores es la misma de sus Clases Premium (el alumno aparece en ambas áreas).
+        </p>
+        <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -3208,12 +3238,21 @@ const ADMIN_NAMES = {
   montantes:         "Montantes y Mangueras",
   ipmagua:           "IPM Base Agua",
   calculador:        "Calculador Hidráulico Integral",
+  plataforma:        "Plataforma ILFIS Ubuntu",
 };
 // "Calcula con Ubuntu" (aplicativos/calculadoras) — NO son Clases Premium; van en su propia área.
 const APP_KEYS = ['calculador'];
+// Llave del producto "Plataforma en sí" (área General). Dormida mientras la plataforma sea gratis
+// (hasta 31/12/2026); no desbloquea Premium/Aplicativos/diplomados.
+const PLATAFORMA_KEY = 'plataforma';
+// Diplomados de la Plataforma Educativa. OJO: hoy el diplomado comparte llave con las Clases
+// Premium homónimas (el "carnet" aún no se separa); al separarlo tendrán llave propia.
+const DIPLOMA_KEYS = ['rociadores'];
+// Llaves que NO son Clases Premium (viven en su propia área y no deben colarse en Premium).
+const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY];
 // Cursos Premium conocidos (para el selector de "Dar acceso"). Para FILTRAR listas, Premium es
-// "todo lo que no es aplicativo": así una llave legada/desconocida sigue visible y revocable.
-const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !APP_KEYS.includes(k));
+// "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
+const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
 let _adminAlumnos    = [];
 let _adminModalUid   = null;
 let _adminModalEmail = null;
@@ -3346,9 +3385,11 @@ async function adminQuitarDocente(email) {
 }
 
 async function adminCargar() {
-  document.getElementById('admin-recaud-content').innerHTML  = '<div class="admin-loading">Cargando...</div>';
-  document.getElementById('admin-alumnos-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
-  document.getElementById('admin-appsusc-content').innerHTML = '<div class="admin-loading">Cargando...</div>';
+  // Un solo fetch alimenta TODAS las áreas; los IDs son (primera pestaña de cada área primero):
+  // recaud/alumnos (Premium) · app/appsusc (Aplicativos) · susc (General) · edurecaud/edualumnos (Educativa)
+  const CARGANDO = ['admin-recaud-content','admin-alumnos-content','admin-appsusc-content',
+                    'admin-susc-content','admin-edurecaud-content','admin-edualumnos-content'];
+  CARGANDO.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '<div class="admin-loading">Cargando...</div>'; });
   try {
     const r = await fetch(BACKEND + '/admin/alumnos', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) { throw new Error('Error ' + r.status); }
@@ -3358,11 +3399,15 @@ async function adminCargar() {
     adminRenderAlumnos();
     adminRenderAplicativos();
     adminRenderAppSuscriptores();
+    adminRenderSuscriptores();
+    adminRenderEduRecaud();
+    adminRenderEduAlumnos();
   } catch(e) {
-    document.getElementById('admin-recaud-content').innerHTML  = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
-    document.getElementById('admin-alumnos-content').innerHTML = '';
-    document.getElementById('admin-app-content').innerHTML     = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`;
-    document.getElementById('admin-appsusc-content').innerHTML = '';
+    // El error se muestra en la PRIMERA pestaña de cada área; el resto se vacía (sin "Cargando..." eterno).
+    const CON_ERROR = ['admin-recaud-content','admin-app-content','admin-susc-content','admin-edurecaud-content'];
+    const VACIAR    = ['admin-alumnos-content','admin-appsusc-content','admin-edualumnos-content'];
+    CON_ERROR.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="admin-loading" style="color:#e87272;">Error: ${e.message}</div>`; });
+    VACIAR.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
   }
 }
 
@@ -3376,7 +3421,7 @@ function adminRenderRecaud() {
     }
   }
   const PRECIO = 000;
-  const cursos = Object.entries(conteo).filter(([k]) => !APP_KEYS.includes(k)).sort((a,b) => b[1] - a[1]);
+  const cursos = Object.entries(conteo).filter(([k]) => !NO_PREMIUM.includes(k)).sort((a,b) => b[1] - a[1]);
   const total  = cursos.reduce((s, [,n]) => s + n, 0);
   const html   = cursos.map(([k, n]) => `
     <div class="rc-card">
@@ -3439,7 +3484,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     const cursos  = u.cursos_activos || {};
     const keys    = Object.keys(cursos).filter(perteneceProducto);
     const badgesHtml = keys.length === 0
-      ? '<span class="cbadge cb-none">Sin suscripción</span>'
+      ? `<span class="cbadge cb-none">${area === 'educativa' ? 'Sin matrícula' : 'Sin suscripción'}</span>`
       : keys.map(k => {
           const exp  = new Date(cursos[k]);
           const dias = Math.ceil((exp - ahora) / 86400000);
@@ -3462,20 +3507,97 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       </td>
     </tr>`;
   }).join('');
+  // En la Plataforma Educativa el término del negocio es "matrícula", no "suscripción".
+  const colAccesos = (area === 'educativa') ? 'Matrículas' : 'Suscripciones';
   box.innerHTML = `
     <table class="admin-table">
-      <thead><tr><th>${etiqueta}</th><th>Suscripciones</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
 
 // Clases Premium → término "Alumno"; Aplicativos → término "Suscriptor" (misma estructura).
-// Premium filtra "todo lo que no es aplicativo" para que llaves legadas sigan gestionables.
+// Premium filtra "todo lo que no es de otra área" para que llaves legadas sigan gestionables.
 function adminRenderAlumnos() {
-  _adminRenderAccesos('admin-alumnos-content', k => !APP_KEYS.includes(k), 'Alumno', 'premium');
+  _adminRenderAccesos('admin-alumnos-content', k => !NO_PREMIUM.includes(k), 'Alumno', 'premium');
 }
 function adminRenderAppSuscriptores() {
   _adminRenderAccesos('admin-appsusc-content', k => APP_KEYS.includes(k), 'Suscriptor', 'aplicativos');
+}
+
+// Plataforma Educativa → término "Alumno"; solo llaves de diplomado (hoy comparte la de Premium).
+function adminRenderEduAlumnos() {
+  _adminRenderAccesos('admin-edualumnos-content', k => DIPLOMA_KEYS.includes(k), 'Alumno', 'educativa');
+}
+
+// Plataforma Educativa: matrículas activas por diplomado. El dinero vive en Odoo (pago externo),
+// por eso no se muestran montos, solo cuánta gente tiene acceso vigente.
+function adminRenderEduRecaud() {
+  const box = document.getElementById('admin-edurecaud-content');
+  if (!box) return;
+  const ahora  = new Date();
+  const conteo = {};
+  DIPLOMA_KEYS.forEach(k => conteo[k] = 0);
+  for (const u of _adminAlumnos) {
+    for (const [curso, exp] of Object.entries(u.cursos_activos || {})) {
+      if (DIPLOMA_KEYS.includes(curso) && new Date(exp) > ahora) conteo[curso]++;
+    }
+  }
+  const html = Object.entries(conteo).sort((a,b) => b[1] - a[1]).map(([k, n]) => `
+    <div class="rc-card">
+      <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
+      <div class="rc-num">${n}</div>
+      <div class="rc-sub">alumnos matriculados</div>
+      <div class="rc-monto" style="font-size:0.72rem;color:#7a8a9a;">pago externo (Odoo)</div>
+    </div>`).join('');
+  box.innerHTML = `<div class="recaud-grid">${html}</div>`;
+}
+
+// General de la plataforma: padrón de TODOS los registrados (con solo loguearse). Sin columna de
+// suscripciones (un solo producto). Usa la llave 'plataforma', dormida mientras sea gratis.
+function adminRenderSuscriptores() {
+  const box = document.getElementById('admin-susc-content');
+  if (!box) return;
+  const ahora = new Date();
+  if (!_adminAlumnos.length) {
+    box.innerHTML = '<div class="admin-loading">No hay usuarios registrados.</div>';
+    return;
+  }
+  const filas = _adminAlumnos.map(u => {
+    const exp = (u.cursos_activos || {})[PLATAFORMA_KEY];
+    let estado = '', acciones = '';
+    if (exp) {
+      const dias = Math.ceil((new Date(exp) - ahora) / 86400000);
+      const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
+      estado = `<span class="cbadge ${cls}">${dias <= 0 ? 'Vencido' : dias + 'd'}</span> `;
+      acciones = `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${PLATAFORMA_KEY}')">+30d</button>
+                  ${dias > 0 ? `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${PLATAFORMA_KEY}','${u.email}')">Revocar</button>` : ''}`;
+    } else {
+      acciones = `<button class="btn-a btn-dar" onclick="adminDarPlataforma('${u.uid}','${u.email}')">Dar acceso</button>`;
+    }
+    return `<tr>
+      <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+      <td style="white-space:nowrap;min-width:200px;">${estado}${acciones}</td>
+    </tr>`;
+  }).join('');
+  box.innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Suscriptor</th><th>Acciones</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+async function adminDarPlataforma(uid, email) {
+  if (!confirm(`¿Dar 30 días de acceso de pago a la plataforma a ${email}?\n(Hoy la plataforma es gratis: esta llave es el control para cuando sea de pago.)`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/dar-acceso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, curso: PLATAFORMA_KEY })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
 }
 
 async function adminExtender(uid, curso) {
@@ -3507,10 +3629,14 @@ async function adminRevocar(uid, curso, email) {
 function adminAbrirDar(uid, email, nombre, area) {
   _adminModalUid   = uid;
   _adminModalEmail = email;
-  // El modal solo ofrece los productos del área desde donde se abrió (Premium ≠ Aplicativos).
-  const keys = (area === 'aplicativos') ? APP_KEYS : PREMIUM_KEYS;
+  // El modal solo ofrece los productos del área desde donde se abrió (cada área su producto).
+  const keys = (area === 'aplicativos') ? APP_KEYS
+             : (area === 'educativa')   ? DIPLOMA_KEYS
+             : PREMIUM_KEYS;
   const tit  = document.getElementById('admin-modal-dar-titulo');
-  if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo' : 'Dar acceso a curso';
+  if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo'
+                           : (area === 'educativa')   ? 'Matricular en el diplomado'
+                           : 'Dar acceso a curso';
   document.getElementById('admin-modal-dar-curso').innerHTML =
     keys.map(k => `<option value="${k}">${ADMIN_NAMES[k]||k}</option>`).join('');
   document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
@@ -3565,9 +3691,10 @@ function renderMiCuenta() {
     av.textContent = name.charAt(0).toUpperCase();
   }
 
-  // Cursos activos
+  // Cursos activos. Se oculta la llave 'plataforma' (acceso general, dormido y GRATIS hasta
+  // 31/12/2026): no es un producto que el usuario "renueve" ni tiene ficha en CURSOS_INFO.
   const lista = document.getElementById('cuenta-cursos-lista');
-  const keys  = Object.keys(_cursosActivos);
+  const keys  = Object.keys(_cursosActivos).filter(k => k !== PLATAFORMA_KEY);
 
   if (keys.length === 0) {
     lista.innerHTML = `<div class="cuenta-empty">

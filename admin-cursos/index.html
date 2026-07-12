@@ -126,9 +126,9 @@ const NOMBRE = {
   mercancias:"Mercancías", alarmas:"Alarmas", hidraulicabasica:"Hidráulica Básica",
   montantes:"Montantes", ipmagua:"IPM Agua"
 };
-// El Calculador es del producto Aplicativos (Calcula con Ubuntu), NO Clases Premium:
-// aquí no se muestra ni se gestiona (se administra en el área Aplicativos del Intranet).
-const APP_KEYS = ["calculador"];
+// Llaves que NO son Clases Premium y no se muestran ni gestionan aquí: el Calculador es de
+// Aplicativos y 'plataforma' es el acceso general de ILFIS Ubuntu (área General del Intranet).
+const NO_PREMIUM = ["calculador", "plataforma"];
 
 let clave = localStorage.getItem("ilfis_admin_key") || null;  // misma clave que la Zona Intranet
 let alumnos = [];
@@ -195,7 +195,7 @@ async function cargarAlumnos(silencioso){
 function activos(a){
   const ahora = new Date();
   return Object.entries(a.cursos_activos || {})
-    .filter(([c]) => !APP_KEYS.includes(c))
+    .filter(([c]) => !NO_PREMIUM.includes(c))
     .map(([c, exp]) => ({ curso: c, exp, vigente: new Date(exp) > ahora }));
 }
 
