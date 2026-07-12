@@ -735,6 +735,7 @@ async function lecQuiz(w, l, c){
     if(p.tipo === "emparejar" || p.tipo === "clasificar") pistas.push("elige una letra por fila · puntaje proporcional");
     if(p.tipo === "respuesta_corta" || p.tipo === "respuesta_abierta") pistas.push("calificación manual del instructor");
     html += `<div class="preg"><div class="enun">${enun} <span class="pts">(${pistas.join(" · ")})</span></div>`;
+    if(p.imagen) html += `<img class="preg-img" src="${esc(p.imagen)}" alt="Gráfico de la pregunta ${num}" loading="lazy" style="max-width:100%;height:auto;margin:8px 0 4px;border:1px solid var(--borde);border-radius:8px;">`;
     (p.contexto || []).forEach(cx => {
       html += `<div class="ctx"><b>${esc(cx.titulo||"")}</b><ul>${(cx.items||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`;
     });
