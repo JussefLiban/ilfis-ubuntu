@@ -1219,7 +1219,7 @@ function recalcular(auto){
   const o={K:kVal, sysType, matDef, aplic,
     qRemote, baseDiseno, dens, cov, src, elevGlobalPsi:elevVal*elevFactor, accesorios:accMode, mang};
   const res=solve(NET,o);
-  if(res.error){ if(!auto){ if(res.timeout)alert('El cálculo se detuvo: no llegó a un resultado estable en el tiempo previsto. Suele pasar con un diámetro demasiado chico para el caudal (la fricción se dispara). Revisa los diámetros y longitudes.'); else if(res.insane)alert('El cálculo dio un valor no físico. Revisa diámetros, C y longitudes.'); else alert('No hay rociadores "Abiertos" marcados en el plano (área de diseño vacía).'); } return; }
+  if(res.error){ if(!auto){ if(res.red||res.servidor||res.pago){/* error de conexión al servidor: el bloque de conexión ya mostró su propio aviso; NO caer en el comodín "no hay rociadores" */} else if(res.timeout)alert('El cálculo se detuvo: no llegó a un resultado estable en el tiempo previsto. Suele pasar con un diámetro demasiado chico para el caudal (la fricción se dispara). Revisa los diámetros y longitudes.'); else if(res.insane)alert('El cálculo dio un valor no físico. Revisa diámetros, C y longitudes.'); else alert('No hay rociadores "Abiertos" marcados en el plano (área de diseño vacía).'); } return; }
   // ===== MONTANTE EN MODO PLANO (DXF): sumar la FRICCIÓN del riser vertical =====
   // El plano 2D no dibuja el montante; su ALTURA ya entra como elevación, pero su FRICCIÓN faltaba (importante en
   // edificios altos). Se calcula como pérdida en serie (acero Sch10, Ø y largo del panel "Troncal y montante") con el
