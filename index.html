@@ -735,9 +735,13 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="admin-section" id="admin-sec-docentes">
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
           Autoriza a un <b style="color:#fff;">instructor</b> por el correo con el que inicia sesión (Google).
-          Con eso podrá entrar a su panel de instructor del <b style="color:#fff;">Diplomado de Rociadores</b>
+          Con eso podrá entrar a su panel de instructor del diplomado que elijas abajo
           (ver avance, calificar, revisar entregas). Ningún alumno ve este acceso. Es aparte de las Clases Premium.
         </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <label style="font-size:0.8rem;color:#8899aa;">Diplomado:</label>
+          <select id="admin-doc-diploma" onchange="adminCargarDocentes()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
           <input type="email" id="admin-doc-email" placeholder="correo@ejemplo.com del instructor" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;" onkeydown="if(event.key==='Enter')adminAltaDocente()">
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminAltaDocente()">Dar permiso</button>
@@ -3252,6 +3256,22 @@ const PLATAFORMA_KEY = 'plataforma';
 const DIPLOMA_KEYS = ['diplomado_rociadores'];
 // Llaves que NO son Clases Premium (viven en su propia área y no deben colarse en Premium).
 const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY, ...DIPLOMA_KEYS];
+// Diplomados existentes (para la gestión de docentes por diplomado). `id` = segmento de la URL
+// del backend (/api/cursos/<id>/admin/docentes); hoy solo Rociadores. Al crear otro diplomado,
+// basta AGREGAR una entrada aquí y su pestaña de docentes ya lo listará.
+const DIPLOMAS = [
+  { id: 'rociadores', nombre: 'Diplomado de Rociadores' },
+];
+// Diplomado seleccionado en la pestaña Docentes (por defecto el primero).
+function _adminDocDiploma() {
+  const sel = document.getElementById('admin-doc-diploma');
+  return (sel && sel.value) || (DIPLOMAS[0] && DIPLOMAS[0].id) || 'rociadores';
+}
+function _adminLlenarDiplomasDocentes() {
+  const sel = document.getElementById('admin-doc-diploma');
+  if (!sel || sel.options.length) return;  // ya llenado
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
 // Cursos Premium conocidos (para el selector de "Dar acceso"). Para FILTRAR listas, Premium es
 // "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
 const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
@@ -3341,9 +3361,11 @@ function _adminEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&
 async function adminCargarDocentes() {
   const box = document.getElementById('admin-doc-content');
   if (!box) return;
+  _adminLlenarDiplomasDocentes();
+  const dip = _adminDocDiploma();
   box.innerHTML = '<div class="admin-loading">Cargando...</div>';
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes', { headers: { 'x-admin-key': _getAdminKey() } });
+    const r = await fetch(BACKEND + '/api/cursos/' + dip + '/admin/docentes', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     if (!r.ok) throw new Error('Error ' + r.status);
     const d = await r.json();
@@ -3364,7 +3386,7 @@ async function adminAltaDocente() {
   const email = (inp.value || '').trim();
   if (!email) return;
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes', {
+    const r = await fetch(BACKEND + '/api/cursos/' + _adminDocDiploma() + '/admin/docentes', {
       method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }) });
     const d = await r.json().catch(() => ({}));
@@ -3377,7 +3399,7 @@ async function adminAltaDocente() {
 async function adminQuitarDocente(email) {
   if (!confirm('¿Quitar el acceso de instructor a ' + email + '?')) return;
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/docentes/quitar', {
+    const r = await fetch(BACKEND + '/api/cursos/' + _adminDocDiploma() + '/admin/docentes/quitar', {
       method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }) });
     const d = await r.json().catch(() => ({}));
