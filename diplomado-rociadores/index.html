@@ -222,7 +222,10 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
     <span style="cursor:pointer;opacity:.7;margin-left:auto;" onclick="document.getElementById('bannerPerfil').style.display='none'" title="Más tarde">✕</span>
   </div>
   <div id="bannerDocente" style="display:none;grid-column:1/-1;background:#0e2e1a;border:1px solid #22c55e;border-radius:10px;padding:10px 14px;font-size:.82rem;color:#bbf7d0;">
-    🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar, revisar entregas y dejar mensajes: <a href="../instructor-cursos/" style="color:#86efac;font-weight:700;text-decoration:underline;">→ Abrir panel de instructor</a>.
+    <span id="bannerDocenteTxt">🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar, revisar entregas y dejar mensajes: <a href="../instructor-cursos/" style="color:#86efac;font-weight:700;text-decoration:underline;">→ Abrir panel de instructor</a>.</span>
+    <div style="margin-top:8px;">
+      <button id="btnVerAlumno" onclick="toggleVerComoAlumno()" style="background:#065f46;color:#d1fae5;border:1px solid #22c55e;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;font-weight:700;">👁 Ver como alumno</button>
+    </div>
   </div>
   <div id="barraTop">
     <span class="tit">🎓 Mi avance</span>
@@ -378,6 +381,35 @@ function toggleSemana(sem, cab){
   if(_semExp && _semExp.has(sem)) _semExp.delete(sem); else (_semExp = _semExp || new Set()).add(sem);
   cab.parentElement.classList.toggle('exp');
 }
+
+// ── Vista previa "ver como alumno" (solo docente): aplica el bloqueo progresivo por fechas ──
+let _verComoAlumno = false;
+function toggleVerComoAlumno(){
+  _verComoAlumno = !_verComoAlumno;
+  const b = document.getElementById('btnVerAlumno');
+  const banner = document.getElementById('bannerDocente');
+  const txt = document.getElementById('bannerDocenteTxt');
+  if(_verComoAlumno){
+    if(b) b.textContent = '🧑‍🏫 Volver a vista docente';
+    if(banner){ banner.style.background = '#2a1e0e'; banner.style.borderColor = '#f59e0b'; banner.style.color = '#fde68a'; }
+    if(txt) txt.innerHTML = '👁 <b>Vista previa como alumno</b> — estás viendo el curso con el bloqueo semana a semana, tal como lo verá el estudiante en la fecha actual. (Tú sigues pudiendo abrir todo.)';
+  } else {
+    if(b) b.textContent = '👁 Ver como alumno';
+    if(banner){ banner.style.background = '#0e2e1a'; banner.style.borderColor = '#22c55e'; banner.style.color = '#bbf7d0'; }
+    if(txt) txt.innerHTML = '🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar, revisar entregas y dejar mensajes: <a href="../instructor-cursos/" style="color:#86efac;font-weight:700;text-decoration:underline;">→ Abrir panel de instructor</a>.';
+  }
+  lecActiva = null;
+  $("contenido").innerHTML = '<div class="aviso">Elige una lección del temario.</div>';
+  renderTemario();
+}
+// ¿esta semana está abierta para lo que se está mostrando? (docente = todo; preview alumno = por fecha)
+function _semAbiertaVista(w){
+  if(_verComoAlumno && estructura && estructura.rol === "docente"){
+    const ahoraMs = estructura.ahora ? Date.parse(estructura.ahora) : Date.now();
+    return Date.parse(w.abre) <= ahoraMs;
+  }
+  return w.abierta;
+}
 function renderTemario(){
   const cont = $("temario");
   cont.innerHTML = "";
@@ -391,9 +423,10 @@ function renderTemario(){
   if(lecActiva) _semExp.add(lecActiva.sem);   // la semana de la lección activa queda abierta
 
   estructura.semanas.forEach(w => {
+    const abiertaW = _semAbiertaVista(w);   // docente: todo; "ver como alumno": según fecha
     const d = document.createElement("div");
-    d.className = "sem " + (w.abierta ? "sem-abierta" : "sem-cerrada") + (_semExp.has(w.sem) ? " exp" : "");
-    const fechas = w.abierta
+    d.className = "sem " + (abiertaW ? "sem-abierta" : "sem-cerrada") + (_semExp.has(w.sem) ? " exp" : "");
+    const fechas = abiertaW
       ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}`
       : `abre lun ${fmtLima(w.abre)}`;
     d.innerHTML = `<div class="sem-cab" onclick="toggleSemana(${w.sem}, this)">
@@ -402,7 +435,7 @@ function renderTemario(){
         <span class="flecha">▶</span>
       </div><div class="sem-lecs"></div>`;
     const zona = d.querySelector(".sem-lecs");
-    if(!w.abierta){
+    if(!abiertaW){
       // Semana cerrada: el alumno NO ve las lecciones ni los títulos de evaluaciones,
       // solo cuándo se abre. (El servidor tampoco los envía; esto es el respaldo visual.)
       const p = document.createElement("div");

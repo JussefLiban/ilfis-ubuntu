@@ -3278,6 +3278,7 @@ const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k
 let _adminAlumnos    = [];
 let _adminModalUid   = null;
 let _adminModalEmail = null;
+let _adminModalArea  = null;   // área desde la que se abrió el modal (para saber si es diplomado)
 
 async function adminEntrar() {
   const pwd = document.getElementById('admin-pwd').value.trim();
@@ -3512,6 +3513,10 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       : keys.map(k => {
           const exp  = new Date(cursos[k]);
           const dias = Math.ceil((exp - ahora) / 86400000);
+          // Diplomado = matrícula manual (sin vencimiento): se muestra "Matriculado", no un contador de días.
+          if (area === 'educativa') {
+            return `<span class="cbadge ${dias <= 0 ? 'cb-exp' : 'cb-ok'}">${ADMIN_NAMES[k]||k}: ${dias <= 0 ? 'Matrícula vencida' : 'Matriculado'}</span>`;
+          }
           const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
           const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
           return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
@@ -3519,6 +3524,10 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     const acciones = keys.map(k => {
       const exp  = new Date(cursos[k]);
       const dias = Math.ceil((exp - ahora) / 86400000);
+      // Diplomado: matrícula manual → solo "Quitar matrícula" (no "+30d", no es mensual).
+      if (area === 'educativa') {
+        return dias > 0 ? `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Quitar matrícula</button>` : '';
+      }
       return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
               ${dias > 0 ? `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Revocar ${ADMIN_NAMES[k]||k}</button>` : ''}`;
     }).join(' ');
@@ -3527,7 +3536,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
-        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}','${area}')">Dar acceso</button>
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}','${area}')">${area === 'educativa' ? 'Matricular' : 'Dar acceso'}</button>
       </td>
     </tr>`;
   }).join('');
@@ -3653,14 +3662,19 @@ async function adminRevocar(uid, curso, email) {
 function adminAbrirDar(uid, email, nombre, area) {
   _adminModalUid   = uid;
   _adminModalEmail = email;
+  _adminModalArea  = area;
   // El modal solo ofrece los productos del área desde donde se abrió (cada área su producto).
   const keys = (area === 'aplicativos') ? APP_KEYS
              : (area === 'educativa')   ? DIPLOMA_KEYS
              : PREMIUM_KEYS;
+  const esDiploma = (area === 'educativa');
   const tit  = document.getElementById('admin-modal-dar-titulo');
   if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo'
-                           : (area === 'educativa')   ? 'Matricular en el diplomado'
+                           : esDiploma                ? 'Matricular en el diplomado'
                            : 'Dar acceso a curso';
+  // El diplomado es MATRÍCULA MANUAL sin vencimiento (pago externo por Odoo); los demás, 30 días.
+  const btn = document.querySelector('#admin-modal-dar .btn-dar');
+  if (btn) btn.textContent = esDiploma ? 'Matricular (acceso manual)' : 'Dar 30 días de acceso';
   document.getElementById('admin-modal-dar-curso').innerHTML =
     keys.map(k => `<option value="${k}">${ADMIN_NAMES[k]||k}</option>`).join('');
   document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
@@ -3674,11 +3688,17 @@ function adminCerrarModal() {
 
 async function adminConfirmarDar() {
   const curso = document.getElementById('admin-modal-dar-curso').value;
+  const esDiploma = (_adminModalArea === 'educativa');
+  // Diplomado = matrícula MANUAL sin vencimiento (se da y se quita a mano; pago externo por Odoo).
+  // Se usa /admin/extender con un plazo muy largo (≈10 años) para que no caduque solo.
+  const endpoint = esDiploma ? '/admin/extender' : '/admin/dar-acceso';
+  const body = esDiploma ? { uid: _adminModalUid, curso, dias: 3650 }
+                         : { uid: _adminModalUid, curso };
   try {
-    const r = await fetch(BACKEND + '/admin/dar-acceso', {
+    const r = await fetch(BACKEND + endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
-      body: JSON.stringify({ uid: _adminModalUid, curso })
+      body: JSON.stringify(body)
     });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     adminCerrarModal();
