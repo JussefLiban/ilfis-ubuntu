@@ -730,6 +730,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </div>
       <!-- Sección Alumnos -->
       <div class="admin-section" id="admin-sec-alumnos">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" placeholder="Buscar alumno por nombre o correo…" oninput="adminFiltrarAccesos('admin-alumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+        </div>
         <div id="admin-alumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Docentes (Plataforma Educativa) -->
@@ -755,6 +758,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </div>
       <!-- Sección Suscriptores de Aplicativos (accesos al Calculador Integral) -->
       <div class="admin-section" id="admin-sec-appsusc">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" placeholder="Buscar suscriptor por nombre o correo…" oninput="adminFiltrarAccesos('admin-appsusc-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+        </div>
         <div id="admin-appsusc-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Cohorte (Plataforma Educativa) -->
@@ -778,6 +784,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           La plataforma es <b style="color:#fff;">gratis hasta el 31/12/2026</b>: este control de acceso queda
           listo para cuando sea de pago. Dar o revocar aquí NO toca Clases Premium, Aplicativos ni diplomados.
         </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" placeholder="Buscar suscriptor por nombre o correo…" oninput="adminFiltrarSuscriptores(this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+        </div>
         <div id="admin-susc-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Recaudación de Plataforma Educativa (diplomados; pago externo vía Odoo) -->
@@ -3704,6 +3713,8 @@ function adminRenderEduRecaud() {
 
 // General de la plataforma: padrón de TODOS los registrados (con solo loguearse). Sin columna de
 // suscripciones (un solo producto). Usa la llave 'plataforma', dormida mientras sea gratis.
+let _adminSuscFiltro = '';
+function adminFiltrarSuscriptores(val) { _adminSuscFiltro = val || ''; adminRenderSuscriptores(); }
 function adminRenderSuscriptores() {
   const box = document.getElementById('admin-susc-content');
   if (!box) return;
@@ -3712,7 +3723,11 @@ function adminRenderSuscriptores() {
     box.innerHTML = '<div class="admin-loading">No hay usuarios registrados.</div>';
     return;
   }
-  const filas = _adminAlumnos.map(u => {
+  const _f = (_adminSuscFiltro || '').toLowerCase();
+  const _fuente = _f
+    ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_f) || (u.email || '').toLowerCase().includes(_f))
+    : _adminAlumnos;
+  const filas = _fuente.map(u => {
     const exp = (u.cursos_activos || {})[PLATAFORMA_KEY];
     let estado = '', acciones = '';
     if (exp) {
@@ -3729,11 +3744,12 @@ function adminRenderSuscriptores() {
       <td style="white-space:nowrap;min-width:200px;">${estado}${acciones}</td>
     </tr>`;
   }).join('');
-  box.innerHTML = `
-    <table class="admin-table">
+  box.innerHTML = filas
+    ? `<table class="admin-table">
       <thead><tr><th>Suscriptor</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
-    </table>`;
+    </table>`
+    : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminSuscFiltro || '')}" —</div>`;
 }
 
 async function adminDarPlataforma(uid, email) {
