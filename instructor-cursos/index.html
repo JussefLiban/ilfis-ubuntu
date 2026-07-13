@@ -475,7 +475,22 @@ async function _bajarZip(url, nombreZip, btn){
   try{
     const r = await fetch(url, { headers: await authHeaders() });
     if(!r.ok){ let d=null; try{ d=await r.json(); }catch(e){} throw new Error(d&&d.detail?d.detail:("Error "+r.status)); }
-    const blob = await r.blob();
+    // Lee el flujo mostrando el % (el backend manda Content-Length del ZIP).
+    const total = +(r.headers.get("Content-Length") || 0);
+    let blob;
+    if(r.body && r.body.getReader){
+      const reader = r.body.getReader();
+      const chunks = []; let recibido = 0;
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        chunks.push(value); recibido += value.length;
+        if(btn){ btn.textContent = total ? `Bajando… ${Math.round(recibido/total*100)}%` : `Bajando… ${(recibido/1048576).toFixed(1)} MB`; }
+      }
+      blob = new Blob(chunks, { type:"application/zip" });
+    } else {
+      blob = await r.blob();
+    }
     const u = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = u; a.download = nombreZip;
     document.body.appendChild(a); a.click(); a.remove();
