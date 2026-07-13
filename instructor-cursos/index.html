@@ -433,21 +433,24 @@ function fmtSize(n){ n=n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1
 function renderEntregas(){
   const tb = $("tabla");
   tb.querySelector("thead").innerHTML =
-    `<tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th style="text-align:right;">Nota</th><th>Comentario</th><th></th></tr>`;
+    `<tr><th colspan="6" style="background:transparent;border:none;padding:0 0 12px;text-align:right;">
+       <button class="btn" onclick="descargarTodoZip(this)">⬇ Descargar TODAS las entregas (ZIP por carpetas)</button>
+     </th></tr>
+     <tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th style="text-align:right;">Nota</th><th>Comentario</th><th></th></tr>`;
   const rows = (E && E.entregas) ? E.entregas : [];
   tb.querySelector("tbody").innerHTML = rows.map(x => {
     const files = (x.archivos||[]).length
       ? x.archivos.map(a => `<button class="btn mini" onclick="descargarEntrega('${esc(x.uid)}',${x.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)} <span style="color:var(--texto2);">(${fmtSize(a.size)})</span></button>`).join("<br>")
       : '<span style="color:var(--texto2);">— sin archivos —</span>';
     const key = `${esc(x.uid)}-${x.semana}`;
-    const notaAl = x.mensaje_alumno ? `<div style="margin-top:6px;color:#7fb0f9;font-size:.72rem;">💬 alumno: ${esc(x.mensaje_alumno)}</div>` : "";
+    const notaAl = x.mensaje_alumno ? `<div style="margin-top:8px;padding:9px 11px;background:#12233f;border-left:3px solid #4a90d9;border-radius:6px;color:#cfe3ff;font-size:.86rem;line-height:1.4;">💬 <b>Mensaje del alumno:</b> ${esc(x.mensaje_alumno)}</div>` : "";
     return `<tr>
       <td>${esc(x.email||x.uid)}</td>
       <td class="num">${x.semana}</td>
       <td>${files}${notaAl}</td>
       <td class="num"><input id="entN-${key}" type="number" min="0" max="100" value="${x.nota!=null?esc(x.nota):""}" placeholder="—" style="width:62px;"></td>
       <td><input id="entC-${key}" type="text" value="${esc(x.comentario||"")}" placeholder="comentario para el alumno" style="width:100%;min-width:150px;"></td>
-      <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="guardarNotaEntrega('${esc(x.uid)}',${x.semana})">Guardar</button> <span class="ent-save" id="entS-${key}"></span></td>
+      <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="guardarNotaEntrega('${esc(x.uid)}',${x.semana})">Guardar</button> <button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button> <span class="ent-save" id="entS-${key}"></span></td>
     </tr>`;
   }).join("") ||
     `<tr><td colspan="6" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
@@ -463,6 +466,28 @@ async function descargarEntrega(uid, sem, nombre){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }catch(e){ alert("No pude descargar: " + e.message); }
+}
+
+// Descarga masiva en ZIP (todas las entregas, o todas las de un alumno).
+async function _bajarZip(url, nombreZip, btn){
+  const txt = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = "Preparando ZIP… ⏳"; }
+  try{
+    const r = await fetch(url, { headers: await authHeaders() });
+    if(!r.ok){ let d=null; try{ d=await r.json(); }catch(e){} throw new Error(d&&d.detail?d.detail:("Error "+r.status)); }
+    const blob = await r.blob();
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = u; a.download = nombreZip;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 8000);
+  }catch(e){ alert("No pude preparar el ZIP: " + e.message); }
+  finally{ if(btn){ btn.disabled = false; if(txt) btn.textContent = txt; } }
+}
+function descargarTodoZip(btn){
+  _bajarZip(`${API}/api/cursos/rociadores/admin/entregas/zip`, "entregas_todos.zip", btn);
+}
+function descargarAlumnoZip(uid, btn){
+  _bajarZip(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/zip`, "entregas_alumno.zip", btn);
 }
 
 async function guardarNotaEntrega(uid, sem){
