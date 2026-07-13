@@ -521,7 +521,7 @@ async function verIntento(uid, quizId, email){
     <div class="calif-tit">✍ Calificar / mensaje al alumno</div>
     <div class="calif-row">
       <label style="flex:0 0 auto;">Nota manual (0–100)<br><input id="calNota" type="number" min="0" max="100" value="${it.nota_manual!=null?esc(it.nota_manual):""}" placeholder="—" style="width:90px;"></label>
-      <label style="flex:1 1 auto;">Mensaje para el alumno<br><textarea id="calMsg" rows="2" placeholder="Comentario, corrección, felicitación…" style="width:100%;">${esc(it.mensaje_docente||"")}</textarea></label>
+      <label style="flex:1 1 auto;">Mensaje para el alumno<br><textarea id="calMsg" rows="4" placeholder="Comentario, corrección, felicitación… puedes escribir un párrafo completo." style="width:100%;resize:vertical;">${esc(it.mensaje_docente||"")}</textarea></label>
     </div>
     <button class="btn rojo mini" onclick="guardarCalifManual()">Guardar calificación</button>
     <span class="ent-save" id="calMsgOut"></span>

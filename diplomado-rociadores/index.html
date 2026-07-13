@@ -545,7 +545,7 @@ function lecManual(w, l, c){
   c.innerHTML = cab(w, l) + `
     <span class="chip" onclick="abrirPDF()">📄 Abrir el manual completo (PDF protegido)</span>
     <div class="aviso">El manual se abre en una pestaña nueva. Es el material oficial de estudio de todo el diplomado.</div>
-    <button class="btn" onclick="marcarCompletada('${esc(l.id)}')" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Marcado como leído'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
 }
 
 async function abrirPDF(){
@@ -577,7 +577,7 @@ function lecTarea(w, l, c){
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
     <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>
-    <button class="btn" onclick="marcarCompletada('${esc(l.id)}')" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Revisada":"Marcar como revisada"}</button>`;
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Revisada'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Revisada":"Marcar como revisada"}</button>`;
   cargarEntrega(w.sem);
 }
 
@@ -624,12 +624,12 @@ async function cargarEntrega(sem){
     : "";
   const notaProf = e.puede_subir
     ? `<div style="margin-top:12px;">
-         <label style="font-size:.76rem;color:var(--texto2);">📝 Nota para el profesor (opcional):</label>
-         <textarea id="notaProf-${sem}" rows="2" class="np-ta" placeholder="Ej: le entrego mi tarea, me costó la pregunta 8…">${esc(e.mensaje_alumno||"")}</textarea>
-         <button class="btn sm" onclick="enviarNotaProfesor(${sem})">Guardar nota</button>
+         <label style="font-size:.76rem;color:var(--texto2);">📝 Mensaje para el profesor (opcional):</label>
+         <textarea id="notaProf-${sem}" rows="4" class="np-ta" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones…">${esc(e.mensaje_alumno||"")}</textarea>
+         <button class="btn sm" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
          <span class="ent-msg" id="notaProfMsg-${sem}"></span>
        </div>`
-    : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu nota al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
+    : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
   box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${calif}`;
 }
 
@@ -638,7 +638,7 @@ async function enviarNotaProfesor(sem){
   if(msg){ msg.className = "ent-msg"; msg.textContent = "…"; }
   try{
     await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje`, { method:"POST", body: JSON.stringify({ mensaje: (ta.value||"").trim() }) });
-    if(msg){ msg.className = "ent-msg ok"; msg.textContent = "✓ nota guardada"; }
+    if(msg){ msg.className = "ent-msg ok"; msg.textContent = "✓ mensaje enviado"; }
   }catch(e){ if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo: " + e.message; } }
 }
 
