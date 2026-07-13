@@ -795,6 +795,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           y aquí se le da el acceso al diplomado. Mientras no se separe el "carnet", la llave del Diplomado de
           Rociadores es la misma de sus Clases Premium (el alumno aparece en ambas áreas).
         </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" id="admin-edualumnos-buscar" placeholder="Buscar alumno por nombre o correo…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+        </div>
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Certificados (Plataforma Educativa) — emite SOLO el superadmin -->
@@ -3594,15 +3597,30 @@ function adminRenderAplicativos() {
 
 // Lista de accesos de UN producto: solo muestra (y gestiona) las suscripciones cuyas llaves
 // pertenecen a ese producto. Así el Calculador no se cuela en Clases Premium y viceversa.
+// Filtro de búsqueda por lista (por nombre/correo). Cada lista de accesos recuerda
+// su texto de búsqueda; el input estático llama a adminFiltrarAccesos y re-renderiza.
+const _adminAccesosFiltro = {};
+const _adminAccesosCfg = {};
+function adminFiltrarAccesos(boxId, val) {
+  _adminAccesosFiltro[boxId] = val || '';
+  const c = _adminAccesosCfg[boxId];
+  if (c) _adminRenderAccesos(boxId, c.perteneceProducto, c.etiqueta, c.area);
+}
+
 function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
   const box = document.getElementById(boxId);
   if (!box) return;
+  _adminAccesosCfg[boxId] = { perteneceProducto, etiqueta, area };
   const ahora = new Date();
   if (!_adminAlumnos.length) {
     box.innerHTML = '<div class="admin-loading">No hay usuarios registrados.</div>';
     return;
   }
-  const filas = _adminAlumnos.map(u => {
+  const _filtro = (_adminAccesosFiltro[boxId] || '').toLowerCase();
+  const _fuente = _filtro
+    ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_filtro) || (u.email || '').toLowerCase().includes(_filtro))
+    : _adminAlumnos;
+  const filas = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
     const keys    = Object.keys(cursos).filter(perteneceProducto);
     const badgesHtml = keys.length === 0
@@ -3639,11 +3657,12 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
   }).join('');
   // En la Plataforma Educativa el término del negocio es "matrícula", no "suscripción".
   const colAccesos = (area === 'educativa') ? 'Matrículas' : 'Suscripciones';
-  box.innerHTML = `
-    <table class="admin-table">
+  box.innerHTML = filas
+    ? `<table class="admin-table">
       <thead><tr><th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
-    </table>`;
+    </table>`
+    : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —</div>`;
 }
 
 // Clases Premium → término "Alumno"; Aplicativos → término "Suscriptor" (misma estructura).
