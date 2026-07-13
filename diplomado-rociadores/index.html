@@ -614,8 +614,8 @@ async function cargarEntrega(sem){
     : `<div class="ent-empty">Aún no has subido ningún archivo.</div>`;
   let ctrl;
   if(e.puede_subir){
-    ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}"><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
-      <div class="ent-hint">Máx ${e.max_mb} MB · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
+    ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}" multiple><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
+      <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
   } else {
     ctrl = `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`;
   }
@@ -642,17 +642,45 @@ async function enviarNotaProfesor(sem){
   }catch(e){ if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo: " + e.message; } }
 }
 
+// Subida con barra de progreso (XMLHttpRequest da el % de subida; fetch no).
+function apiFormXHR(path, formData, onProgress){
+  return new Promise((resolve, reject) => {
+    usuario.getIdToken().then(t => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", API + path);
+      xhr.setRequestHeader("Authorization", "Bearer " + t);
+      if(FECHA_PRUEBA){ const k = localStorage.getItem("ilfis_admin_key"); if(k){ xhr.setRequestHeader("X-Fecha-Prueba", FECHA_PRUEBA); xhr.setRequestHeader("X-Admin-Key", k); } }
+      xhr.upload.onprogress = ev => { if(ev.lengthComputable && onProgress) onProgress(Math.round(ev.loaded/ev.total*100)); };
+      xhr.onload = () => {
+        let data=null; try{ data = JSON.parse(xhr.responseText); }catch(e){}
+        if(xhr.status>=200 && xhr.status<300){ resolve(data); }
+        else { const err=new Error((data&&data.detail)?data.detail:("Error "+xhr.status)); err.status=xhr.status; reject(err); }
+      };
+      xhr.onerror = () => reject(new Error("Error de conexión"));
+      xhr.send(formData);
+    }).catch(reject);
+  });
+}
+
 async function subirEntrega(sem){
   const inp = $(`entFile-${sem}`), msg = $(`entMsg-${sem}`), btn = $(`entBtn-${sem}`);
-  if(!inp || !inp.files || !inp.files.length){ if(msg){msg.className="ent-msg err"; msg.textContent="Elige un archivo primero.";} return; }
-  if(btn){ btn.disabled=true; btn.textContent="Subiendo…"; }
+  if(!inp || !inp.files || !inp.files.length){ if(msg){msg.className="ent-msg err"; msg.textContent="Elige uno o varios archivos primero.";} return; }
+  const archivos = Array.from(inp.files);
+  if(btn){ btn.disabled=true; }
+  const setMsg = (cls, txt) => { if(msg){ msg.className="ent-msg "+cls; msg.textContent=txt; } };
   try{
-    const fd = new FormData(); fd.append("archivo", inp.files[0]);
-    await apiForm(`/api/cursos/${CURSO}/entrega/${sem}`, fd);
+    for(let i=0; i<archivos.length; i++){
+      const f = archivos[i];
+      const etq = archivos.length>1 ? `archivo ${i+1} de ${archivos.length} · ${f.name} — ` : `${f.name} — `;
+      if(btn) btn.textContent = `Subiendo… ${i+1}/${archivos.length}`;
+      const fd = new FormData(); fd.append("archivo", f);
+      await apiFormXHR(`/api/cursos/${CURSO}/entrega/${sem}`, fd, pct => setMsg("", `⏳ Subiendo ${etq}${pct}%`));
+    }
+    setMsg("ok", archivos.length>1 ? `✓ ${archivos.length} archivos subidos` : "✓ archivo subido");
     await cargarEntrega(sem);
   }catch(e){
     if(btn){ btn.disabled=false; btn.textContent="Subir entregable"; }
-    if(msg){ msg.className="ent-msg err"; msg.textContent="No se pudo subir: " + e.message; }
+    setMsg("err", "No se pudo subir: " + e.message);
   }
 }
 
