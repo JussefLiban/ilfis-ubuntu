@@ -624,9 +624,9 @@ async function cargarEntrega(sem){
     : "";
   const notaProf = e.puede_subir
     ? `<div style="margin-top:12px;">
-         <label style="font-size:.76rem;color:var(--texto2);">📝 Mensaje para el profesor (opcional):</label>
-         <textarea id="notaProf-${sem}" rows="4" class="np-ta" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones…">${esc(e.mensaje_alumno||"")}</textarea>
-         <button class="btn sm" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
+         <label style="display:block;font-size:.8rem;color:var(--texto2);margin-bottom:6px;">📝 Mensaje para el profesor (opcional):</label>
+         <textarea id="notaProf-${sem}" class="np-ta" style="width:100%;min-height:160px;box-sizing:border-box;" oninput="this.style.height='auto';this.style.height=Math.max(160,this.scrollHeight+4)+'px'" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones… Puedes escribir todo lo que necesites; la caja crece sola.">${esc(e.mensaje_alumno||"")}</textarea>
+         <button class="btn sm" style="margin-top:8px;" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
          <span class="ent-msg" id="notaProfMsg-${sem}"></span>
        </div>`
     : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
