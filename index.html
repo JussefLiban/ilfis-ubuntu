@@ -720,6 +720,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <button class="admin-tab" onclick="adminShowTab('edualumnos', this)">Alumnos</button>
             <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
             <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
+            <button class="admin-tab" onclick="adminShowTab('educertif', this)">Certificados</button>
           </div>
         </div>
       </div>
@@ -795,6 +796,20 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           Rociadores es la misma de sus Clases Premium (el alumno aparece en ambas áreas).
         </p>
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+      <!-- Sección Certificados (Plataforma Educativa) — emite SOLO el superadmin -->
+      <div class="admin-section" id="admin-sec-educertif">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Emite el <b style="color:#fff;">certificado del Diplomado de Rociadores</b> al alumno que terminó.
+          Solo el superadmin emite; el alumno solo lo ve y descarga cuando está emitido. Cada certificado
+          lleva un <b style="color:#fff;">folio</b> y un enlace de verificación. El diseño gráfico de ILFIS
+          se aplica sobre la máscara de datos (fase de diseño).
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <input type="text" id="admin-cert-buscar" placeholder="Buscar por nombre o correo…" oninput="adminRenderCertificados()" style="flex:1;min-width:220px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarCertificados()">Actualizar</button>
+        </div>
+        <div id="admin-cert-content"><div class="admin-loading">Cargando...</div></div>
       </div>
     </div>
   </div>
@@ -3310,6 +3325,7 @@ function adminShowTab(name, btn) {
   document.getElementById('admin-sec-' + name).classList.add('active');
   if (name === 'docentes') adminCargarDocentes();
   if (name === 'cohorte') adminCargarCohorte();
+  if (name === 'educertif') adminCargarCertificados();
 }
 
 // ── Cohorte (fecha de inicio del diplomado; solo superadmin) ──
@@ -3407,6 +3423,87 @@ async function adminQuitarDocente(email) {
     if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
     adminCargarDocentes();
   } catch(e) { alert('No pude quitar: ' + e.message); }
+}
+
+// ── Certificados (Plataforma Educativa) — emite SOLO el superadmin ──
+let _adminCertLista = [];
+
+async function adminCargarCertificados() {
+  const box = document.getElementById('admin-cert-content');
+  if (!box) return;
+  box.innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificados', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    _adminCertLista = d.certificados || [];
+    adminRenderCertificados();
+  } catch(e) {
+    box.innerHTML = '<div class="admin-loading" style="color:#e87272;">Error: ' + e.message + '</div>';
+  }
+}
+
+function adminRenderCertificados() {
+  const box = document.getElementById('admin-cert-content');
+  if (!box) return;
+  const q = (document.getElementById('admin-cert-buscar').value || '').trim().toLowerCase();
+  const lista = _adminCertLista.filter(a =>
+    !q || (a.nombre_certificado || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
+  const emitidos = _adminCertLista.filter(a => a.emitido).length;
+  if (!lista.length) {
+    box.innerHTML = '<div style="color:#8899aa;font-size:0.85rem;">— no hay alumnos que coincidan —</div>';
+    return;
+  }
+  const filas = lista.map(a => {
+    const nombre = a.nombre_certificado || '(sin nombre)';
+    const estado = a.emitido
+      ? `<span style="color:#4ade80;font-size:0.78rem;">✓ Emitido · folio <b>${_adminEsc(a.folio)}</b> · ${_adminEsc(a.fecha_emision || '')}</span>`
+      : (a.anulado ? '<span style="color:#e6a23c;font-size:0.78rem;">Anulado</span>'
+                   : '<span style="color:#8899aa;font-size:0.78rem;">Sin emitir</span>');
+    let acciones = '';
+    if (a.emitido) {
+      acciones = `<a href="certificado/?folio=${encodeURIComponent(a.folio)}" target="_blank" style="color:#7ab8ff;font-size:0.8rem;margin-right:12px;">Ver</a>`
+        + `<span style="cursor:pointer;color:#f87171;font-size:0.8rem;" onclick="adminAnularCertificado('${_adminEsc(a.uid)}','${_adminEsc(nombre).replace(/'/g,'&#39;')}')">Anular</span>`;
+    } else if (a.perfil_completo) {
+      acciones = `<button class="btn-dar btn-a" style="padding:5px 12px;font-size:0.78rem;" onclick="adminEmitirCertificado('${_adminEsc(a.uid)}','${_adminEsc(nombre).replace(/'/g,'&#39;')}')">Emitir</button>`;
+    } else {
+      acciones = '<span style="color:#8899aa;font-size:0.75rem;" title="El alumno no ha completado su nombre para el certificado">datos incompletos</span>';
+    }
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
+      <div style="min-width:200px;">
+        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(nombre)}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.email || '')}</div>
+        <div style="margin-top:3px;">${estado}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">${acciones}</div>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:10px;">${emitidos} emitido(s) · ${_adminCertLista.length} alumno(s) con datos</div>${filas}`;
+}
+
+async function adminEmitirCertificado(uid, nombre) {
+  if (!confirm('¿Emitir el certificado del Diplomado de Rociadores a ' + nombre + '?')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificado/emitir', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    adminCargarCertificados();
+  } catch(e) { alert('No pude emitir: ' + e.message); }
+}
+
+async function adminAnularCertificado(uid, nombre) {
+  if (!confirm('¿Anular el certificado de ' + nombre + '? Dejará de ser válido y descargable (el folio se conserva).')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificado/anular', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    adminCargarCertificados();
+  } catch(e) { alert('No pude anular: ' + e.message); }
 }
 
 async function adminCargar() {

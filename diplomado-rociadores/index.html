@@ -233,6 +233,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
     <span class="prog-txt mono" id="progTxt">0 / 0</span>
     <button class="btn-notas" onclick="abrirPerfil()">📋 Mis datos</button>
     <button class="btn-notas" onclick="verNotas()">📊 Mis notas</button>
+    <button class="btn-notas" id="btnCertif" style="display:none;" onclick="verMiCertificado()">🎓 Mi certificado</button>
   </div>
   <div id="temario"></div>
   <div id="contenido">
@@ -362,6 +363,7 @@ async function cargarAula(){
     if(est.rol === "docente"){ $("bannerDocente").style.display = "block"; }
     pantalla("aula");
     cargarPerfil();
+    cargarCertificadoAlumno();
   }catch(e){
     if(e.status === 403){
       $("matriculaMsg").textContent = e.message;
@@ -373,6 +375,21 @@ async function cargarAula(){
       pantalla("pError");
     }
   }
+}
+
+// ── Certificado del alumno (se muestra el botón solo si el superadmin lo emitió) ──
+let _miCertFolio = null;
+async function cargarCertificadoAlumno(){
+  try{
+    const r = await api(`/api/cursos/${CURSO}/certificado`);
+    if(r && r.emitido && r.folio){
+      _miCertFolio = r.folio;
+      const b = $("btnCertif"); if(b) b.style.display = "inline-block";
+    }
+  }catch(e){ /* si aún no hay certificado, no se muestra nada */ }
+}
+function verMiCertificado(){
+  if(_miCertFolio) window.open(`../certificado/?folio=${encodeURIComponent(_miCertFolio)}`, "_blank");
 }
 
 // ═══════════════ TEMARIO (sidebar) ═══════════════

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certificado · ILFIS Ubuntu</title>
+<!--
+  MÁSCARA DE DATOS del certificado (Diplomado de Rociadores Automáticos).
+  Esta página SOLO rellena los datos del alumno (nombre, curso, fecha, folio) y
+  verifica la autenticidad contra el servidor por folio. El DISEÑO GRÁFICO de
+  ILFIS va aparte: pega la imagen de fondo en `.cert-fondo` (ver el bloque
+  marcado "ZONA DE DISEÑO ILFIS") y coloca el QR real en `.cert-qr`.
+  Se abre como  /certificado/?folio=ILFIS-ROC-2026-0001  (destino del QR).
+-->
+<style>
+  :root{ --tinta:#123; --oro:#b8860b; --papel:#fff; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#e9edf3; font-family:"Segoe UI",Roboto,Arial,sans-serif; color:var(--tinta); }
+  .barra{ display:flex; gap:10px; justify-content:center; align-items:center; padding:14px; flex-wrap:wrap; }
+  .barra button{ padding:10px 18px; border:0; border-radius:8px; font-size:.95rem; cursor:pointer; }
+  .btn-print{ background:#123a7a; color:#fff; }
+  .btn-print:hover{ background:#0e2c5e; }
+  .estado{ font-size:.9rem; padding:6px 12px; border-radius:20px; }
+  .ok{ background:#e5f6e9; color:#1a7a37; } .mal{ background:#fdeaea; color:#b02020; }
+
+  /* Lienzo A4 horizontal */
+  .cert{ position:relative; width:1123px; max-width:96vw; aspect-ratio:1123/794; margin:0 auto 30px;
+         background:var(--papel); box-shadow:0 8px 30px rgba(0,0,0,.18); overflow:hidden; }
+  /* ZONA DE DISEÑO ILFIS — reemplazar por la imagen de fondo del certificado.
+     Ej:  .cert-fondo{ background-image:url('fondo-ilfis.png'); background-size:cover; }
+     Mientras no exista, se muestra un marco guía. */
+  .cert-fondo{ position:absolute; inset:0; z-index:0;
+               background:
+                 repeating-linear-gradient(45deg,#fafaf5 0 22px,#f4f4ec 22px 44px);
+               border:14px double var(--oro); }
+  .cert-guia{ position:absolute; top:8px; left:8px; z-index:3; font-size:11px; color:#b8860b;
+              background:#fff8e6; border:1px dashed #d9b64a; padding:2px 8px; border-radius:6px; }
+
+  /* Contenido = la MÁSCARA DE DATOS (encima del fondo) */
+  .cert-cont{ position:relative; z-index:2; height:100%; display:flex; flex-direction:column;
+              align-items:center; justify-content:center; text-align:center; padding:60px 90px; }
+  .cert-marca{ letter-spacing:3px; font-size:14px; color:var(--oro); font-weight:700; text-transform:uppercase; }
+  .cert-titulo{ font-size:40px; font-weight:800; margin:10px 0 4px; }
+  .cert-sub{ font-size:15px; color:#555; margin-bottom:26px; }
+  .cert-otorga{ font-size:15px; color:#444; }
+  .cert-nombre{ font-size:44px; font-weight:800; color:#0e2c5e; margin:8px 0; font-family:"Georgia",serif; }
+  .cert-linea{ width:60%; border:0; border-top:1px solid #ccc; margin:6px auto 18px; }
+  .cert-curso{ font-size:20px; font-weight:700; }
+  .cert-desc{ font-size:14px; color:#555; max-width:720px; margin:10px auto 0; line-height:1.5; }
+  .cert-pie{ position:absolute; z-index:2; bottom:44px; left:0; right:0; padding:0 70px;
+             display:flex; justify-content:space-between; align-items:flex-end; }
+  .cert-firma{ text-align:center; font-size:12px; color:#444; }
+  .cert-firma .fl{ width:180px; border-top:1px solid #333; margin:0 auto 4px; }
+  .cert-qr{ width:96px; height:96px; border:1px dashed #999; border-radius:8px; display:flex;
+            align-items:center; justify-content:center; font-size:9px; color:#888; text-align:center; padding:4px; }
+  .cert-folio{ text-align:center; font-size:11px; color:#666; }
+  .cert-folio b{ color:#0e2c5e; }
+  .cargando,.error{ text-align:center; padding:60px 20px; color:#555; }
+
+  @media print{
+    body{ background:#fff; }
+    .barra{ display:none; }
+    .cert{ box-shadow:none; margin:0; max-width:none; width:100%; }
+    .cert-guia{ display:none; }
+    @page{ size:A4 landscape; margin:0; }
+  }
+</style>
+</head>
+<body>
+  <div class="barra" id="barra" style="display:none;">
+    <span class="estado" id="estado"></span>
+    <button class="btn-print" onclick="window.print()">⬇ Descargar / Imprimir</button>
+  </div>
+
+  <div id="root">
+    <div class="cargando">Cargando certificado…</div>
+  </div>
+
+<script>
+const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+const $ = id => document.getElementById(id);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function getFolio(){
+  const p = new URLSearchParams(location.search);
+  return (p.get("folio") || "").trim();
+}
+
+function pintarError(msg){
+  $("root").innerHTML = `<div class="error"><h2>Certificado no disponible</h2><p>${esc(msg)}</p></div>`;
+}
+
+function pintarCert(d, folio){
+  const urlVerif = location.origin + location.pathname + "?folio=" + encodeURIComponent(folio);
+  $("root").innerHTML = `
+    <div class="cert" id="lienzo">
+      <div class="cert-fondo"></div>
+      <div class="cert-guia">ZONA DE DISEÑO ILFIS · reemplazar fondo y QR (máscara de datos lista)</div>
+      <div class="cert-cont">
+        <div class="cert-marca">Instituto Latinoamericano de Formación en Ingeniería contra Incendios</div>
+        <div class="cert-titulo">Certificado</div>
+        <div class="cert-sub">Plataforma Educativa · ILFIS Ubuntu</div>
+        <div class="cert-otorga">Se otorga el presente certificado a</div>
+        <div class="cert-nombre">${esc(d.nombre) || "—"}</div>
+        <hr class="cert-linea">
+        <div class="cert-otorga">por haber culminado satisfactoriamente el</div>
+        <div class="cert-curso">${esc(d.curso) || "Diplomado"}</div>
+        <div class="cert-desc">Cumpliendo con las evaluaciones, tareas y requisitos académicos
+          establecidos por ILFIS para la certificación de este diplomado.</div>
+      </div>
+      <div class="cert-pie">
+        <div class="cert-firma"><div class="fl"></div>Dirección Académica · ILFIS</div>
+        <div class="cert-folio">Emitido el <b>${esc(d.fecha)||"—"}</b><br>Folio <b>${esc(d.folio)||esc(folio)}</b></div>
+        <div class="cert-qr" title="${esc(urlVerif)}">QR de verificación<br>(se genera en el diseño)</div>
+      </div>
+    </div>`;
+  $("barra").style.display = "flex";
+  $("estado").className = "estado ok";
+  $("estado").textContent = "✓ Certificado verificado · auténtico";
+  document.title = "Certificado " + (d.folio||folio) + " · " + (d.nombre||"");
+}
+
+async function cargar(){
+  const folio = getFolio();
+  if(!folio){ pintarError("No se indicó el folio del certificado. El enlace debe terminar en ?folio=…"); return; }
+  try{
+    const r = await fetch(`${API}/api/cursos/rociadores/certificado/verificar/${encodeURIComponent(folio)}`);
+    const d = await r.json();
+    if(!d.valido){
+      if(d.anulado){ pintarError(`El certificado con folio "${folio}" fue ANULADO y ya no es válido.`); }
+      else { pintarError(`No existe un certificado con el folio "${folio}".`); }
+      return;
+    }
+    pintarCert(d, folio);
+  }catch(e){
+    pintarError("No pude verificar el certificado en este momento. Reintenta más tarde.");
+  }
+}
+cargar();
+</script>
+</body>
+</html>
