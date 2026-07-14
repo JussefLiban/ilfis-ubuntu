@@ -891,8 +891,10 @@ async function _calcularPrueba(){
     // ¿cuál se descarta? la más baja de las 13 (el backend da eliminada_valor)
     let dropSem = null;
     if(r.eliminada_valor != null){
-      const hit = vals.filter(x=>x.v!=null).find(x => Math.abs(x.v - r.eliminada_valor) < 0.001);
-      if(hit) dropSem = hit.sem;
+      // semanas empatadas con la nota más baja; con empate se descarta la ÚLTIMA
+      // (así la Crítica/Sem 0 solo se descarta si es la única más baja)
+      const cand = vals.filter(x => x.v!=null && Math.abs(x.v - r.eliminada_valor) < 0.001);
+      if(cand.length) dropSem = cand[cand.length - 1].sem;
     }
     vals.forEach(x => {
       const elP = $("prPS-"+x.sem), elW = $("prPeso-"+x.sem);
