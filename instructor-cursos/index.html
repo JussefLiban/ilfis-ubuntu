@@ -903,15 +903,23 @@ async function _calcularPrueba(){
         else { const v = x.v; elW.innerHTML = `Peso<br><b style="color:var(--rojoTxt);">${v==null?'—':fmtN(v*0.05)}</b>`; }
       }
     });
-    const resCol = r.resultado==="APROBADO" ? "var(--verde)" : "var(--rojoTxt)";
-    const elim = (r.eliminada_valor!=null) ? ` <span style="color:var(--texto2);font-size:.85em;">(descarta la más baja: ${r.eliminada_valor})</span>` : "";
-    out.innerHTML = `
-      <div class="prline"><span>Promedio Semanal (60%)${elim}</span><span>${_colNota(r.promedio_semanal,ap)}</span></div>
-      <div class="prline"><span>Promedio Exámenes (30%)</span><span>${_colNota(r.promedio_examenes,ap)}</span></div>
-      <div class="prline"><span>Nota Concepto (10%)</span><span>${_colNota(r.concepto?r.concepto.nota:null,ap)}</span></div>
-      <div class="prline prtot"><span>PROMEDIO TOTAL</span><span><b style="color:${resCol};font-size:1.2em;">${r.promedio_total!=null?r.promedio_total:'—'}</b> / 100</span></div>
-      <div class="prline"><span>Resultado</span><span style="color:${resCol};font-weight:700;">${r.resultado||'—'}</span></div>
-      <div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">Las casillas que dejas vacías cuentan como <b>0</b> (igual que en tu Excel). Llena todas para reproducir la nota final exacta.</div>`;
+    const resCol = r.resultado==="APROBADO" ? "var(--verde)" : (r.resultado==="DESAPROBADO" ? "var(--rojoTxt)" : "var(--azul)");
+    // Sumatorias (como tu Excel): puntaje total semanal (13 notas) y de exámenes
+    const svs = (r.semanal_valores||[]).map(x=>x.valor).filter(v=>v!=null);
+    const puntSem = svs.length ? svs.reduce((a,b)=>a+b,0) : null;
+    const evs = (r.examenes||[]).map(x=>x.nota).filter(v=>v!=null);
+    const puntEx = evs.length ? evs.reduce((a,b)=>a+b,0) : null;
+    const fila = (lab, val) => `<div class="prline"><span>${lab}</span><span><b>${val==null?'—':fmtN(val)}</b></span></div>`;
+    out.innerHTML =
+        fila("NOTA ELIMINADA", r.eliminada_valor)
+      + fila("PUNTAJE TOTAL SEMANAL", puntSem)
+      + fila("PROMEDIO SEMANAL", r.promedio_semanal)
+      + fila("PUNTAJE TOTAL EXAMENES", puntEx)
+      + fila("PROMEDIO EXAMENES", r.promedio_examenes)
+      + fila("NOTA CONCEPTO", r.concepto ? r.concepto.nota : null)
+      + `<div class="prline prtot"><span>PROMEDIO TOTAL</span><span><b style="color:${resCol};font-size:1.2em;">${r.promedio_total!=null?fmtN(r.promedio_total):'—'}</b></span></div>`
+      + `<div class="prline"><span>RESULTADO FINAL</span><span style="color:${resCol};font-weight:700;">${r.resultado||'En curso'}</span></div>`
+      + `<div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">Las casillas vacías cuentan como <b>0</b> (igual que en tu Excel). Llena todas para reproducir la nota final exacta.</div>`;
   }catch(e){ out.innerHTML = `<span style="color:var(--rojoTxt);">⚠ ${esc(e.message)}</span>`; }
 }
 
