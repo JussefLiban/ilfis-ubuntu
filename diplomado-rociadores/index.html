@@ -1034,18 +1034,18 @@ async function verNotas(){
   // Cierre (categorías + total)
   const elim = (r.eliminada_valor !== null && r.eliminada_valor !== undefined)
     ? ` <span style="color:var(--texto2);font-size:.8em;">(se descartó tu semana más baja: ${r.eliminada_valor})</span>` : "";
-  const resCol = r.resultado === "APROBADO" ? "var(--verde)" : "var(--rojo)";
+  const resCol = r.resultado === "APROBADO" ? "var(--verde)" : (r.resultado === "DESAPROBADO" ? "var(--rojo)" : "var(--azul)");
   const totalTxt = (r.promedio_total !== null && r.promedio_total !== undefined)
     ? `<b style="color:${resCol};font-size:1.15em;">${r.promedio_total} / 100</b>` : "—";
   const provi = r.provisional
-    ? `<div class="aviso" style="margin-top:8px;">Es tu <b>avance parcial</b>: calculado solo con lo ya publicado (${Math.round((r.peso_evaluado||0)*100)}% del diplomado). Tu nota final se cierra al terminar el curso.</div>`
+    ? `<div class="aviso" style="margin-top:8px;"><b>En curso:</b> las evaluaciones que aún no realizas cuentan como 0, así que tu nota irá subiendo a medida que avances y te califiquen. La nota final se cierra al terminar el diplomado.</div>`
     : `<div class="aviso" style="margin-top:8px;">Nota final <b>${r.resultado}</b>.</div>`;
   const cierre = `<div class="bolcierre">
     <div class="bolrow"><span>Promedio Semanal <span class="pct">60%</span>${elim}</span><span>${_prom(r, r.promedio_semanal)}</span></div>
     <div class="bolrow"><span>Promedio Exámenes <span class="pct">30%</span></span><span>${_prom(r, r.promedio_examenes)}</span></div>
     <div class="bolrow"><span>Nota Concepto <span class="pct">10%</span></span><span>${_prom(r, r.concepto.nota)}</span></div>
     <div class="bolrow bolprom" style="border-top:2px solid var(--azul);"><span>PROMEDIO TOTAL</span><span>${totalTxt}</span></div>
-    ${r.resultado ? `<div class="bolrow"><span>Resultado</span><span><b style="color:${resCol};">${r.resultado}</b></span></div>` : ""}
+    <div class="bolrow"><span>Resultado</span><span><b style="color:${resCol};">${r.resultado || "En curso"}</b></span></div>
   </div>${provi}`;
 
   c.innerHTML = `<h2>📊 Mi boletín</h2>

@@ -729,8 +729,8 @@ function renderPlanilla(){
     tds += `<td class="num colcierre">${_colNota(a.promedio_semanal, ap)}</td>`
          + `<td class="num colcierre">${_colNota(a.promedio_examenes, ap)}</td>`
          + conceptoCell
-         + `<td class="num colcierre">${a.promedio_total!=null?`<b style="color:${resCol};font-size:1.05em;">${a.promedio_total}</b>`:'—'}${(!a.completo&&a.promedio_total!=null)?'<span style="color:var(--texto2);font-size:.62rem;"> parc</span>':''}</td>`
-         + `<td class="colcierre" style="color:${resCol};font-weight:700;font-size:.7rem;">${a.resultado||'—'}</td>`
+         + `<td class="num colcierre">${a.promedio_total!=null?`<b style="color:${resCol};font-size:1.05em;">${fmtN(a.promedio_total)}</b>`:'—'}${(!a.completo&&a.promedio_total!=null)?'<div style="color:var(--texto2);font-size:.6rem;">en curso</div>':''}</td>`
+         + `<td class="colcierre" style="color:${resCol};font-weight:700;font-size:.7rem;">${a.resultado||'En curso'}</td>`
          + `<td class="num colcierre">${a.ranking||'—'}</td>`;
     return `<tr>${tds}</tr>`;
   }).join("");
@@ -824,8 +824,12 @@ function renderPrueba(){
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
     <div class="pruebaWrap">
       <div class="aviso" style="margin-bottom:12px;">🧪 <b>Alumno de prueba</b> — calculadora de práctica: teclea las notas que quieras (todas editables) y comprueba que el <b>Promedio Total</b> coincide con tu Excel. No toca datos reales.
-      <button class="btn mini gris" style="margin-left:8px;" onclick="prueba100()">Llenar con 100</button>
-      <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button></div>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="prVal" type="number" min="0" max="100" placeholder="valor" style="width:78px;" onkeydown="if(event.key==='Enter')pruebaTodas()">
+        <button class="btn mini rojo" onclick="pruebaTodas()">Poner ese valor en TODAS</button>
+        <button class="btn mini gris" onclick="prueba100()">Llenar con 100</button>
+        <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button>
+      </div></div>
 
       <div class="prtitulo">✍ Evaluaciones que califica el profesor (manuales)</div>
       <div class="prgrid">${manualInputs}</div>
@@ -839,6 +843,13 @@ function renderPrueba(){
   </td></tr>`;
 }
 function prueba100(){ document.querySelectorAll(".prinp").forEach(i => i.value = 100); calcularPrueba(); }
+function pruebaTodas(){
+  const v = ($("prVal").value || "").trim();
+  if(v === "") return;
+  const n = Math.max(0, Math.min(100, Number(v)));
+  document.querySelectorAll(".prinp").forEach(i => i.value = n);
+  calcularPrueba();
+}
 function pruebaLimpiar(){ document.querySelectorAll(".prinp").forEach(i => i.value = ""); $("prResultado").innerHTML = "Ingresa notas para ver el cálculo…"; }
 let _prTimer = null;
 function calcularPrueba(){
