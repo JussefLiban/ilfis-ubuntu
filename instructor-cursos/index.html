@@ -42,6 +42,7 @@ input:focus{outline:none;border-color:var(--azul);}
 
 #panel{display:none;max-width:1250px;margin:0 auto;padding:16px;}
 #panel.wide{max-width:100%;}   /* Planilla / Alumno de prueba: usar todo el ancho */
+.ayuda{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.35);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.5;color:var(--texto);}
 .barra{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
 .tab{font-size:.8rem;padding:8px 16px;border-radius:18px;background:var(--campo);color:var(--texto2);cursor:pointer;border:1px solid var(--borde);user-select:none;}
 .tab.sel{background:var(--rojo);color:#fff;border-color:var(--rojo);}
@@ -157,8 +158,8 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <div class="kpi"><div class="num" id="kAvance">0%</div><div class="lbl">Avance promedio</div></div>
     <div class="kpi alerta click" onclick="verTab('a')"><div class="num" id="kRez">0</div><div class="lbl">Alumnos rezagados</div></div>
   </div>
+  <div class="ayuda" id="ayudaTab"></div>
   <div class="tabla-wrap"><table id="tabla"><thead></thead><tbody></tbody></table></div>
-  <div class="aviso">Las preguntas de texto (respuesta corta/abierta) y las entregas de tareas no se autocalifican: revísalas en la pestaña <b>Cola de calificación</b>. El <b>Estado</b> se calcula por la última actividad del alumno: Al día (≤3 días), Atención (4–7), Rezagado (>7). La nota que ve el alumno se publica automáticamente el lunes 12:00 (hora de Lima).</div>
 </div>
 
 <div class="overlay" id="modalDet" onclick="if(event.target===this)this.classList.remove('abierto')">
@@ -267,6 +268,16 @@ function verTab(t){
   $("btnExport").textContent = (t === "planilla") ? "⬇ Exportar planilla (Excel)" : "⬇ Exportar notas (Excel)";
   $("kpis").style.display = (t === "planilla" || t === "prueba") ? "none" : "grid";
   $("panel").classList.toggle("wide", t === "planilla" || t === "prueba");   // ancho completo
+  // Instructivo corto de cada pestaña (para que cualquiera entienda qué hace)
+  const AYUDAS = {
+    q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
+    a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El botón <b>Exportar notas</b> baja este resumen a Excel.",
+    cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
+    e: "📤 <b>Entregas de tareas:</b> los archivos que suben los alumnos por semana. Puedes descargarlos (uno por uno, todo del alumno, o todo en un ZIP) y dejarles un comentario.",
+    planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel — cada alumno con todas sus evaluaciones y su promedio total. Las <b>objetivas se llenan solas</b> del cuestionario; las celdas con <b>✎</b> las calificas tú con un clic. El botón <b>Exportar planilla</b> baja todo a Excel.",
+    prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel."
+  };
+  $("ayudaTab").innerHTML = AYUDAS[t] || "";
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
   else if(t === "cola") renderCola();
