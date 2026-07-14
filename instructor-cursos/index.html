@@ -843,13 +843,15 @@ function calcularPrueba(){
   _prTimer = setTimeout(_calcularPrueba, 350);   // debounce
 }
 async function _calcularPrueba(){
-  const notas = {};
-  document.querySelectorAll(".prinp[data-cod]").forEach(i => {
-    if(i.value !== "") notas[i.getAttribute("data-cod")] = Number(i.value);
-  });
-  const cVal = $("prConcepto").value;
-  const body = { notas, concepto: cVal==="" ? null : Number(cVal) };
   const out = $("prResultado");
+  const campos = [...document.querySelectorAll(".prinp[data-cod]")];
+  const cVal = $("prConcepto").value;
+  const algo = campos.some(i => i.value !== "") || cVal !== "";
+  if(!algo){ out.innerHTML = "Ingresa notas para ver el cálculo…"; return; }
+  // SIMULADOR = como tu Excel: una casilla VACÍA cuenta como 0 (no como "pendiente").
+  const notas = {};
+  campos.forEach(i => { notas[i.getAttribute("data-cod")] = i.value==="" ? 0 : Number(i.value); });
+  const body = { notas, concepto: cVal==="" ? 0 : Number(cVal) };
   try{
     const r = await postJSON("/api/cursos/rociadores/admin/planilla/calcular", body);
     const ap = r.aprobatoria || 60;
@@ -861,7 +863,7 @@ async function _calcularPrueba(){
       <div class="prline"><span>Nota Concepto (10%)</span><span>${_colNota(r.concepto?r.concepto.nota:null,ap)}</span></div>
       <div class="prline prtot"><span>PROMEDIO TOTAL</span><span><b style="color:${resCol};font-size:1.2em;">${r.promedio_total!=null?r.promedio_total:'—'}</b> / 100</span></div>
       <div class="prline"><span>Resultado</span><span style="color:${resCol};font-weight:700;">${r.resultado||'—'}</span></div>
-      <div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">${r.completo?'Cálculo completo (todas las categorías).':'Cálculo parcial: '+Math.round((r.peso_evaluado||0)*100)+'% de las categorías. Llena todo para el total final.'}</div>`;
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">Las casillas que dejas vacías cuentan como <b>0</b> (igual que en tu Excel). Llena todas para reproducir la nota final exacta.</div>`;
   }catch(e){ out.innerHTML = `<span style="color:var(--rojoTxt);">⚠ ${esc(e.message)}</span>`; }
 }
 
