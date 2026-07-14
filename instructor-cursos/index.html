@@ -41,6 +41,7 @@ input:focus{outline:none;border-color:var(--azul);}
 .err{color:var(--rojoTxt);font-size:.8rem;margin-top:10px;display:none;}
 
 #panel{display:none;max-width:1250px;margin:0 auto;padding:16px;}
+#panel.wide{max-width:100%;}   /* Planilla / Alumno de prueba: usar todo el ancho */
 .barra{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
 .tab{font-size:.8rem;padding:8px 16px;border-radius:18px;background:var(--campo);color:var(--texto2);cursor:pointer;border:1px solid var(--borde);user-select:none;}
 .tab.sel{background:var(--rojo);color:#fff;border-color:var(--rojo);}
@@ -265,6 +266,7 @@ function verTab(t){
   $("btnExport").style.display = (t === "a" || t === "planilla") ? "inline-block" : "none";
   $("btnExport").textContent = (t === "planilla") ? "⬇ Exportar planilla (Excel)" : "⬇ Exportar notas (Excel)";
   $("kpis").style.display = (t === "planilla" || t === "prueba") ? "none" : "grid";
+  $("panel").classList.toggle("wide", t === "planilla" || t === "prueba");   // ancho completo
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
   else if(t === "cola") renderCola();
