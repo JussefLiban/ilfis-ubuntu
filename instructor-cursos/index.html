@@ -74,6 +74,8 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .pfloor{display:flex;align-items:center;gap:6px;border:1px solid var(--borde);border-radius:5px;padding:2px 6px;margin-bottom:3px;background:var(--panel);}
 .pflabel{min-width:52px;font-size:.68rem;font-weight:700;color:var(--texto);flex:0 0 auto;}
 .pfevs{display:flex;flex-wrap:wrap;gap:4px;flex:1;}
+.pfprom{flex:0 0 auto;text-align:center;font-size:.56rem;color:var(--texto2);line-height:1.15;min-width:46px;border-left:1px solid var(--borde);padding-left:8px;margin-left:6px;}
+.pfprom b{font-size:.82rem;}
 .pev{display:flex;flex-direction:column;gap:1px;font-size:.6rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:5px;padding:2px 5px;width:78px;}
 .pev span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pev b{color:var(--texto);}
@@ -829,7 +831,8 @@ function renderPrueba(){
   const semanas = Object.keys(porSem).map(Number).sort((a,b)=>a-b);
   const pisosArr = semanas.map(w => {
     const etq = w===0 ? "Sem 0" : (w===13 ? "Ex. final" : "Sem "+w);
-    return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div></div>`;
+    const prom = (w>=1 && w<=12) ? `<div class="pfprom" id="prPS-${w}">Prom.<br><b>—</b></div>` : "";
+    return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div>${prom}</div>`;
   });
   pisosArr.push(`<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
       <label class="pev" style="border-color:var(--azul);"><span>Concepto <b>10%</b></span>
@@ -858,7 +861,7 @@ function pruebaTodas(){
   document.querySelectorAll(".prinp").forEach(i => i.value = n);
   calcularPrueba();
 }
-function pruebaLimpiar(){ document.querySelectorAll(".prinp").forEach(i => i.value = ""); $("prResultado").innerHTML = "Ingresa notas para ver el cálculo…"; }
+function pruebaLimpiar(){ document.querySelectorAll(".prinp").forEach(i => i.value = ""); document.querySelectorAll(".pfprom").forEach(e => e.innerHTML = "Prom.<br><b>—</b>"); $("prResultado").innerHTML = "Ingresa notas para ver el cálculo…"; }
 let _prTimer = null;
 function calcularPrueba(){
   clearTimeout(_prTimer);
@@ -877,6 +880,12 @@ async function _calcularPrueba(){
   try{
     const r = await postJSON("/api/cursos/rociadores/admin/planilla/calcular", body);
     const ap = r.aprobatoria || 60;
+    // Promedio de cada semana, en su propio piso
+    (r.semanas||[]).forEach(s => {
+      const el = $("prPS-"+s.sem);
+      if(el){ const v = s.prom_sem;
+        el.innerHTML = `Prom.<br><b style="color:${v==null?'var(--texto2)':(v>=ap?'var(--verde)':'var(--rojoTxt)')};">${v==null?'—':fmtN(v)}</b>`; }
+    });
     const resCol = r.resultado==="APROBADO" ? "var(--verde)" : "var(--rojoTxt)";
     const elim = (r.eliminada_valor!=null) ? ` <span style="color:var(--texto2);font-size:.85em;">(descarta la más baja: ${r.eliminada_valor})</span>` : "";
     out.innerHTML = `
