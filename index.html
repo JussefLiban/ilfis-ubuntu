@@ -809,16 +809,68 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </div>
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
-      <!-- Sección Certificados (Plataforma Educativa) — emite SOLO el superadmin -->
+      <!-- Sección Certificados (Plataforma Educativa) — GENERADOR general, emite SOLO el superadmin -->
       <div class="admin-section" id="admin-sec-educertif">
+        <style>
+          .cert-lbl{ display:flex; flex-direction:column; gap:5px; font-size:0.78rem; color:#8899aa; }
+          .cert-lbl input, .cert-lbl select{ padding:9px 11px; border:1px solid #2a2a5a; border-radius:8px; background:#0b1220; color:#e6ecf7; font-size:0.85rem; }
+        </style>
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
-          Emite el <b style="color:#fff;">certificado del Diplomado de Rociadores</b> al alumno que terminó.
-          Solo el superadmin emite; el alumno solo lo ve y descarga cuando está emitido. Cada certificado
-          lleva un <b style="color:#fff;">folio</b> y un enlace de verificación. El diseño gráfico de ILFIS
-          se aplica sobre la máscara de datos (fase de diseño).
+          Emite el <b style="color:#fff;">certificado de cualquier curso o evento de ILFIS</b> con el diseño oficial.
+          Elige alumno, curso, nota, fechas e instructor: se genera el certificado con su
+          <b style="color:#fff;">código</b>, QR de verificación pública y descarga en PDF. Solo el superadmin emite.
+          <br><span style="color:#6b7a8a;">Los certificados del sistema anterior (Laravel) siguen intactos; estos son los nuevos de UBUNTU.</span>
         </p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
-          <input type="text" id="admin-cert-buscar" placeholder="Buscar por nombre o correo…" oninput="adminRenderCertificados()" style="flex:1;min-width:220px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+
+        <!-- Formulario de emisión -->
+        <div style="border:1px solid #2a2a5a;border-radius:10px;padding:16px;background:#0f1729;margin-bottom:22px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+            <label class="cert-lbl">Tipo de certificado
+              <select id="cert-f-tipo" onchange="certToggleTipo()">
+                <option value="aprobacion">Aprobación (curso con nota)</option>
+                <option value="participacion">Participación (evento / congreso)</option>
+              </select>
+            </label>
+            <label class="cert-lbl">Nombre del alumno
+              <input type="text" id="cert-f-nombre" placeholder="Nombre completo tal como saldrá">
+            </label>
+            <label class="cert-lbl" style="grid-column:1/-1;">Curso / evento
+              <input type="text" id="cert-f-curso" list="cert-cursos-dl" placeholder="Elige de la lista o escribe uno nuevo" oninput="certAutoHoras()">
+              <datalist id="cert-cursos-dl"></datalist>
+            </label>
+            <label class="cert-lbl">Instructor
+              <select id="cert-f-instructor"></select>
+            </label>
+            <label class="cert-lbl">Horas
+              <input type="number" id="cert-f-horas" min="0" placeholder="60">
+            </label>
+            <label class="cert-lbl cert-apr">Calificación (0-100)
+              <input type="number" id="cert-f-cali" min="0" max="100" placeholder="87">
+            </label>
+            <label class="cert-lbl cert-apr">Inicio
+              <input type="month" id="cert-f-inicio">
+            </label>
+            <label class="cert-lbl cert-apr">Culminación
+              <input type="month" id="cert-f-culm">
+            </label>
+            <label class="cert-lbl cert-part" style="display:none;">Fecha del evento
+              <input type="text" id="cert-f-realizado" placeholder="15 de marzo de 2025">
+            </label>
+            <label class="cert-lbl">Fondo del diploma
+              <select id="cert-f-fondo"></select>
+            </label>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-dar btn-a" style="padding:9px 20px;font-size:0.9rem;" onclick="certEmitir()">Emitir certificado</button>
+            <span id="cert-emit-msg" style="font-size:0.82rem;"></span>
+          </div>
+          <div id="cert-emit-result" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- Lista de emitidos -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <b style="color:#e6ecf7;font-size:0.9rem;margin-right:6px;">Certificados emitidos</b>
+          <input type="text" id="admin-cert-buscar" placeholder="Buscar por nombre, curso o código…" oninput="adminRenderCertificados()" style="flex:1;min-width:220px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarCertificados()">Actualizar</button>
         </div>
         <div id="admin-cert-content"><div class="admin-loading">Cargando...</div></div>
@@ -3437,15 +3489,77 @@ async function adminQuitarDocente(email) {
   } catch(e) { alert('No pude quitar: ' + e.message); }
 }
 
-// ── Certificados (Plataforma Educativa) — emite SOLO el superadmin ──
+// ── Certificados (Plataforma Educativa) — GENERADOR general, emite SOLO el superadmin ──
 let _adminCertLista = [];
+let _certCatalogo = null;
+
+async function _certCargarCatalogo() {
+  if (!_certCatalogo) {
+    try { _certCatalogo = await (await fetch('certificado/catalogo.json')).json(); }
+    catch(e) { _certCatalogo = { cursos:[], instructores:[], fondos:[] }; }
+  }
+  const dl = document.getElementById('cert-cursos-dl');
+  if (dl) dl.innerHTML = (_certCatalogo.cursos||[]).map(c =>
+    `<option data-horas="${c.horas}" value="${_adminEsc(c.nombre)}"></option>`).join('');
+  const si = document.getElementById('cert-f-instructor');
+  if (si && !si.options.length) si.innerHTML = (_certCatalogo.instructores||[]).map(i =>
+    `<option value="${_adminEsc(i.firma)}">${_adminEsc(i.nombre)}</option>`).join('');
+  const sf = document.getElementById('cert-f-fondo');
+  if (sf && !sf.options.length) sf.innerHTML = (_certCatalogo.fondos||[]).map(f =>
+    `<option value="${_adminEsc(f.img)}">${_adminEsc(f.nombre)}</option>`).join('');
+  return _certCatalogo;
+}
+
+function certToggleTipo() {
+  const tipo = (document.getElementById('cert-f-tipo')||{}).value || 'aprobacion';
+  document.querySelectorAll('.cert-apr').forEach(el => el.style.display = (tipo==='aprobacion'?'flex':'none'));
+  document.querySelectorAll('.cert-part').forEach(el => el.style.display = (tipo==='participacion'?'flex':'none'));
+}
+
+function certAutoHoras() {
+  const val = document.getElementById('cert-f-curso').value;
+  const c = (_certCatalogo && _certCatalogo.cursos || []).find(x => x.nombre === val);
+  if (c) document.getElementById('cert-f-horas').value = c.horas;
+}
+
+async function certEmitir() {
+  const g = id => (document.getElementById(id).value || '').trim();
+  const tipo = g('cert-f-tipo');
+  const instrSel = document.getElementById('cert-f-instructor');
+  const instrNombre = instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  const body = { tipo, nombre: g('cert-f-nombre'), curso: g('cert-f-curso'), horas: g('cert-f-horas'),
+    instructor: instrNombre, instructor_firma: instrSel.value, fondo: document.getElementById('cert-f-fondo').value };
+  if (tipo === 'aprobacion') { body.calificacion = g('cert-f-cali'); body.inicio = g('cert-f-inicio'); body.culminacion = g('cert-f-culm'); }
+  else { body.realizado = g('cert-f-realizado'); }
+  const msg = document.getElementById('cert-emit-msg');
+  msg.textContent = 'Emitiendo…'; msg.style.color = '#8899aa';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+      method:'POST', headers:{ 'x-admin-key':_getAdminKey(), 'Content-Type':'application/json' },
+      body: JSON.stringify(body) });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.detail || ('Error '+r.status));
+    msg.textContent = '✓ Emitido'; msg.style.color = '#4ade80';
+    document.getElementById('cert-emit-result').innerHTML =
+      `<div style="border:1px solid #24506b;background:#0b2233;border-radius:8px;padding:12px;">
+        <div style="color:#e6ecf7;font-size:0.88rem;">Certificado emitido · código <b style="color:#7ab8ff;">${_adminEsc(d.codigo)}</b></div>
+        <div style="margin-top:6px;"><a href="certificado/?c=${encodeURIComponent(d.codigo)}" target="_blank" style="color:#7ab8ff;font-size:0.85rem;">Ver / descargar certificado →</a></div>
+      </div>`;
+    document.getElementById('cert-f-nombre').value = '';
+    document.getElementById('cert-f-cali').value = '';
+    adminCargarCertificados();
+  } catch(e) { msg.textContent = 'No pude emitir: ' + e.message; msg.style.color = '#e87272'; }
+}
 
 async function adminCargarCertificados() {
+  await _certCargarCatalogo();
+  certToggleTipo();
   const box = document.getElementById('admin-cert-content');
   if (!box) return;
   box.innerHTML = '<div class="admin-loading">Cargando...</div>';
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificados', { headers: { 'x-admin-key': _getAdminKey() } });
+    const r = await fetch(BACKEND + '/api/cursos/certificados/admin/lista', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     if (!r.ok) throw new Error('Error ' + r.status);
     const d = await r.json();
@@ -3460,62 +3574,41 @@ function adminRenderCertificados() {
   const box = document.getElementById('admin-cert-content');
   if (!box) return;
   const q = (document.getElementById('admin-cert-buscar').value || '').trim().toLowerCase();
-  const lista = _adminCertLista.filter(a =>
-    !q || (a.nombre_certificado || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
-  const emitidos = _adminCertLista.filter(a => a.emitido).length;
+  const lista = _adminCertLista.filter(a => !q ||
+    (a.nombre||'').toLowerCase().includes(q) || (a.curso||'').toLowerCase().includes(q) || (a.codigo||'').toLowerCase().includes(q));
   if (!lista.length) {
-    box.innerHTML = '<div style="color:#8899aa;font-size:0.85rem;">— no hay alumnos que coincidan —</div>';
+    box.innerHTML = '<div style="color:#8899aa;font-size:0.85rem;">— sin certificados —</div>';
     return;
   }
   const filas = lista.map(a => {
-    const nombre = a.nombre_certificado || '(sin nombre)';
-    const estado = a.emitido
-      ? `<span style="color:#4ade80;font-size:0.78rem;">✓ Emitido · folio <b>${_adminEsc(a.folio)}</b> · ${_adminEsc(a.fecha_emision || '')}</span>`
-      : (a.anulado ? '<span style="color:#e6a23c;font-size:0.78rem;">Anulado</span>'
-                   : '<span style="color:#8899aa;font-size:0.78rem;">Sin emitir</span>');
-    let acciones = '';
-    if (a.emitido) {
-      acciones = `<a href="certificado/?folio=${encodeURIComponent(a.folio)}" target="_blank" style="color:#7ab8ff;font-size:0.8rem;margin-right:12px;">Ver</a>`
-        + `<span style="cursor:pointer;color:#f87171;font-size:0.8rem;" onclick="adminAnularCertificado('${_adminEsc(a.uid)}','${_adminEsc(nombre).replace(/'/g,'&#39;')}')">Anular</span>`;
-    } else if (a.perfil_completo) {
-      acciones = `<button class="btn-dar btn-a" style="padding:5px 12px;font-size:0.78rem;" onclick="adminEmitirCertificado('${_adminEsc(a.uid)}','${_adminEsc(nombre).replace(/'/g,'&#39;')}')">Emitir</button>`;
-    } else {
-      acciones = '<span style="color:#8899aa;font-size:0.75rem;" title="El alumno no ha completado su nombre para el certificado">datos incompletos</span>';
-    }
+    const estado = a.anulado
+      ? '<span style="color:#e6a23c;font-size:0.78rem;">Anulado</span>'
+      : '<span style="color:#4ade80;font-size:0.78rem;">✓ Válido</span>';
+    const nota = (a.tipo==='aprobacion' && a.calificacion!=null) ? ` · ${a.calificacion}/100` : '';
+    const accVer = `<a href="certificado/?c=${encodeURIComponent(a.codigo)}" target="_blank" style="color:#7ab8ff;font-size:0.8rem;margin-right:12px;">Ver</a>`;
+    const accAnular = `<span style="cursor:pointer;color:${a.anulado?'#4ade80':'#f87171'};font-size:0.8rem;" onclick="adminAnularCert('${_adminEsc(a.codigo)}')">${a.anulado?'Reactivar':'Anular'}</span>`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
-      <div style="min-width:200px;">
-        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(nombre)}</div>
-        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.email || '')}</div>
-        <div style="margin-top:3px;">${estado}</div>
+      <div style="min-width:220px;">
+        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(a.nombre)}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.curso)}</div>
+        <div style="margin-top:3px;">${estado} · código <b style="color:#7ab8ff;">${_adminEsc(a.codigo)}</b> · ${_adminEsc(a.fecha||'')}${nota}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:4px;">${acciones}</div>
+      <div style="display:flex;align-items:center;gap:4px;">${accVer}${accAnular}</div>
     </div>`;
   }).join('');
-  box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:10px;">${emitidos} emitido(s) · ${_adminCertLista.length} alumno(s) con datos</div>${filas}`;
+  box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:10px;">${_adminCertLista.length} certificado(s)</div>${filas}`;
 }
 
-async function adminEmitirCertificado(uid, nombre) {
-  if (!confirm('¿Emitir el certificado del Diplomado de Rociadores a ' + nombre + '?')) return;
+async function adminAnularCert(codigo) {
+  if (!confirm('¿Cambiar el estado (anular / reactivar) del certificado ' + codigo + '?')) return;
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificado/emitir', {
+    const r = await fetch(BACKEND + '/api/cursos/certificados/admin/anular', {
       method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid }) });
+      body: JSON.stringify({ codigo }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
     adminCargarCertificados();
-  } catch(e) { alert('No pude emitir: ' + e.message); }
-}
-
-async function adminAnularCertificado(uid, nombre) {
-  if (!confirm('¿Anular el certificado de ' + nombre + '? Dejará de ser válido y descargable (el folio se conserva).')) return;
-  try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/certificado/anular', {
-      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid }) });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
-    adminCargarCertificados();
-  } catch(e) { alert('No pude anular: ' + e.message); }
+  } catch(e) { alert('No pude: ' + e.message); }
 }
 
 async function adminCargar() {
