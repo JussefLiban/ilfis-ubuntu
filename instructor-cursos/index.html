@@ -68,10 +68,14 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .calpend{color:var(--ambar);font-weight:700;}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
-.prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:5px;}
-.prlbl{display:flex;flex-direction:column;gap:2px;font-size:.64rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:6px;padding:3px 6px;}
-.prcab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.prlbl-auto{border-left:3px solid var(--azul);}
+.pfloor{display:flex;align-items:center;gap:8px;border:1px solid var(--borde);border-radius:6px;padding:3px 8px;margin-bottom:4px;background:var(--panel);}
+.pflabel{min-width:82px;font-size:.72rem;font-weight:700;color:var(--texto);flex:0 0 auto;}
+.pfevs{display:flex;flex-wrap:wrap;gap:4px;flex:1;}
+.pev{display:flex;flex-direction:column;gap:1px;font-size:.6rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:5px;padding:2px 5px;width:78px;}
+.pev span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pev b{color:var(--texto);}
+.pev-auto{border-color:var(--azul);}
+.pev .prinp{width:100%;box-sizing:border-box;padding:1px 3px;font-size:.72rem;}
 .prinp{width:100%;box-sizing:border-box;}
 .prtitulo{font-size:.78rem;font-weight:700;color:var(--texto);margin-bottom:8px;}
 .prres{margin-top:16px;background:var(--panel);border:1px solid var(--rojo);border-radius:10px;padding:14px 16px;}
@@ -806,38 +810,37 @@ function renderPrueba(){
   // solo para que se ENTIENDA cuáles son manuales y cuáles automáticas. Como esto
   // es un SIMULADOR de práctica, TODAS son editables (las automáticas van marcadas
   // "auto" para recordar que en la realidad se llenan solas del cuestionario).
+  // "Edificio": un PISO por semana. Cada evaluación es una casilla chica dentro
+  // de su piso. Las automáticas (cuestionarios) van marcadas con borde azul.
   const manuales = new Set(P.codigos_manuales || []);
   const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
-  const inp = (c, auto) => {
-    let meta;
-    if(c.peso_semana!=null)      meta = `S${c.semana} · ${Math.round(c.peso_semana*100)}%`;
-    else if(c.peso_global!=null) meta = `${Math.round(c.peso_global*100)}% total`;
-    else                         meta = "";
-    const tag = auto ? ` <span style="color:var(--azul);">auto</span>` : "";
-    return `<label class="prlbl${auto?' prlbl-auto':''}" title="${esc(c.nombre)}"><span class="prcab">${esc(_colLbl(c))}${meta?" · "+meta:""}${tag}</span>
+  const box = (c) => {
+    const auto = !manuales.has(c.codigo);
+    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"%t" : "");
+    return `<label class="pev${auto?' pev-auto':''}" title="${esc(c.nombre)}${auto?' · automática (cuestionario)':''}"><span>${esc(_colLbl(c))} <b>${pct}</b></span>
       <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
   };
-  const manualInputs = evals.filter(c => manuales.has(c.codigo)).map(c => inp(c, false)).join("")
-    + `<label class="prlbl" style="background:rgba(59,130,246,.1);"><span class="prcab">Nota Concepto · 10%</span>
-        <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label>`;
-  const autoInputs = evals.filter(c => !manuales.has(c.codigo)).map(c => inp(c, true)).join("");
+  // agrupar por semana (crítica = piso 0; exámenes en su semana)
+  const porSem = {};
+  evals.forEach(c => { const w = (c.semana!=null? c.semana : 0); (porSem[w]=porSem[w]||[]).push(c); });
+  const semanas = Object.keys(porSem).map(Number).sort((a,b)=>a-b);
+  const pisos = semanas.map(w => {
+    const etq = w===0 ? "Semana 0" : (w===13 ? "Examen final" : "Semana "+w);
+    return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div></div>`;
+  }).join("");
+  const pisoConcepto = `<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
+      <label class="pev" style="border-color:var(--azul);"><span>Nota Concepto <b>10%</b></span>
+        <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label></div></div>`;
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
     <div class="pruebaWrap">
-      <div class="aviso" style="margin-bottom:12px;">🧪 <b>Alumno de prueba</b> — calculadora de práctica: teclea las notas que quieras (todas editables) y comprueba que el <b>Promedio Total</b> coincide con tu Excel. No toca datos reales.
+      <div class="aviso" style="margin-bottom:10px;">🧪 <b>Alumno de prueba</b> — calculadora de práctica (no toca datos). Cada piso es una semana. Borde azul = automática (cuestionario).
       <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <input id="prVal" type="number" min="0" max="100" placeholder="valor" style="width:78px;" onkeydown="if(event.key==='Enter')pruebaTodas()">
-        <button class="btn mini rojo" onclick="pruebaTodas()">Poner ese valor en TODAS</button>
+        <button class="btn mini rojo" onclick="pruebaTodas()">Poner en TODAS</button>
         <button class="btn mini gris" onclick="prueba100()">Llenar con 100</button>
         <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button>
       </div></div>
-
-      <div class="prtitulo">✍ Evaluaciones que califica el profesor (manuales)</div>
-      <div class="prgrid">${manualInputs}</div>
-
-      <div class="prtitulo" style="margin-top:16px;">🤖 Evaluaciones automáticas (cuestionarios / formularios)</div>
-      <div style="color:var(--texto2);font-size:.72rem;margin-bottom:6px;">En la realidad estas se llenan solas con el resultado del cuestionario del alumno. Aquí puedes teclearlas para simular y cuadrar el total con tu Excel.</div>
-      <div class="prgrid">${autoInputs}</div>
-
+      ${pisos}${pisoConcepto}
       <div id="prResultado" class="prres">Ingresa notas para ver el cálculo…</div>
     </div>
   </td></tr>`;
