@@ -68,8 +68,11 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .calpend{color:var(--ambar);font-weight:700;}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
-.pfloor{display:flex;align-items:center;gap:8px;border:1px solid var(--borde);border-radius:6px;padding:3px 8px;margin-bottom:4px;background:var(--panel);}
-.pflabel{min-width:82px;font-size:.72rem;font-weight:700;color:var(--texto);flex:0 0 auto;}
+.pedificios{display:flex;gap:10px;align-items:flex-start;}
+.pedificio{flex:1;min-width:0;}
+@media(max-width:760px){.pedificios{flex-direction:column;}}
+.pfloor{display:flex;align-items:center;gap:6px;border:1px solid var(--borde);border-radius:5px;padding:2px 6px;margin-bottom:3px;background:var(--panel);}
+.pflabel{min-width:52px;font-size:.68rem;font-weight:700;color:var(--texto);flex:0 0 auto;}
 .pfevs{display:flex;flex-wrap:wrap;gap:4px;flex:1;}
 .pev{display:flex;flex-direction:column;gap:1px;font-size:.6rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:5px;padding:2px 5px;width:78px;}
 .pev span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -824,13 +827,15 @@ function renderPrueba(){
   const porSem = {};
   evals.forEach(c => { const w = (c.semana!=null? c.semana : 0); (porSem[w]=porSem[w]||[]).push(c); });
   const semanas = Object.keys(porSem).map(Number).sort((a,b)=>a-b);
-  const pisos = semanas.map(w => {
-    const etq = w===0 ? "Semana 0" : (w===13 ? "Examen final" : "Semana "+w);
+  const pisosArr = semanas.map(w => {
+    const etq = w===0 ? "Sem 0" : (w===13 ? "Ex. final" : "Sem "+w);
     return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div></div>`;
-  }).join("");
-  const pisoConcepto = `<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
-      <label class="pev" style="border-color:var(--azul);"><span>Nota Concepto <b>10%</b></span>
-        <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label></div></div>`;
+  });
+  pisosArr.push(`<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
+      <label class="pev" style="border-color:var(--azul);"><span>Concepto <b>10%</b></span>
+        <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label></div></div>`);
+  const mitad = Math.ceil(pisosArr.length / 2);
+  const edificios = `<div class="pedificios"><div class="pedificio">${pisosArr.slice(0,mitad).join("")}</div><div class="pedificio">${pisosArr.slice(mitad).join("")}</div></div>`;
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
     <div class="pruebaWrap">
       <div class="aviso" style="margin-bottom:10px;">🧪 <b>Alumno de prueba</b> — calculadora de práctica (no toca datos). Cada piso es una semana. Borde azul = automática (cuestionario).
@@ -840,7 +845,7 @@ function renderPrueba(){
         <button class="btn mini gris" onclick="prueba100()">Llenar con 100</button>
         <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button>
       </div></div>
-      ${pisos}${pisoConcepto}
+      ${edificios}
       <div id="prResultado" class="prres">Ingresa notas para ver el cálculo…</div>
     </div>
   </td></tr>`;
