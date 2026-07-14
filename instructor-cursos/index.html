@@ -693,7 +693,7 @@ function renderPlanilla(){
   // Encabezado: Alumno (fijo) + cada columna + cierre
   let th = `<th class="stick">Alumno</th>`;
   P.columnas.forEach(c => {
-    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% glob" : "");
+    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem." : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% total" : "");
     const cls = c.grupo==="prom_sem" ? "colcalc" : (manuales.has(c.codigo) ? "colman" : "");
     th += `<th class="${cls}" title="${esc(c.nombre)}${pct?" · "+pct:""}">${esc(_colLbl(c))}<div class="pct">${pct}</div></th>`;
   });
@@ -809,7 +809,10 @@ function renderPrueba(){
   const manuales = new Set(P.codigos_manuales || []);
   const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
   const inp = (c, auto) => {
-    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% glob" : "");
+    let pct;
+    if(c.peso_semana!=null)      pct = `Semana ${c.semana} · ${Math.round(c.peso_semana*100)}% de esa semana`;
+    else if(c.peso_global!=null) pct = `${Math.round(c.peso_global*100)}% del total`;
+    else                         pct = "";
     const tag = auto ? ` <span class="pct" style="color:var(--azul);">auto</span>` : "";
     return `<label class="prlbl${auto?' prlbl-auto':''}">${esc(_colLbl(c))} <span class="pct">${pct}</span>${tag}
       <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
