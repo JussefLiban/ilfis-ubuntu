@@ -54,6 +54,26 @@ th{background:var(--navy);text-align:left;padding:10px 12px;font-size:.7rem;lett
 td{padding:9px 12px;border-bottom:1px solid var(--borde);vertical-align:top;}
 tr:hover td{background:#1a2030;}
 td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap;}
+/* Planilla / Libro de notas (matriz ancha) */
+th.stick,td.stick{position:sticky;left:0;z-index:3;background:var(--panel);min-width:150px;max-width:190px;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 0 var(--borde);}
+th.stick{z-index:5;background:var(--navy);}
+tr:hover td.stick{background:#1a2030;}
+th .pct{font-weight:400;color:var(--texto2);font-size:.6rem;letter-spacing:0;}
+th.colman,td.colman{background:rgba(251,191,36,.06);}
+th.colcalc,td.colcalc{background:rgba(59,130,246,.06);}
+th.colcierre,td.colcierre{background:rgba(74,222,128,.05);}
+td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
+.calpend{color:var(--ambar);font-weight:700;}
+/* Alumno de prueba */
+.pruebaWrap{padding:14px;}
+.prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.prlbl{display:flex;flex-direction:column;gap:2px;font-size:.66rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:6px 8px;}
+.prlbl .pct{font-size:.58rem;}
+.prinp{width:100%;box-sizing:border-box;}
+.prres{margin-top:16px;background:var(--panel);border:1px solid var(--rojo);border-radius:10px;padding:14px 16px;}
+.prline{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--borde);}
+.prline:first-child{border-top:none;}
+.prline.prtot{border-top:2px solid var(--rojo);margin-top:4px;font-weight:700;}
 .pill{font-size:.68rem;font-weight:700;border-radius:5px;padding:3px 8px;white-space:nowrap;}
 .pill.manual{background:rgba(251,191,36,.15);color:var(--ambar);}
 .pill.ok{background:#14532d;color:#bbf7d0;}
@@ -120,6 +140,8 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <span class="tab" id="tabA" onclick="verTab('a')">Por alumno</span>
     <span class="tab" id="tabC" onclick="verTab('cola')">Cola de calificación<span class="cnt" id="colaCnt" style="display:none;">0</span></span>
     <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
+    <span class="tab" id="tabP" onclick="verTab('planilla')">📋 Planilla (Libro de notas)</span>
+    <span class="tab" id="tabT" onclick="verTab('prueba')">🧪 Alumno de prueba</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" id="btnExport" onclick="exportarNotas()" style="display:none;">⬇ Exportar notas (Excel)</button>
@@ -162,6 +184,7 @@ let usuario = null;   // docente logueado con Google (si aplica)
 let clave = localStorage.getItem("ilfis_admin_key") || null;  // clave de administración (intranet)
 let R = null;      // resumen
 let E = null;      // entregas de tareas
+let P = null;      // planilla / libro de notas
 let tab = "q";
 let _autoIntentado = false;
 
@@ -219,6 +242,9 @@ async function cargar(inicial){
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
   try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
   catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
+  // Planilla / Libro de notas (defensivo: si el backend aún no la soporta, no rompe el panel)
+  try{ P = await api("/api/cursos/rociadores/admin/planilla"); }
+  catch(e){ P = null; console.warn("Planilla no disponible:", e.message); }
   actualizarKPIs();
   verTab(tab);
 }
@@ -229,12 +255,19 @@ function verTab(t){
   $("tabA").classList.toggle("sel", t === "a");
   $("tabC").classList.toggle("sel", t === "cola");
   $("tabE").classList.toggle("sel", t === "e");
+  $("tabP").classList.toggle("sel", t === "planilla");
+  $("tabT").classList.toggle("sel", t === "prueba");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
-  $("btnExport").style.display = t === "a" ? "inline-block" : "none";
+  // El botón exportar sirve en "Por alumno" (resumen) y en la Planilla (libro completo)
+  $("btnExport").style.display = (t === "a" || t === "planilla") ? "inline-block" : "none";
+  $("btnExport").textContent = (t === "planilla") ? "⬇ Exportar planilla (Excel)" : "⬇ Exportar notas (Excel)";
+  $("kpis").style.display = (t === "planilla" || t === "prueba") ? "none" : "grid";
   if(t === "q") renderQuiz();
   else if(t === "a") renderAlumnos();
   else if(t === "cola") renderCola();
-  else renderEntregas();
+  else if(t === "e") renderEntregas();
+  else if(t === "planilla") renderPlanilla();
+  else if(t === "prueba") renderPrueba();
 }
 
 // ── Cálculo compartido (KPIs, tabla de alumnos y export usan lo mismo) ──
@@ -318,13 +351,36 @@ function computeCola(){
         cuando: x.enviado });
     }
   });
+  // Semanas con archivos entregados, por alumno
+  const entregaSem = {};   // uid -> { semana: entrega }
   ((E && E.entregas) || []).forEach(en => {
-    if((en.archivos || []).length && en.nota == null){
-      cola.push({ tipo:"tarea", uid:en.uid, email:en.email, semana:en.semana,
-        actividad: "Tarea de la Semana " + en.semana + " — " + en.archivos.length + " archivo(s)",
-        cuando: (en.archivos[0] || {}).subido, entrega: en });
-    }
+    if((en.archivos || []).length){ (entregaSem[en.uid] = entregaSem[en.uid] || {})[en.semana] = en; }
   });
+  if(P && P.alumnos && P.columnas){
+    // Libro de notas: UNA fila por CADA evaluación de desarrollo pendiente (con entrega subida)
+    const desarrollo = P.columnas.filter(c => c.tipo === "desarrollo");
+    P.alumnos.forEach(a => {
+      desarrollo.forEach(c => {
+        const est = a.estados ? a.estados[c.codigo] : null;
+        const en = (entregaSem[a.uid] || {})[c.semana];
+        if(est === "por_calificar" && en){
+          cola.push({ tipo:"eval", uid:a.uid, email:a.email, codigo:c.codigo, nombreEval:c.nombre,
+            nombreAlumno:a.nombre, semana:c.semana,
+            actividad: `${c.nombre} · Semana ${c.semana} — por calificar`,
+            cuando:(en.archivos[0] || {}).subido });
+        }
+      });
+    });
+  } else {
+    // Sin libro de notas (backend viejo): una fila por semana entregada sin nota
+    ((E && E.entregas) || []).forEach(en => {
+      if((en.archivos || []).length && en.nota == null){
+        cola.push({ tipo:"tarea", uid:en.uid, email:en.email, semana:en.semana,
+          actividad: "Tarea de la Semana " + en.semana + " — " + en.archivos.length + " archivo(s)",
+          cuando: (en.archivos[0] || {}).subido, entrega: en });
+      }
+    });
+  }
   cola.sort((a, b) => new Date(a.cuando || 0) - new Date(b.cuando || 0)); // más antiguo primero
   return cola;
 }
@@ -387,16 +443,20 @@ function renderCola(){
   $("tabla").querySelector("thead").innerHTML =
     `<tr><th>Tipo</th><th>Alumno</th><th>Actividad</th><th>Entregado (Lima)</th><th>Acción</th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = cola.map(c => {
-    let accion;
+    let accion, pill;
     if(c.tipo === "texto"){
       accion = `<button class="btn mini primario" onclick="verIntento('${esc(c.uid)}','${esc(c.quiz_id)}','${esc(c.email)}')">Revisar respuesta</button>`;
+      pill = `<span class="pill texto">Texto</span>`;
+    } else if(c.tipo === "eval"){
+      accion = `<button class="btn mini" onclick="descargarAlumnoZip('${esc(c.uid)}',this)">⬇ Entregas (ZIP)</button> `
+        + `<button class="btn mini rojo" onclick="calificarEval('${esc(c.uid)}','${esc(c.codigo)}',${JSON.stringify(c.nombreEval).replace(/"/g,'&quot;')},${JSON.stringify(c.nombreAlumno).replace(/"/g,'&quot;')},${c.semana||0})">Calificar</button>`;
+      pill = `<span class="pill tarea">Desarrollo</span>`;
     } else {
       const dl = (c.entrega.archivos || []).map(a =>
         `<button class="btn mini" onclick="descargarEntrega('${esc(c.uid)}',${c.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)}</button>`).join(" ");
       accion = `${dl} <button class="btn mini rojo" onclick="verTab('e')">Calificar</button>`;
+      pill = `<span class="pill tarea">Tarea</span>`;
     }
-    const pill = c.tipo === "texto"
-      ? `<span class="pill texto">Texto</span>` : `<span class="pill tarea">Tarea</span>`;
     return `<tr>
       <td>${pill}</td>
       <td>${esc(c.email || c.uid)}</td>
@@ -409,6 +469,7 @@ function renderCola(){
 
 // ── Exportar notas (CSV con BOM y separador ; — Excel lo abre en columnas) ──
 function exportarNotas(){
+  if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
   const cab = ["Alumno","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
@@ -584,6 +645,196 @@ async function guardarCalifManual(){
     if(out){ out.textContent = "✓ guardada"; out.className = "ent-save ok"; }
     await cargar(false);
   }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
+}
+
+// ═══════════════ PLANILLA · LIBRO DE NOTAS (matriz del G10) ═══════════════
+async function postJSON(path, body){
+  const r = await fetch(API + path, { method:"POST",
+    headers: await authHeaders({ "Content-Type":"application/json" }), body: JSON.stringify(body) });
+  let d=null; try{ d=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(d && d.detail ? d.detail : ("Error " + r.status));
+  return d;
+}
+function fmtN(v){ return (v==null || v==="") ? v : (Math.round(Number(v)*100)/100); }
+function _num(v){ return (v==null) ? "" : fmtN(v); }
+function _colNota(v, ap){
+  if(v==null) return `<span style="color:var(--texto2);">—</span>`;
+  return `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`;
+}
+// abreviatura corta para el encabezado de columna (EV-12, MITOS 1, EX-1, PS1…)
+function _colLbl(c){
+  if(c.grupo==="prom_sem") return "PS"+c.semana;
+  return (c.nombre||c.codigo).replace("PROM SEM ","PS").replace("Examen Final","EX Final");
+}
+function renderPlanilla(){
+  const tb = $("tabla");
+  if(!P || !P.columnas){
+    tb.querySelector("thead").innerHTML = "";
+    tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">El Libro de notas aún no está disponible (el backend se está actualizando). Recarga en unos minutos.</td></tr>`;
+    return;
+  }
+  const ap = P.aprobatoria || 60;
+  const manuales = new Set(P.codigos_manuales || []);
+  // Encabezado: Alumno (fijo) + cada columna + cierre
+  let th = `<th class="stick">Alumno</th>`;
+  P.columnas.forEach(c => {
+    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% glob" : "");
+    const cls = c.grupo==="prom_sem" ? "colcalc" : (manuales.has(c.codigo) ? "colman" : "");
+    th += `<th class="${cls}" title="${esc(c.nombre)}${pct?" · "+pct:""}">${esc(_colLbl(c))}<div class="pct">${pct}</div></th>`;
+  });
+  th += `<th class="colcierre">SEMANAL<br>60%</th><th class="colcierre">EXÁM.<br>30%</th><th class="colcierre colman">CONCEPTO<br>10%</th><th class="colcierre">TOTAL</th><th class="colcierre">RESULTADO</th><th class="colcierre">#</th>`;
+  tb.querySelector("thead").innerHTML = `<tr>${th}</tr>`;
+
+  const rows = (P.alumnos || []).map(a => {
+    let tds = `<td class="stick" title="${esc(a.email)}">${esc(a.nombre)}</td>`;
+    P.columnas.forEach(c => {
+      const v = a.celdas ? a.celdas[c.codigo] : null;
+      const est = a.estados ? a.estados[c.codigo] : null;
+      if(c.grupo==="prom_sem"){
+        tds += `<td class="num colcalc">${v==null?'—':`<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`}</td>`;
+      } else if(manuales.has(c.codigo)){
+        // celda calificable a mano → clic para calificar
+        let inner;
+        if(v!=null) inner = `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`;
+        else if(est==="enviado") inner = `<span style="color:var(--ambar);font-size:.7rem;">enviado</span>`;
+        else inner = `<span class="calpend">✎</span>`;
+        tds += `<td class="num colman" title="Calificar ${esc(c.nombre)}" onclick="calificarEval('${esc(a.uid)}','${esc(c.codigo)}',${JSON.stringify(c.nombre).replace(/"/g,'&quot;')},${JSON.stringify(a.nombre).replace(/"/g,'&quot;')},${c.semana||0})">${inner}</td>`;
+      } else {
+        // objetiva (autocalificada) → solo lectura
+        let inner = "—";
+        if(v!=null) inner = `<span style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</span>`;
+        else if(est==="enviado") inner = `<span style="color:var(--ambar);font-size:.7rem;">env.</span>`;
+        else if(est==="sin_entrega") inner = `<span style="color:var(--rojoTxt);">0</span>`;
+        tds += `<td class="num">${inner}</td>`;
+      }
+    });
+    // cierre
+    const conceptoCell = `<td class="num colman" title="Poner Nota Concepto (0-100)" onclick="calificarEval('${esc(a.uid)}','NOTA_CONCEPTO','Nota Concepto',${JSON.stringify(a.nombre).replace(/"/g,'&quot;')},0)">${a.concepto!=null?`<b>${fmtN(a.concepto)}</b>`:'<span class="calpend">✎</span>'}</td>`;
+    const resCol = a.resultado==="APROBADO" ? "var(--verde)" : (a.resultado==="DESAPROBADO" ? "var(--rojoTxt)" : "var(--texto2)");
+    tds += `<td class="num colcierre">${_colNota(a.promedio_semanal, ap)}</td>`
+         + `<td class="num colcierre">${_colNota(a.promedio_examenes, ap)}</td>`
+         + conceptoCell
+         + `<td class="num colcierre">${a.promedio_total!=null?`<b style="color:${resCol};font-size:1.05em;">${a.promedio_total}</b>`:'—'}${(!a.completo&&a.promedio_total!=null)?'<span style="color:var(--texto2);font-size:.62rem;"> parc</span>':''}</td>`
+         + `<td class="colcierre" style="color:${resCol};font-weight:700;font-size:.7rem;">${a.resultado||'—'}</td>`
+         + `<td class="num colcierre">${a.ranking||'—'}</td>`;
+    return `<tr>${tds}</tr>`;
+  }).join("");
+  tb.querySelector("tbody").innerHTML = rows ||
+    `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">Aún no hay alumnos matriculados con datos.</td></tr>`;
+}
+
+// Calificar UNA evaluación manual (desarrollo/examen/crítica/concepto) → fluye a la planilla
+function calificarEval(uid, codigo, nombreEval, nombreAlumno, semana){
+  const a = (P.alumnos||[]).find(x => x.uid===uid) || {};
+  const actual = codigo==="NOTA_CONCEPTO" ? a.concepto : (a.celdas ? a.celdas[codigo] : null);
+  const com = (a.comentarios && a.comentarios[codigo]) || "";
+  $("detTit").textContent = `Calificar: ${nombreEval}`;
+  $("detSub").textContent = `${nombreAlumno}${semana?" · Semana "+semana:""}`;
+  const zip = (semana && codigo.indexOf("EV-")===0)
+    ? `<button class="btn mini" onclick="descargarAlumnoZip('${esc(uid)}',this)">⬇ Descargar entregas del alumno (ZIP)</button>
+       <div style="color:var(--texto2);font-size:.72rem;margin:6px 0 12px;">Revisa el paquete que subió el alumno en la Semana ${semana} y pon la nota de esta evaluación.</div>` : "";
+  $("detCuerpo").innerHTML = `${zip}
+    <div class="calif-box">
+      <div class="calif-row">
+        <label style="flex:0 0 auto;">Nota (0–100)<br><input id="evNota" type="number" min="0" max="100" value="${actual!=null?esc(actual):""}" placeholder="—" style="width:90px;"></label>
+        <label style="flex:1 1 100%;">Comentario para el alumno<br><textarea id="evMsg" placeholder="Corrección, felicitación… (opcional)" style="width:100%;min-height:120px;box-sizing:border-box;resize:vertical;" oninput="this.style.height='auto';this.style.height=Math.max(120,this.scrollHeight+4)+'px'">${esc(com)}</textarea></label>
+      </div>
+      <button class="btn rojo mini" onclick="guardarEvalNota('${esc(uid)}','${esc(codigo)}')">Guardar nota</button>
+      <span class="ent-save" id="evOut"></span>
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:5px;">La nota se registra en el Libro de notas y aparece en el boletín del alumno según la publicación (lunes 12:00).</div>
+    </div>`;
+  $("modalDet").classList.add("abierto");
+}
+async function guardarEvalNota(uid, codigo){
+  const out = $("evOut");
+  const notaStr = ($("evNota").value || "").trim();
+  const body = { nota: notaStr==="" ? null : Number(notaStr), comentario: ($("evMsg").value||"").trim() };
+  if(out){ out.textContent = "…"; out.className = "ent-save"; }
+  try{
+    await postJSON(`/api/cursos/rociadores/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`, body);
+    if(out){ out.textContent = "✓ guardada"; out.className = "ent-save ok"; }
+    P = await api("/api/cursos/rociadores/admin/planilla");   // refresca la matriz
+    actualizarKPIs();
+    if(tab === "cola") renderCola(); else renderPlanilla();
+    setTimeout(() => $("modalDet").classList.remove("abierto"), 500);
+  }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
+}
+function exportarPlanilla(){
+  if(!P || !P.columnas) return;
+  const q = s => `"${String(s==null?"":s).replace(/"/g,'""')}"`;
+  const cab = ["Ranking","Alumno","Correo",
+    ...P.columnas.map(c => _colLbl(c)),
+    "Promedio Semanal","Promedio Examenes","Nota Concepto","Promedio Total","Resultado"];
+  const filas = (P.alumnos||[]).map(a => [
+    a.ranking, a.nombre, a.email,
+    ...P.columnas.map(c => { const v = a.celdas ? a.celdas[c.codigo] : null; return v==null?"":fmtN(v); }),
+    _num(a.promedio_semanal), _num(a.promedio_examenes), _num(a.concepto), _num(a.promedio_total), a.resultado||""
+  ].map(q).join(";"));
+  const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
+  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const hoy = new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Lima"}).format(new Date());
+  const el = document.createElement("a"); el.href = url; el.download = `planilla_rociadores_${hoy}.csv`;
+  document.body.appendChild(el); el.click(); el.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+// ═══════════════ ALUMNO DE PRUEBA (verificar el cálculo vs el Excel) ═══════════════
+function renderPrueba(){
+  const tb = $("tabla");
+  tb.querySelector("thead").innerHTML = "";
+  if(!P || !P.columnas){
+    tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">El Libro de notas aún no está disponible. Recarga en unos minutos.</td></tr>`;
+    return;
+  }
+  // inputs para cada evaluación (menos las columnas calculadas PROM SEM) + concepto
+  const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
+  const inputs = evals.map(c => {
+    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% glob" : "");
+    return `<label class="prlbl">${esc(_colLbl(c))} <span class="pct">${pct}</span>
+      <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
+  }).join("");
+  tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
+    <div class="pruebaWrap">
+      <div class="aviso" style="margin-bottom:12px;">🧪 <b>Alumno de prueba</b> — teclea notas (0–100) en las evaluaciones y comprueba que el <b>Promedio Total</b> coincide con tu Excel. No toca datos reales. Deja en blanco lo que no quieras contar (se toma como pendiente).
+      <button class="btn mini gris" style="margin-left:8px;" onclick="prueba100()">Llenar todo con 100</button>
+      <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button></div>
+      <div class="prgrid">${inputs}
+        <label class="prlbl" style="background:rgba(59,130,246,.1);">NOTA CONCEPTO <span class="pct">10% · 0-100</span>
+          <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label>
+      </div>
+      <div id="prResultado" class="prres">Ingresa notas para ver el cálculo…</div>
+    </div>
+  </td></tr>`;
+}
+function prueba100(){ document.querySelectorAll(".prinp").forEach(i => i.value = 100); calcularPrueba(); }
+function pruebaLimpiar(){ document.querySelectorAll(".prinp").forEach(i => i.value = ""); $("prResultado").innerHTML = "Ingresa notas para ver el cálculo…"; }
+let _prTimer = null;
+function calcularPrueba(){
+  clearTimeout(_prTimer);
+  _prTimer = setTimeout(_calcularPrueba, 350);   // debounce
+}
+async function _calcularPrueba(){
+  const notas = {};
+  document.querySelectorAll(".prinp[data-cod]").forEach(i => {
+    if(i.value !== "") notas[i.getAttribute("data-cod")] = Number(i.value);
+  });
+  const cVal = $("prConcepto").value;
+  const body = { notas, concepto: cVal==="" ? null : Number(cVal) };
+  const out = $("prResultado");
+  try{
+    const r = await postJSON("/api/cursos/rociadores/admin/planilla/calcular", body);
+    const ap = r.aprobatoria || 60;
+    const resCol = r.resultado==="APROBADO" ? "var(--verde)" : "var(--rojoTxt)";
+    const elim = (r.eliminada_valor!=null) ? ` <span style="color:var(--texto2);font-size:.85em;">(descarta la más baja: ${r.eliminada_valor})</span>` : "";
+    out.innerHTML = `
+      <div class="prline"><span>Promedio Semanal (60%)${elim}</span><span>${_colNota(r.promedio_semanal,ap)}</span></div>
+      <div class="prline"><span>Promedio Exámenes (30%)</span><span>${_colNota(r.promedio_examenes,ap)}</span></div>
+      <div class="prline"><span>Nota Concepto (10%)</span><span>${_colNota(r.concepto?r.concepto.nota:null,ap)}</span></div>
+      <div class="prline prtot"><span>PROMEDIO TOTAL</span><span><b style="color:${resCol};font-size:1.2em;">${r.promedio_total!=null?r.promedio_total:'—'}</b> / 100</span></div>
+      <div class="prline"><span>Resultado</span><span style="color:${resCol};font-weight:700;">${r.resultado||'—'}</span></div>
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">${r.completo?'Cálculo completo (todas las categorías).':'Cálculo parcial: '+Math.round((r.peso_evaluado||0)*100)+'% de las categorías. Llena todo para el total final.'}</div>`;
+  }catch(e){ out.innerHTML = `<span style="color:var(--rojoTxt);">⚠ ${esc(e.message)}</span>`; }
 }
 
 // Auto-entrada: si ya hay sesión de Google (p.ej. el docente venía del aula) o

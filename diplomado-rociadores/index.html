@@ -62,6 +62,19 @@ header{background:var(--marino);border-bottom:2px solid var(--rojo);padding:10px
 .btn-notas{background:var(--marino);border:1px solid #2a3a5e;color:var(--texto);border-radius:8px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}
 .btn-notas:hover{border-color:var(--azul);}
 
+/* Boletín (Mi boletín) */
+.bolenc{background:var(--campo);border:1px solid var(--borde);border-radius:10px;padding:12px 14px;margin:10px 0 14px;}
+.bolsem{border:1px solid var(--borde);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--panel);}
+.bolsemh{background:var(--marino);padding:7px 14px;font-weight:700;font-size:.82rem;}
+.bolrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 14px;border-top:1px solid var(--borde);font-size:.86rem;}
+.bolrow:first-child{border-top:none;}
+.bolrow .pct{color:var(--texto2);font-size:.78em;font-weight:600;}
+.bolrow.bolex{background:rgba(52,120,246,.06);}
+.bolrow.bolprom{background:var(--campo);font-weight:700;}
+.bolcom{padding:2px 14px 8px 14px;font-size:.74rem;color:var(--azul);}
+.bolcierre{border:1px solid var(--azul);border-radius:10px;margin-top:14px;overflow:hidden;background:var(--panel);}
+.bolcierre .bolrow{padding:9px 14px;}
+
 /* Sidebar temario */
 #temario{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:10px;overflow-y:auto;max-height:calc(100vh - 190px);align-self:start;}
 @media(max-width:899px){#temario{max-height:44vh;}}
@@ -235,7 +248,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
     <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
     <span class="prog-txt mono" id="progTxt">0 / 0</span>
     <button class="btn-notas" onclick="abrirPerfil()">📋 Mis datos</button>
-    <button class="btn-notas" onclick="verNotas()">📊 Mis notas</button>
+    <button class="btn-notas" onclick="verNotas()">📊 Mi boletín</button>
     <button class="btn-notas" id="btnCertif" style="display:none;" onclick="verMiCertificado()">🎓 Mi certificado</button>
   </div>
   <div id="temario"></div>
@@ -272,6 +285,7 @@ let hechas = new Set();         // ids de lecciones completadas (Firestore)
 let totalLecs = 0;
 let lecActiva = null;           // {sem, leccion}
 let notasCache = null;
+let boletinCache = null;
 
 const ICO = { video:"🎬", manual:"📄", quiz:"📝", tarea:"📤" };
 const $ = id => document.getElementById(id);
@@ -927,7 +941,7 @@ async function enviarQuiz(){
       method:"POST", body: JSON.stringify({ respuestas })
     });
     marcarCompletada(leccionId);
-    notasCache = null;
+    notasCache = null; boletinCache = null;
     $("contenido").innerHTML = cab(_quizActivo.w, _quizActivo.l) + `
       <div class="aviso okv">✓ ${esc(r.mensaje || "Respuestas registradas.")}</div>
       <div class="aviso">Tu nota estará visible desde el ${fmtLima(r.nota_visible_desde, true)} (hora de Lima) en <b>📊 Mis notas</b>.</div>
@@ -945,50 +959,101 @@ async function enviarQuiz(){
   }
 }
 
-// ═══════════════ MIS NOTAS ═══════════════
+// ═══════════════ MI BOLETÍN ═══════════════
+// Boletín vertical calcado de la hoja "Calificaciones G10" del Excel de ILFIS:
+// cada evaluación con su peso y nota, el PROMEDIO de cada semana, y el cierre
+// (Semanal 60% / Exámenes 30% / Concepto 10% / Total → APROBADO/DESAPROBADO).
+// Respeta la publicación diferida (las notas de una semana se ven el lunes 12:00).
+function _celdaNota(r, cod, nota){
+  const AP = r.aprobatoria || 60;
+  const est = (r.estados || {})[cod];
+  if(est === "publicado" && nota !== null && nota !== undefined){
+    const col = nota >= AP ? "var(--verde)" : "var(--rojo)";
+    return `<b style="color:${col};">${nota}</b>`;
+  }
+  if(est === "enviado")      return `<span style="color:var(--ambar);">Enviado ✓</span>`;
+  if(est === "sin_entrega")  return `<b style="color:var(--rojo);">0</b>`;
+  if(est === "por_calificar")return `<span style="color:var(--texto2);">Por calificar</span>`;
+  return `<span style="color:var(--texto2);">—</span>`;
+}
+function _prom(r, v){
+  if(v === null || v === undefined) return `<span style="color:var(--texto2);">—</span>`;
+  const AP = r.aprobatoria || 60;
+  return `<b style="color:${v >= AP ? "var(--verde)" : "var(--rojo)"};">${v}</b>`;
+}
+function _rowsEvals(r, evals){
+  return evals.map(ev => {
+    const pct = Math.round((ev.peso_semana || 0) * 100);
+    const com = (r.comentarios || {})[ev.codigo];
+    return `<div class="bolrow"><span>${esc(ev.nombre)} · <span class="pct">${pct}%</span></span>`
+      + `<span>${_celdaNota(r, ev.codigo, ev.nota)}</span></div>`
+      + (com ? `<div class="bolcom">💬 ${esc(com)}</div>` : "");
+  }).join("");
+}
 async function verNotas(){
   lecActiva = null;
   renderTemario();
   const c = $("contenido");
-  c.innerHTML = `<h2>📊 Mis notas</h2><div class="meta">Cuestionarios del diplomado · las notas se publican el lunes 12:00 (hora de Lima) de la semana siguiente</div><div class="aviso">Cargando…</div>`;
+  c.innerHTML = `<h2>📊 Mi boletín</h2><div class="aviso">Cargando…</div>`;
+  let r;
   try{
-    if(!notasCache) notasCache = await api(`/api/cursos/${CURSO}/notas`);
+    if(!boletinCache) boletinCache = await api(`/api/cursos/${CURSO}/boletin`);
+    r = boletinCache;
   }catch(e){
-    c.innerHTML = `<h2>📊 Mis notas</h2><div class="aviso err">⚠ ${esc(e.message)}</div>`;
+    c.innerHTML = `<h2>📊 Mi boletín</h2><div class="aviso err">⚠ ${esc(e.message)}</div>`;
     return;
   }
-  const aprob = notasCache.aprobatoria || 60;
-  const filas = notasCache.notas.map(n => {
-    let nota = "—", extra = "";
-    if(n.es_encuesta){
-      nota = "";
-    } else if(n.estado === "publicado"){
-      const v = (n.nota !== undefined && n.nota !== null) ? n.nota : n.puntaje;
-      const color = v >= aprob ? "var(--verde)" : "var(--rojo)";
-      nota = `<span style="color:${color};font-weight:700;">${v}</span> / 100`;
-      if(n.pendiente_manual) extra = `<div style="font-size:.68rem;color:var(--ambar);">+ preguntas de texto por calificar</div>`;
-      if(n.mensaje_docente) extra += `<div style="font-size:.7rem;color:var(--azul);margin-top:3px;text-align:left;">💬 ${esc(n.mensaje_docente)}</div>`;
-    } else if(n.estado === "sin_entrega"){
-      nota = `<span style="color:var(--rojo);font-weight:700;">0</span> / 100`;
-    }
-    const etiquetas = { pendiente:"Pendiente", enviado:"Enviado ✓", publicado:"Publicada", sin_entrega:"Sin entrega" };
-    const etiqueta = n.es_encuesta ? (n.estado === "enviado" ? "Encuesta ✓" : "Encuesta") : (etiquetas[n.estado] || n.estado);
-    return `<tr>
-      <td class="num">S${n.semana}</td>
-      <td>${esc(n.titulo)}<div style="font-size:.66rem;color:var(--texto2);">${(!n.es_encuesta && n.estado==="enviado") ? "nota el " + fmtLima(n.publicacion, true) : ""}</div></td>
-      <td><span class="est ${n.es_encuesta ? "pendiente" : n.estado}">${etiqueta}</span></td>
-      <td class="num">${nota}${extra}</td>
-    </tr>`;
-  }).join("");
-  const final = (notasCache.nota_final_parcial !== undefined)
-    ? `<div class="aviso" style="margin-top:10px;"><b>Nota final parcial (ponderada): ${notasCache.nota_final_parcial} / 100</b> — calculada sobre el ${notasCache.peso_evaluado}% del diplomado ya evaluado.</div>`
-    : "";
-  c.innerHTML = `<h2>📊 Mis notas</h2>
-    <div class="meta">Cuestionarios del diplomado · zona horaria oficial: Lima (UTC-5) · nota aprobatoria: ${aprob}/100</div>
-    <table><thead><tr><th>Sem.</th><th>Cuestionario</th><th>Estado</th><th style="text-align:right;">Nota</th></tr></thead>
-    <tbody>${filas}</tbody></table>
-    ${final}
-    <div class="aviso" style="margin-top:14px;">Toda evaluación vale 100 puntos (si trae puntos extra, son bonus con tope en 100). “Sin entrega” significa que el cuestionario cerró sin recibir tus respuestas (nota 0). Las preguntas de texto se califican manualmente y pueden sumar puntos adicionales a tu nota publicada.</div>`;
+  const AP = r.aprobatoria || 60;
+  const enc = r.encabezado || {};
+  // exámenes agrupados por semana
+  const exPorSem = {};
+  (r.examenes || []).forEach(ex => { (exPorSem[ex.semana] = exPorSem[ex.semana] || []).push(ex); });
+  const exRow = ex => {
+    const pct = Math.round((ex.peso_global || 0) * 100);
+    return `<div class="bolrow bolex"><span>🎯 ${esc(ex.nombre)} · <span class="pct">${pct}% del total</span></span>`
+      + `<span>${_celdaNota(r, ex.codigo, ex.nota)}</span></div>`;
+  };
+
+  // Crítica de lecturas (semana 0)
+  let cuerpo = `<div class="bolsem"><div class="bolsemh">Semana 0 · Introducción</div>`
+    + `<div class="bolrow"><span>${esc(r.critica.nombre)}</span><span>${_celdaNota(r, r.critica.codigo, r.critica.nota)}</span></div></div>`;
+
+  // Semanas 1..12
+  (r.semanas || []).forEach(s => {
+    let inner = _rowsEvals(r, s.evals);
+    (exPorSem[s.sem] || []).forEach(ex => { inner += exRow(ex); });
+    cuerpo += `<div class="bolsem"><div class="bolsemh">Semana ${s.sem}</div>${inner}`
+      + `<div class="bolrow bolprom"><span>PROMEDIO SEMANA ${s.sem}</span><span>${_prom(r, s.prom_sem)}</span></div></div>`;
+  });
+  // exámenes cuya semana no cae en 1..12 (Examen Final)
+  const exFinal = (r.examenes || []).filter(ex => !r.semanas.some(s => s.sem === ex.semana));
+  if(exFinal.length){
+    cuerpo += `<div class="bolsem"><div class="bolsemh">Examen Final</div>${exFinal.map(exRow).join("")}</div>`;
+  }
+
+  // Cierre (categorías + total)
+  const elim = (r.eliminada_valor !== null && r.eliminada_valor !== undefined)
+    ? ` <span style="color:var(--texto2);font-size:.8em;">(se descartó tu semana más baja: ${r.eliminada_valor})</span>` : "";
+  const resCol = r.resultado === "APROBADO" ? "var(--verde)" : "var(--rojo)";
+  const totalTxt = (r.promedio_total !== null && r.promedio_total !== undefined)
+    ? `<b style="color:${resCol};font-size:1.15em;">${r.promedio_total} / 100</b>` : "—";
+  const provi = r.provisional
+    ? `<div class="aviso" style="margin-top:8px;">Es tu <b>avance parcial</b>: calculado solo con lo ya publicado (${Math.round((r.peso_evaluado||0)*100)}% del diplomado). Tu nota final se cierra al terminar el curso.</div>`
+    : `<div class="aviso" style="margin-top:8px;">Nota final <b>${r.resultado}</b>.</div>`;
+  const cierre = `<div class="bolcierre">
+    <div class="bolrow"><span>Promedio Semanal <span class="pct">60%</span>${elim}</span><span>${_prom(r, r.promedio_semanal)}</span></div>
+    <div class="bolrow"><span>Promedio Exámenes <span class="pct">30%</span></span><span>${_prom(r, r.promedio_examenes)}</span></div>
+    <div class="bolrow"><span>Nota Concepto <span class="pct">10%</span></span><span>${_prom(r, r.concepto.nota)}</span></div>
+    <div class="bolrow bolprom" style="border-top:2px solid var(--azul);"><span>PROMEDIO TOTAL</span><span>${totalTxt}</span></div>
+    ${r.resultado ? `<div class="bolrow"><span>Resultado</span><span><b style="color:${resCol};">${r.resultado}</b></span></div>` : ""}
+  </div>${provi}`;
+
+  c.innerHTML = `<h2>📊 Mi boletín</h2>
+    <div class="meta">Diplomado de Rociadores · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
+    <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
+    ${cuerpo}
+    ${cierre}
+    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado. La nota semanal más baja de las 13 se descarta. “Sin entrega” = el cuestionario cerró sin tus respuestas (0). “Por calificar” = tu profesor aún no revisa esa tarea.</div>`;
 }
 </script>
 </body>
