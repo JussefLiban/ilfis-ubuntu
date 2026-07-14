@@ -68,9 +68,9 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .calpend{color:var(--ambar);font-weight:700;}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
-.prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
-.prlbl{display:flex;flex-direction:column;gap:2px;font-size:.66rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:6px 8px;}
-.prlbl .pct{font-size:.58rem;}
+.prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:5px;}
+.prlbl{display:flex;flex-direction:column;gap:2px;font-size:.64rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:6px;padding:3px 6px;}
+.prcab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .prlbl-auto{border-left:3px solid var(--azul);}
 .prinp{width:100%;box-sizing:border-box;}
 .prtitulo{font-size:.78rem;font-weight:700;color:var(--texto);margin-bottom:8px;}
@@ -809,16 +809,16 @@ function renderPrueba(){
   const manuales = new Set(P.codigos_manuales || []);
   const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
   const inp = (c, auto) => {
-    let pct;
-    if(c.peso_semana!=null)      pct = `Semana ${c.semana} · ${Math.round(c.peso_semana*100)}% de esa semana`;
-    else if(c.peso_global!=null) pct = `${Math.round(c.peso_global*100)}% del total`;
-    else                         pct = "";
-    const tag = auto ? ` <span class="pct" style="color:var(--azul);">auto</span>` : "";
-    return `<label class="prlbl${auto?' prlbl-auto':''}">${esc(_colLbl(c))} <span class="pct">${pct}</span>${tag}
+    let meta;
+    if(c.peso_semana!=null)      meta = `S${c.semana} · ${Math.round(c.peso_semana*100)}%`;
+    else if(c.peso_global!=null) meta = `${Math.round(c.peso_global*100)}% total`;
+    else                         meta = "";
+    const tag = auto ? ` <span style="color:var(--azul);">auto</span>` : "";
+    return `<label class="prlbl${auto?' prlbl-auto':''}" title="${esc(c.nombre)}"><span class="prcab">${esc(_colLbl(c))}${meta?" · "+meta:""}${tag}</span>
       <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
   };
   const manualInputs = evals.filter(c => manuales.has(c.codigo)).map(c => inp(c, false)).join("")
-    + `<label class="prlbl" style="background:rgba(59,130,246,.1);">NOTA CONCEPTO <span class="pct">10% · 0-100</span>
+    + `<label class="prlbl" style="background:rgba(59,130,246,.1);"><span class="prcab">Nota Concepto · 10%</span>
         <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label>`;
   const autoInputs = evals.filter(c => !manuales.has(c.codigo)).map(c => inp(c, true)).join("");
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
