@@ -69,7 +69,10 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
 .prlbl{display:flex;flex-direction:column;gap:2px;font-size:.66rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:6px 8px;}
 .prlbl .pct{font-size:.58rem;}
+.prlbl-auto{opacity:.6;}
 .prinp{width:100%;box-sizing:border-box;}
+.prinp:disabled{background:var(--panel);cursor:not-allowed;}
+.prtitulo{font-size:.78rem;font-weight:700;color:var(--texto);margin-bottom:8px;}
 .prres{margin-top:16px;background:var(--panel);border:1px solid var(--rojo);border-radius:10px;padding:14px 16px;}
 .prline{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--borde);}
 .prline:first-child{border-top:none;}
@@ -787,27 +790,47 @@ function renderPrueba(){
     tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">El Libro de notas aún no está disponible. Recarga en unos minutos.</td></tr>`;
     return;
   }
-  // inputs para cada evaluación (menos las columnas calculadas PROM SEM) + concepto
+  // Evaluaciones (menos las columnas calculadas PROM SEM), separadas en:
+  //  • MANUALES (las que pone el profesor) → editables
+  //  • AUTOMÁTICAS (cuestionarios/formularios) → el sistema las llena solo, aquí
+  //    van BLOQUEADAS por defecto (coherente con la realidad); una casilla las
+  //    desbloquea si el profesor quiere cuadrar el total completo contra su Excel.
+  const manuales = new Set(P.codigos_manuales || []);
   const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
-  const inputs = evals.map(c => {
+  const inp = (c, auto) => {
     const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% glob" : "");
-    return `<label class="prlbl">${esc(_colLbl(c))} <span class="pct">${pct}</span>
-      <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
-  }).join("");
+    const tag = auto ? ` <span class="pct" style="color:var(--azul);">auto</span>` : "";
+    return `<label class="prlbl${auto?' prlbl-auto':''}">${esc(_colLbl(c))} <span class="pct">${pct}</span>${tag}
+      <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp${auto?' prauto':''}"${auto?' disabled':''} oninput="calcularPrueba()"></label>`;
+  };
+  const manualInputs = evals.filter(c => manuales.has(c.codigo)).map(c => inp(c, false)).join("")
+    + `<label class="prlbl" style="background:rgba(59,130,246,.1);">NOTA CONCEPTO <span class="pct">10% · 0-100</span>
+        <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label>`;
+  const autoInputs = evals.filter(c => !manuales.has(c.codigo)).map(c => inp(c, true)).join("");
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
     <div class="pruebaWrap">
-      <div class="aviso" style="margin-bottom:12px;">🧪 <b>Alumno de prueba</b> — teclea notas (0–100) en las evaluaciones y comprueba que el <b>Promedio Total</b> coincide con tu Excel. No toca datos reales. Deja en blanco lo que no quieras contar (se toma como pendiente).
-      <button class="btn mini gris" style="margin-left:8px;" onclick="prueba100()">Llenar todo con 100</button>
+      <div class="aviso" style="margin-bottom:12px;">🧪 <b>Alumno de prueba</b> — teclea notas (0–100) y comprueba que el <b>Promedio Total</b> coincide con tu Excel. No toca datos reales.
+      <button class="btn mini gris" style="margin-left:8px;" onclick="prueba100()">Llenar con 100</button>
       <button class="btn mini gris" onclick="pruebaLimpiar()">Limpiar</button></div>
-      <div class="prgrid">${inputs}
-        <label class="prlbl" style="background:rgba(59,130,246,.1);">NOTA CONCEPTO <span class="pct">10% · 0-100</span>
-          <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label>
-      </div>
+
+      <div class="prtitulo">✍ Evaluaciones que califica el profesor (manuales)</div>
+      <div class="prgrid">${manualInputs}</div>
+
+      <div class="prtitulo" style="margin-top:16px;">🤖 Evaluaciones automáticas (cuestionarios / formularios)
+        <label style="font-weight:400;font-size:.72rem;color:var(--texto2);margin-left:8px;"><input type="checkbox" id="prAuto" onchange="toggleAuto()" style="vertical-align:middle;"> desbloquear para simularlas y cuadrar el total con mi Excel</label></div>
+      <div style="color:var(--texto2);font-size:.72rem;margin-bottom:6px;">Estas se llenan solas con el resultado del cuestionario del alumno; por eso están bloqueadas.</div>
+      <div class="prgrid">${autoInputs}</div>
+
       <div id="prResultado" class="prres">Ingresa notas para ver el cálculo…</div>
     </div>
   </td></tr>`;
 }
-function prueba100(){ document.querySelectorAll(".prinp").forEach(i => i.value = 100); calcularPrueba(); }
+function toggleAuto(){
+  const on = $("prAuto") && $("prAuto").checked;
+  document.querySelectorAll(".prauto").forEach(i => { i.disabled = !on; if(!on) i.value = ""; });
+  calcularPrueba();
+}
+function prueba100(){ document.querySelectorAll(".prinp:not([disabled])").forEach(i => i.value = 100); calcularPrueba(); }
 function pruebaLimpiar(){ document.querySelectorAll(".prinp").forEach(i => i.value = ""); $("prResultado").innerHTML = "Ingresa notas para ver el cálculo…"; }
 let _prTimer = null;
 function calcularPrueba(){
@@ -816,7 +839,7 @@ function calcularPrueba(){
 }
 async function _calcularPrueba(){
   const notas = {};
-  document.querySelectorAll(".prinp[data-cod]").forEach(i => {
+  document.querySelectorAll(".prinp[data-cod]:not([disabled])").forEach(i => {
     if(i.value !== "") notas[i.getAttribute("data-cod")] = Number(i.value);
   });
   const cVal = $("prConcepto").value;
