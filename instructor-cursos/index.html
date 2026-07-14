@@ -834,7 +834,7 @@ function renderPrueba(){
   const semanas = Object.keys(porSem).map(Number).sort((a,b)=>a-b);
   const pisosArr = semanas.map(w => {
     const etq = w===0 ? "Sem 0" : (w===13 ? "Ex. final" : "Sem "+w);
-    const prom = (w>=1 && w<=12)
+    const prom = (w>=0 && w<=12)
       ? `<div class="pfprom" id="prPS-${w}">Prom.<br><b>—</b></div><div class="pfpeso" id="prPeso-${w}">Peso<br><b>—</b></div>`
       : "";
     return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div>${prom}</div>`;
@@ -885,14 +885,23 @@ async function _calcularPrueba(){
   try{
     const r = await postJSON("/api/cursos/rociadores/admin/planilla/calcular", body);
     const ap = r.aprobatoria || 60;
-    // Promedio de cada semana, en su propio piso
-    (r.semanas||[]).forEach(s => {
-      const el = $("prPS-"+s.sem);
-      if(el){ const v = s.prom_sem;
-        el.innerHTML = `Prom.<br><b style="color:${v==null?'var(--texto2)':(v>=ap?'var(--verde)':'var(--rojoTxt)')};">${v==null?'—':fmtN(v)}</b>`; }
-      const ep = $("prPeso-"+s.sem);
-      if(ep){ const v = s.prom_sem;
-        ep.innerHTML = `Peso<br><b style="color:var(--rojoTxt);">${v==null?'—':fmtN(v*0.05)}</b>`; }
+    // Las 13 notas semanales: Sem 0 (Crítica Lecturas) + Semanas 1..12
+    const vals = [{sem:0, v:(r.critica ? r.critica.nota : null)}];
+    (r.semanas||[]).forEach(s => vals.push({sem:s.sem, v:s.prom_sem}));
+    // ¿cuál se descarta? la más baja de las 13 (el backend da eliminada_valor)
+    let dropSem = null;
+    if(r.eliminada_valor != null){
+      const hit = vals.filter(x=>x.v!=null).find(x => Math.abs(x.v - r.eliminada_valor) < 0.001);
+      if(hit) dropSem = hit.sem;
+    }
+    vals.forEach(x => {
+      const elP = $("prPS-"+x.sem), elW = $("prPeso-"+x.sem);
+      if(elP){ const v = x.v;
+        elP.innerHTML = `Prom.<br><b style="color:${v==null?'var(--texto2)':(v>=ap?'var(--verde)':'var(--rojoTxt)')};">${v==null?'—':fmtN(v)}</b>`; }
+      if(elW){
+        if(x.sem===dropSem) elW.innerHTML = `Peso<br><b style="color:var(--texto2);text-decoration:line-through;" title="Semana más baja: se descarta">0</b>`;
+        else { const v = x.v; elW.innerHTML = `Peso<br><b style="color:var(--rojoTxt);">${v==null?'—':fmtN(v*0.05)}</b>`; }
+      }
     });
     const resCol = r.resultado==="APROBADO" ? "var(--verde)" : "var(--rojoTxt)";
     const elim = (r.eliminada_valor!=null) ? ` <span style="color:var(--texto2);font-size:.85em;">(descarta la más baja: ${r.eliminada_valor})</span>` : "";
