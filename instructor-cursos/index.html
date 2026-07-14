@@ -910,10 +910,12 @@ async function _calcularPrueba(){
     const evs = (r.examenes||[]).map(x=>x.nota).filter(v=>v!=null);
     const puntEx = evs.length ? evs.reduce((a,b)=>a+b,0) : null;
     const fila = (lab, val) => `<div class="prline"><span>${lab}</span><span><b>${val==null?'—':fmtN(val)}</b></span></div>`;
+    const subSem = (puntSem!=null && r.eliminada_valor!=null) ? puntSem - r.eliminada_valor : null;
     out.innerHTML =
-        fila("NOTA ELIMINADA", r.eliminada_valor)
-      + fila("PUNTAJE TOTAL SEMANAL", puntSem)
-      + fila("PROMEDIO SEMANAL", r.promedio_semanal)
+        fila("PUNTAJE TOTAL SEMANAL (13 notas)", puntSem)
+      + fila("NOTA ELIMINADA (la más baja)", r.eliminada_valor)
+      + `<div class="prline" style="color:var(--texto2);font-size:.9em;"><span>SUBTOTAL (12 notas, sin la más baja)</span><span><b>${subSem==null?'—':fmtN(subSem)}</b></span></div>`
+      + fila("PROMEDIO SEMANAL (÷ 12)", r.promedio_semanal)
       + fila("PUNTAJE TOTAL EXAMENES", puntEx)
       + fila("PROMEDIO EXAMENES", r.promedio_examenes)
       + fila("NOTA CONCEPTO", r.concepto ? r.concepto.nota : null)
