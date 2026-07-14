@@ -60,9 +60,11 @@
 
   @media print{
     @page{ size:A4 landscape; margin:0; }
-    body{ background:#fff; }
+    html,body{ margin:0; padding:0; background:#fff; height:100%; overflow:hidden; }
     .barra{ display:none; }
-    .hoja{ box-shadow:none; margin:0; width:100%; max-width:none; }
+    /* Ajustar por ALTO para que quepa exacto en una sola hoja A4 horizontal
+       (el ancho lo deriva el aspect-ratio). Evita que se desborde a página 2. */
+    .hoja{ box-shadow:none; margin:0 auto; width:auto; height:100vh; max-width:100%; }
   }
 </style>
 </head>
