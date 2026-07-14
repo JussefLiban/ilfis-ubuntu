@@ -77,8 +77,9 @@ td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .pfprom{flex:0 0 auto;text-align:center;font-size:.56rem;color:var(--texto2);line-height:1.15;min-width:46px;border-left:1px solid var(--borde);padding-left:8px;margin-left:6px;}
 .pfprom b{font-size:.82rem;}
 .pev{display:flex;flex-direction:column;gap:1px;font-size:.6rem;color:var(--texto2);background:var(--campo);border:1px solid var(--borde);border-radius:5px;padding:2px 5px;width:78px;}
-.pev span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pev b{color:var(--texto);}
+.pevh{display:flex;justify-content:space-between;align-items:baseline;gap:4px;}
+.pevn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pev b{color:var(--texto);flex:0 0 auto;}
 .pev-auto{border-color:var(--azul);}
 .pev .prinp{width:100%;box-sizing:border-box;padding:1px 3px;font-size:.72rem;}
 .prinp{width:100%;box-sizing:border-box;}
@@ -822,7 +823,7 @@ function renderPrueba(){
   const box = (c) => {
     const auto = !manuales.has(c.codigo);
     const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"%t" : "");
-    return `<label class="pev${auto?' pev-auto':''}" title="${esc(c.nombre)}${auto?' · automática (cuestionario)':''}"><span>${esc(_colLbl(c))} <b>${pct}</b></span>
+    return `<label class="pev${auto?' pev-auto':''}" title="${esc(c.nombre)}${auto?' · automática (cuestionario)':''}"><span class="pevh"><span class="pevn">${esc(_colLbl(c))}</span><b>${pct}</b></span>
       <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
   };
   // agrupar por semana (crítica = piso 0; exámenes en su semana)
