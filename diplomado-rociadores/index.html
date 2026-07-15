@@ -170,7 +170,7 @@ td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowra
 .ent-msg{font-size:.8rem;margin-top:8px;min-height:1em;}
 .ent-msg.ok{color:#bbf7d0;} .ent-msg.err{color:#fecaca;}
 .ent-nota{margin-top:10px;padding:8px 10px;background:#14532d;color:#dcfce7;border-radius:6px;font-size:.82rem;}
-.np-ta{width:100%;margin:4px 0 6px;background:var(--campo,#1a2233);border:1px solid var(--borde);border-radius:7px;color:var(--texto,#e2e8f4);font-family:inherit;font-size:.82rem;padding:8px;resize:vertical;}
+.np-ta{width:100%;max-width:none;margin:4px 0 6px;background:var(--campo,#1a2233);border:1px solid var(--borde);border-radius:7px;color:var(--texto,#e2e8f4);font-family:inherit;font-size:.82rem;padding:8px;resize:vertical;}
 .np-ta:focus{outline:none;border-color:var(--azul);}
 
 /* Formulario de datos del alumno */
@@ -639,8 +639,8 @@ async function cargarEntrega(sem){
   const notaProf = e.puede_subir
     ? `<div style="margin-top:12px;">
          <label style="display:block;font-size:.8rem;color:var(--texto2);margin-bottom:6px;">📝 Mensaje para el profesor (opcional):</label>
-         <textarea id="notaProf-${sem}" class="np-ta" style="width:100%;min-height:160px;box-sizing:border-box;" oninput="this.style.height='auto';this.style.height=Math.max(160,this.scrollHeight+4)+'px'" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones… Puedes escribir todo lo que necesites; la caja crece sola.">${esc(e.mensaje_alumno||"")}</textarea>
-         <button class="btn sm" style="margin-top:8px;" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
+         <textarea id="notaProf-${sem}" class="np-ta" style="width:100%;max-width:none;min-height:200px;box-sizing:border-box;" oninput="this.style.height='auto';this.style.height=Math.max(200,this.scrollHeight+4)+'px'" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones… Puedes escribir todo lo que necesites; la caja crece sola.">${esc(e.mensaje_alumno||"")}</textarea>
+         <button class="btn sm" style="margin-top:10px;display:block;" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
          <span class="ent-msg" id="notaProfMsg-${sem}"></span>
        </div>`
     : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
