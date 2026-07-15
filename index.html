@@ -856,9 +856,6 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <label class="cert-lbl cert-part" style="display:none;">Fecha del evento
               <input type="text" id="cert-f-realizado" placeholder="15 de marzo de 2025">
             </label>
-            <label class="cert-lbl">Fondo del diploma
-              <select id="cert-f-fondo"></select>
-            </label>
           </div>
           <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <button class="btn-dar btn-a" style="padding:9px 20px;font-size:0.9rem;" onclick="certEmitir()">Emitir certificado</button>
@@ -3504,9 +3501,6 @@ async function _certCargarCatalogo() {
   const si = document.getElementById('cert-f-instructor');
   if (si && !si.options.length) si.innerHTML = (_certCatalogo.instructores||[]).map(i =>
     `<option value="${_adminEsc(i.firma)}">${_adminEsc(i.nombre)}</option>`).join('');
-  const sf = document.getElementById('cert-f-fondo');
-  if (sf && !sf.options.length) sf.innerHTML = (_certCatalogo.fondos||[]).map(f =>
-    `<option value="${_adminEsc(f.img)}">${_adminEsc(f.nombre)}</option>`).join('');
   return _certCatalogo;
 }
 
@@ -3528,7 +3522,7 @@ async function certEmitir() {
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
   const body = { tipo, nombre: g('cert-f-nombre'), curso: g('cert-f-curso'), horas: g('cert-f-horas'),
-    instructor: instrNombre, instructor_firma: instrSel.value, fondo: document.getElementById('cert-f-fondo').value };
+    instructor: instrNombre, instructor_firma: instrSel.value };
   if (tipo === 'aprobacion') { body.calificacion = g('cert-f-cali'); body.inicio = g('cert-f-inicio'); body.culminacion = g('cert-f-culm'); }
   else { body.realizado = g('cert-f-realizado'); }
   const msg = document.getElementById('cert-emit-msg');
