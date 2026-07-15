@@ -5,54 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Certificado · ILFIS</title>
 <!--
-  Certificado ILFIS (UBUNTU) — réplica fiel del diseño Laravel (verdiploma).
-  Destino del QR y visor/descarga del certificado. Se abre como:
-      /certificado/?c=CODIGO
+  Certificado ILFIS (UBUNTU) — diseño aprobado por Jussef (14-jul-2026).
+  Destino del QR y visor/descarga. Se abre como:  /certificado/?c=CODIGO
   Pide los datos a  /api/cursos/certificados/ver/{codigo}  (público).
-  Para previsualizar el diseño sin backend:  /certificado/?demo=1
+  Previsualizar el diseño sin backend:  /certificado/?demo=1
 -->
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ background:#e9edf3; font-family:"Segoe UI",Roboto,Arial,sans-serif; color:#123; }
 
-  /* Barra superior (no se imprime) */
-  .barra{ display:flex; gap:12px; justify-content:center; align-items:center;
-          padding:14px; flex-wrap:wrap; }
+  .barra{ display:flex; gap:12px; justify-content:center; align-items:center; padding:14px; flex-wrap:wrap; }
   .estado{ font-size:.92rem; padding:7px 14px; border-radius:20px; font-weight:600; }
   .ok{ background:#e5f6e9; color:#1a7a37; } .mal{ background:#fdeaea; color:#b02020; }
   .btn{ padding:10px 20px; border:0; border-radius:8px; font-size:.95rem; cursor:pointer;
         background:#c0392b; color:#fff; font-weight:600; }
   .btn:hover{ background:#a5311f; }
 
-  /* Lienzo del certificado — A4 horizontal (ratio del fondo 1920x1359) */
+  /* Lienzo A4 apaisado (ratio del fondo 1920x1359) */
   .hoja{ position:relative; width:1180px; max-width:97vw; aspect-ratio:1920/1359;
          margin:0 auto 34px; background:#fff; box-shadow:0 10px 34px rgba(0,0,0,.20);
          overflow:hidden; container-type:inline-size; }
   .fondo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 
-  /* Contenido sobre el fondo. Medidas en % (posición) y cqw/em (texto) → escala
-     idéntico en cualquier ancho de pantalla. 1cqw = 1% del ancho del certificado. */
-  .cont{ position:absolute; inset:0; z-index:1;
-         font-family:Arial, Helvetica, Verdana, sans-serif; color:#1a1a1a;
-         font-size:1.35cqw; }
-  .centro{ position:absolute; top:20.5%; left:6%; right:6%; text-align:center; }
-  .titulo{ font-size:2.35em; font-weight:700; margin-bottom:.35em; }
-  .intro{ font-size:1.2em; margin-bottom:.5em; }
-  .nombre{ font-size:2.15em; font-weight:800; text-transform:uppercase; line-height:1.05;
-           margin:.15em 0 .25em; }
-  .accion{ font-size:1.2em; font-weight:400; margin-bottom:.35em; }
-  .curso{ font-size:1.75em; font-weight:700; text-transform:capitalize; line-height:1.12;
-          width:88%; margin:0 auto; }
-
-  /* Zona inferior: detalles (izq) + firmas (centro/der) + QR (der) */
-  .detalles{ position:absolute; left:8%; bottom:9%; font-size:1.15em; line-height:1.55;
-             text-align:left; max-width:46%; }
-  .firmas{ position:absolute; right:9%; bottom:11%; display:flex; gap:2.5em; align-items:flex-end; }
-  .firma{ text-align:center; font-size:1.02em; width:11em; }
-  .firma img{ display:block; margin:0 auto .1em; height:4.3em; max-width:100%; object-fit:contain; }
-  .firma .ln{ border-top:1.5px solid #333; margin:.1em .4em .25em; }
-  .firma b{ font-weight:700; }
-  .qr{ position:absolute; right:8%; bottom:31%; width:8.2%; }
+  /* Contenido — medidas en % (posición) y em/cqw (texto) para escalar en cualquier ancho */
+  .cont{ position:absolute; inset:0; z-index:1; color:#1a1a1a;
+         font-family:Arial,Helvetica,sans-serif; font-size:1.32cqw; }
+  .titulo{ position:absolute; top:21.5%; left:8%; right:8%; text-align:center; font-size:2.0em; font-weight:800; letter-spacing:.01em; }
+  .intro{ position:absolute; top:29%; left:10%; right:10%; text-align:center; font-size:1.05em; }
+  .nombre{ position:absolute; top:34.2%; left:8%; right:8%; text-align:center; font-size:1.6em; font-weight:700; color:#1a1a1a; }
+  .accion{ position:absolute; top:39.8%; left:11%; font-size:1.05em; }
+  .curso{ position:absolute; top:43.8%; left:12%; right:12%; text-align:center; font-size:1.35em; font-weight:700; line-height:1.25; }
+  .detalles{ position:absolute; top:54.7%; left:11%; font-size:1.05em; line-height:1.7; color:#12233f; }
+  .firmas{ position:absolute; left:21%; width:40%; top:74%; display:flex; justify-content:space-around; }
+  .firma{ text-align:center; width:14em; font-size:1em; }
+  .firma img{ display:block; margin:0 auto; height:4.2em; }
+  .firma .n{ margin-top:.15em; }
+  .f-sec img{ height:4.41em; }
+  .f-inst{ position:relative; left:9cqw; }
+  .f-inst img{ height:4.62em; }
+  .qr{ position:absolute; top:71%; right:6.5%; width:14%; }
   .qr img{ width:100%; display:block; }
 
   .msg{ text-align:center; padding:70px 20px; color:#555; }
@@ -62,8 +53,6 @@
     @page{ size:A4 landscape; margin:0; }
     html,body{ margin:0; padding:0; background:#fff; height:100%; overflow:hidden; }
     .barra{ display:none; }
-    /* Ajustar por ALTO para que quepa exacto en una sola hoja A4 horizontal
-       (el ancho lo deriva el aspect-ratio). Evita que se desborde a página 2. */
     .hoja{ box-shadow:none; margin:0 auto; width:auto; height:100vh; max-width:100%; }
   }
 </style>
@@ -81,8 +70,25 @@ const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 const ASSETS = "assets/";
 const $ = id => document.getElementById(id);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
 function param(k){ return (new URLSearchParams(location.search).get(k)||"").trim(); }
+
+// Mayúscula inicial de cada palabra, salvo palabras de 3 letras o menos (que quedan
+// minúsculas). La primera palabra siempre va con mayúscula. Preserva siglas (NFPA).
+function tituloCurso(s){
+  const ps = String(s||"").trim().split(/\s+/);
+  return ps.map((w,i) => {
+    if(!w) return w;
+    if(w.length <= 3 && i !== 0) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(" ");
+}
+
+// Capitaliza el nombre del mes dentro de una fecha ("17 de abril de 2025" → "…Abril…").
+const _MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function capMes(f){
+  return String(f||"").replace(new RegExp("\\b("+_MESES.join("|")+")\\b","gi"),
+    m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
+}
 
 function pintarError(titulo, msg){
   $("root").innerHTML = `<div class="msg"><h2>${esc(titulo)}</h2><p>${esc(msg)}</p></div>`;
@@ -90,48 +96,44 @@ function pintarError(titulo, msg){
 }
 
 function pintar(d){
-  const esParticipacion = (d.tipo === "participacion");
+  const participacion = (d.tipo === "participacion");
   // Bloque de detalles (izquierda)
   let det = "";
-  if(!esParticipacion){
+  if(!participacion){
     det += `Obteniendo una calificación aprobatoria de: ${esc(d.calificacion)}/100<br>`;
-    if(d.inicio) det += `Inicio: ${esc(d.inicio)}<br>`;
-    if(d.culminacion) det += `Culminación: ${esc(d.culminacion)}<br>`;
-    det += `Con un total de: ${esc(d.horas)} Horas<br>`;
+    if(d.inicio && d.culminacion) det += `Periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}<br>`;
+    else if(d.inicio) det += `Inicio: ${esc(d.inicio)}<br>`;
+    if(d.horas) det += `Con un total de: ${esc(d.horas)} Horas<br>`;
   } else {
     if(d.realizado) det += `Realizado ${esc(d.realizado)}<br>`;
-    det += `Con un total de ${esc(d.horas)} Horas Lectivas<br>`;
+    if(d.horas) det += `Con un total de ${esc(d.horas)} Horas Lectivas<br>`;
   }
-  det += `Instructor: ${esc(d.instructor)}<br>`;
-  det += `Fecha de emisión: ${esc(d.fecha)}`;
+  if(d.instructor) det += `Instructor: ${esc(d.instructor)}<br>`;
+  det += `Fecha de Emisión: ${esc(capMes(d.fecha))}`;
 
   const fondo = ASSETS + (d.fondo || "fondo-2025.png");
   const firmaSec = ASSETS + (d.firma_secretario || "firma-ilfis-guillermo-paredes.jpg");
-  const firmaIns = ASSETS + (d.firma_instructor || "");
+  const firmaIns = d.firma_instructor ? (ASSETS + d.firma_instructor) : "";
   const qrImg = d.qr ? `<div class="qr"><img src="${d.qr}" alt="QR de verificación"></div>` : "";
 
   $("root").innerHTML = `
     <div class="hoja">
       <img class="fondo" src="${fondo}" alt="">
       <div class="cont">
-        <div class="centro">
-          <div class="titulo">Certificado de ${esParticipacion ? "Participación" : "Aprobación"}</div>
-          <div class="intro">El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que:</div>
-          <div class="nombre">${esc(d.nombre) || "—"}</div>
-          <div class="accion">${esParticipacion ? "Participó del:" : "Aprobó satisfactoriamente el:"}</div>
-          <div class="curso">${esc(d.curso) || ""}</div>
-        </div>
+        <div class="titulo">CERTIFICADO DE ${participacion ? "PARTICIPACIÓN" : "APROBACIÓN"}</div>
+        <div class="intro">El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a):</div>
+        <div class="nombre">${esc(d.nombre) || "—"}</div>
+        <div class="accion">${participacion ? "Participó del:" : "Aprobó satisfactoriamente el curso:"}</div>
+        <div class="curso">${esc(tituloCurso(d.curso))}</div>
         <div class="detalles">${det}</div>
         <div class="firmas">
-          <div class="firma">
+          <div class="firma f-sec">
             <img src="${firmaSec}" alt="">
-            <div class="ln"></div>
-            <b>${esc(d.secretario_nombre || "Guillermo Paredes")}</b><br>${esc(d.secretario_cargo || "Secretario General")}
+            <div class="n"><b>${esc(d.secretario_nombre || "Guillermo Paredes")}</b><br>${esc(d.secretario_cargo || "Secretario General")}</div>
           </div>
-          <div class="firma">
-            ${firmaIns ? `<img src="${firmaIns}" alt="">` : `<div style="height:4.3em"></div>`}
-            <div class="ln"></div>
-            <b>${esc(d.instructor)}</b><br>Instructor
+          <div class="firma f-inst">
+            ${firmaIns ? `<img src="${firmaIns}" alt="">` : `<div style="height:4.62em"></div>`}
+            <div class="n"><b>${esc(d.instructor)}</b><br>Instructor</div>
           </div>
         </div>
         ${qrImg}
@@ -165,10 +167,10 @@ async function cargar(){
 // Datos de muestra para previsualizar el diseño (?demo=1)
 const DEMO = {
   valido:true, tipo:"aprobacion", codigo:"DEMO1",
-  nombre:"Juan Carlos Pérez Rodríguez",
-  curso:"Diplomado Internacional de Diseño, Instalación y Mantenimiento de Bombas Contra Incendios",
-  calificacion:87, inicio:"Septiembre 2024", culminacion:"Enero 2025", horas:60,
-  instructor:"Jussef Liban", fecha:"14 de julio de 2026",
+  nombre:"Carolina Lerma Caicedo",
+  curso:"Diplomado Especializado en Diseño e Instalación de Sistemas de Rociadores Automáticos Contra Incendios en base a la norma NFPA 13",
+  calificacion:62, inicio:"Noviembre 2024", culminacion:"Abril 2025", horas:60,
+  instructor:"Jussef Liban", fecha:"17 de Abril de 2025",
   secretario_nombre:"Guillermo Paredes", secretario_cargo:"Secretario General",
   fondo:"fondo-2025.png", firma_secretario:"firma-ilfis-guillermo-paredes.jpg",
   firma_instructor:"firma-1-jussef-liban.jpg", qr:""
