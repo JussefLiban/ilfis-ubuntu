@@ -51,111 +51,138 @@
   "cursos": [
     {
       "nombre": "Curso de Análisis de Seguridad Humana en Edificaciones",
-      "horas": 24
+      "horas": 24,
+      "alias": "Seguridad Humana"
     },
     {
       "nombre": "Curso de Hidráulica Básica Aplicada a Sistemas de Protección Contra Incendios",
-      "horas": 16
+      "horas": 16,
+      "alias": "Hidráulica Básica"
     },
     {
       "nombre": "Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras",
-      "horas": 16
+      "horas": 16,
+      "alias": "Montantes y Mangueras"
     },
     {
       "nombre": "Curso Gestión Proyectos Norma Peruana",
-      "horas": 36
+      "horas": 36,
+      "alias": "Gestión de Proyectos"
     },
     {
       "nombre": "Curso Presencial de Análisis de Seguridad Humana en Edificaciones",
-      "horas": 16
+      "horas": 16,
+      "alias": "Seguridad Humana (Presencial)"
     },
     {
       "nombre": "Curso Principios de Detección de Incendios Basado en la Norma NFPA 72 Ed. 2019",
-      "horas": 24
+      "horas": 24,
+      "alias": "Detección NFPA 72"
     },
     {
       "nombre": "Diplomado  en  Diseño e Instalación de Sistemas de Rociadores Automáticos Contra Incendios  en base a la norma  NFPA 13",
-      "horas": 60
+      "horas": 60,
+      "alias": "Rociadores"
     },
     {
       "nombre": "Diplomado Avanzado de Cálculos Hidráulicos",
-      "horas": 60
+      "horas": 60,
+      "alias": "Cálculos Hidráulicos Avanzado"
     },
     {
       "nombre": "Diplomado Avanzado en Dinámica de Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Dinámica de Incendios Avanzado"
     },
     {
       "nombre": "Diplomado Avanzado en Seguridad Humana Fase I",
-      "horas": 60
+      "horas": 60,
+      "alias": "Seguridad Humana Fase I"
     },
     {
       "nombre": "Diplomado Avanzado en Seguridad Humana Fase II",
-      "horas": 60
+      "horas": 60,
+      "alias": "Seguridad Humana Fase II"
     },
     {
       "nombre": "Diplomado en Dinámica de Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Dinámica de Incendios"
     },
     {
       "nombre": "Diplomado Especializado en Cálculos Hidráulicos de Sistemas de Agua Contra Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Cálculos Hidráulicos"
     },
     {
       "nombre": "Diplomado Especializado para el Modelado Revit de Sistemas Contra Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Modelado Revit"
     },
     {
       "nombre": "Diplomado Internacional de Detección y Alarmas de Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Detección y Alarmas"
     },
     {
       "nombre": "Diplomado Internacional de Diseño de Sistemas Contra Incendios para Protección de Mercancías",
-      "horas": 60
+      "horas": 60,
+      "alias": "Protección de Mercancías"
     },
     {
       "nombre": "Diplomado Internacional de Diseño, Instalación y Mantenimiento de Bombas Contra Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Bombas Contra Incendios"
     },
     {
       "nombre": "Diplomado Internacional de Inspección, Prueba y Mantenimiento de Sistemas de Extinción a Base de Agua",
-      "horas": 60
+      "horas": 60,
+      "alias": "Inspección y Mantenimiento"
     },
     {
       "nombre": "Modulo 1: Sistema de Enfriamiento y Protección de Fachadas del: Diplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 1 Fachadas"
     },
     {
       "nombre": "Modulo 2: Protección Contra Incendios con Rociadores para una Planta de Empacado de Frutos de Estación del: Diplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 2 Empacado de Frutos"
     },
     {
       "nombre": "Modulo 3: Protección Contra Incendios con Rociadores para una Edificación Mixta de Gran Altura del:\tDiplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 3 Edificación Mixta"
     },
     {
       "nombre": "Modulo 4: Protección Contra Incendios para una planta envasadora de GLP del: Diplomado en Temas Avanzados de Cálculo Hidráulico de Sistemas Contra Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 4 Envasadora GLP"
     },
     {
       "nombre": "Modulo 5: Sistema de Protección Contra Incendios para un Almacén de Mercancías en un Centro Logístico, en el marco del: Diplomado en Temas Avanzados de Cálculo Hidráulico de Sistemas Contra Incendios",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 5 Centro Logístico"
     },
     {
       "nombre": "Modulo 6: Sistema de Protección Contra Incendios para un Patio de Almacenamiento Exterior del: Diplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 6 Patio Exterior"
     },
     {
       "nombre": "Modulo 7: Protección Contra Incendios con Espumas de Alta Expansión en un Almacén de Neumáticos de Caucho del: Diplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 7 Espumas"
     },
     {
       "nombre": "Modulo 8: Protección Contra Incendios para el Almacenamiento de Líquidos Combustibles e Inflamables del:\tDiplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 8 Líquidos Combustibles"
     },
     {
       "nombre": "Módulo 0: Inducción al Uso del Software de Cálculo hidráulico SHC del: Diplomado en Temas Avanzados de Cálculo Hidráulico",
-      "horas": 60
+      "horas": 60,
+      "alias": "Módulo 0 Software SHC"
     }
   ]
 }

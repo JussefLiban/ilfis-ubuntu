@@ -90,6 +90,21 @@ function capMes(f){
     m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
 }
 
+// Catálogo (apodos cortos por curso) — para el nombre del archivo PDF.
+let _catalogo = null;
+async function cargarCatalogo(){
+  if(_catalogo) return _catalogo;
+  try{ _catalogo = await (await fetch("catalogo.json")).json(); }
+  catch(e){ _catalogo = { cursos:[] }; }
+  return _catalogo;
+}
+const _norm = s => String(s||"").toLowerCase().replace(/\s+/g," ").trim();
+function aliasCurso(nombre){
+  const n = _norm(nombre);
+  const c = (_catalogo && _catalogo.cursos || []).find(x => _norm(x.nombre) === n);
+  return c ? (c.alias || "") : "";
+}
+
 function pintarError(titulo, msg){
   $("root").innerHTML = `<div class="msg"><h2>${esc(titulo)}</h2><p>${esc(msg)}</p></div>`;
   $("barra").style.display = "none";
@@ -143,10 +158,13 @@ function pintar(d){
   $("barra").style.display = "flex";
   $("estado").className = "estado ok";
   $("estado").textContent = "✓ Certificado auténtico · verificado por ILFIS";
-  document.title = "Certificado · " + (d.nombre || d.codigo || "ILFIS");
+  // Nombre del archivo al descargar/imprimir: "Certificado {apodo} · {alumno}"
+  const alias = aliasCurso(d.curso);
+  document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
 }
 
 async function cargar(){
+  await cargarCatalogo();
   if(param("demo") === "1"){ pintar(DEMO); return; }
   const c = param("c");
   if(!c){ pintarError("Falta el código", "El enlace debe terminar en ?c=CÓDIGO"); return; }
