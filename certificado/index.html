@@ -60,11 +60,13 @@
 <body>
   <div class="barra" id="barra" style="display:none;">
     <span class="estado" id="estado"></span>
-    <button class="btn" onclick="window.print()">⬇ Descargar / Imprimir PDF</button>
+    <button class="btn" id="btnpdf" onclick="descargarPDF()">⬇ Descargar PDF</button>
   </div>
 
   <div id="root"><div class="msg">Cargando certificado…</div></div>
 
+<script src="lib/html2canvas.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
 <script>
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 const ASSETS = "assets/";
@@ -161,6 +163,29 @@ function pintar(d){
   // Nombre del archivo al descargar/imprimir: "Certificado {apodo} · {alumno}"
   const alias = aliasCurso(d.curso);
   document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
+}
+
+// Genera el PDF (horizontal, tamaño justo) desde la página, sin depender de la
+// impresión del navegador — así sale bien también en celular. Respaldo: window.print().
+async function descargarPDF(){
+  const hoja = document.querySelector('.hoja');
+  const btn = document.getElementById('btnpdf');
+  if(!hoja || typeof html2canvas === "undefined" || !(window.jspdf && window.jspdf.jsPDF)){
+    window.print(); return;
+  }
+  const orig = btn ? btn.textContent : "";
+  if(btn){ btn.textContent = "Generando PDF…"; btn.disabled = true; }
+  try{
+    const canvas = await html2canvas(hoja, { scale:2, useCORS:true, backgroundColor:"#ffffff", logging:false });
+    const img = canvas.toDataURL("image/jpeg", 0.95);
+    const pdf = new window.jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+    pdf.addImage(img, "JPEG", 0, 0, 297, 210);   // A4 apaisado 297x210 (ratio del certificado ≈ igual)
+    pdf.save((document.title || "Certificado") + ".pdf");
+  }catch(e){
+    window.print();
+  }finally{
+    if(btn){ btn.textContent = orig; btn.disabled = false; }
+  }
 }
 
 async function cargar(){
