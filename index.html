@@ -806,12 +806,18 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <!-- Sección Alumnos de Plataforma Educativa (matrícula manual) -->
       <div class="admin-section" id="admin-sec-edualumnos">
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
-          Matrícula <b style="color:#fff;">manual</b>: el área comercial confirma el pago (Odoo / medios externos)
-          y aquí se le da el acceso al diplomado. Mientras no se separe el "carnet", la llave del Diplomado de
-          Rociadores es la misma de sus Clases Premium (el alumno aparece en ambas áreas).
+          Alumnos <b style="color:#fff;">matriculados</b> en cada diplomado. La matrícula es
+          <b style="color:#fff;">manual</b>: el área comercial confirma el pago (Odoo / medios externos) y aquí le das el acceso.
         </p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
-          <input type="text" id="admin-edualumnos-buscar" placeholder="Buscar alumno por nombre o correo…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
+          <select id="admin-edualumnos-curso" onchange="adminRenderEduAlumnos()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+          <span id="admin-edualumnos-count" style="font-size:0.8rem;color:#8899aa;"></span>
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosNuevo()">+ Matricular alumno</button>
+        </div>
+        <div id="admin-edualumnos-buscarwrap" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" id="admin-edualumnos-buscar" placeholder="Escribe el nombre o correo del alumno a matricular…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+          <button class="btn-a" style="padding:9px 14px;font-size:0.85rem;" onclick="adminEduAlumnosCerrarBuscar()">Cancelar</button>
         </div>
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
@@ -3782,9 +3788,23 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     return;
   }
   const _filtro = (_adminAccesosFiltro[boxId] || '').toLowerCase();
-  const _fuente = _filtro
+  let _fuente = _filtro
     ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_filtro) || (u.email || '').toLowerCase().includes(_filtro))
     : _adminAlumnos;
+  // Plataforma Educativa: por defecto SOLO los matriculados del curso elegido; el modo
+  // "Matricular alumno" abre el buscador para dar de alta a alguien de toda la base.
+  if (area === 'educativa') {
+    const selC = document.getElementById('admin-edualumnos-curso');
+    const cursoKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
+    if (cursoKey) perteneceProducto = (k => k === cursoKey);
+    if (_eduModoMatricular) {
+      _fuente = _filtro ? _fuente : [];
+    } else {
+      _fuente = _adminAlumnos.filter(u => Object.keys(u.cursos_activos || {}).some(perteneceProducto));
+    }
+    const cnt = document.getElementById('admin-edualumnos-count');
+    if (cnt) cnt.textContent = _eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' matriculado' : ' matriculados'));
+  }
   const filas = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
     const keys    = Object.keys(cursos).filter(perteneceProducto);
@@ -3827,7 +3847,11 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       <thead><tr><th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`
-    : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —</div>`;
+    : (area === 'educativa'
+        ? `<div class="admin-loading">${_eduModoMatricular
+            ? (_filtro ? `— nadie coincide con "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —` : 'Escribe arriba el nombre o correo del alumno a matricular.')
+            : 'Aún no hay alumnos matriculados en este curso. Pulsa "+ Matricular alumno".'}</div>`
+        : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —</div>`);
 }
 
 // Clases Premium → término "Alumno"; Aplicativos → término "Suscriptor" (misma estructura).
@@ -3839,9 +3863,35 @@ function adminRenderAppSuscriptores() {
   _adminRenderAccesos('admin-appsusc-content', k => APP_KEYS.includes(k), 'Suscriptor', 'aplicativos');
 }
 
-// Plataforma Educativa → término "Alumno"; solo llaves de diplomado (hoy comparte la de Premium).
+// Plataforma Educativa → término "Alumno". Por defecto lista SOLO matriculados del curso elegido.
+let _eduModoMatricular = false;
+function _adminLlenarDiplomasEdu() {
+  const sel = document.getElementById('admin-edualumnos-curso');
+  if (!sel || sel.options.length) return;
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
 function adminRenderEduAlumnos() {
+  _adminLlenarDiplomasEdu();
   _adminRenderAccesos('admin-edualumnos-content', k => DIPLOMA_KEYS.includes(k), 'Alumno', 'educativa');
+}
+// Abre el buscador para matricular a alguien de toda la base.
+function adminEduAlumnosNuevo() {
+  _eduModoMatricular = true;
+  const w = document.getElementById('admin-edualumnos-buscarwrap');
+  if (w) w.style.display = 'flex';
+  const inp = document.getElementById('admin-edualumnos-buscar');
+  if (inp) inp.focus();
+  adminRenderEduAlumnos();
+}
+// Vuelve a la vista de solo matriculados.
+function adminEduAlumnosCerrarBuscar() {
+  _eduModoMatricular = false;
+  const w = document.getElementById('admin-edualumnos-buscarwrap');
+  if (w) w.style.display = 'none';
+  const inp = document.getElementById('admin-edualumnos-buscar');
+  if (inp) inp.value = '';
+  _adminAccesosFiltro['admin-edualumnos-content'] = '';
+  adminRenderEduAlumnos();
 }
 
 // Plataforma Educativa: matrículas activas por diplomado. El dinero vive en Odoo (pago externo),
