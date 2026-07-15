@@ -834,6 +834,21 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <br><span style="color:#6b7a8a;">Los certificados del sistema anterior (Laravel) siguen intactos; estos son los nuevos de UBUNTU.</span>
         </p>
 
+        <!-- Pre-certificados desde los resultados del cohorte -->
+        <div style="border:1px solid #24506b;border-radius:10px;padding:16px;background:#0b1a26;margin-bottom:18px;">
+          <b style="color:#e6ecf7;font-size:0.9rem;"><i class="ti ti-award" style="vertical-align:-2px;"></i> Pre-certificados del cohorte</b>
+          <p style="font-size:0.78rem;color:#8899aa;margin:6px 0 12px;line-height:1.6;">
+            Trae los <b style="color:#fff;">resultados del diplomado</b> y genera el certificado de cada alumno aprobado con los datos ya llenados (nombre, curso, nota final y fechas). Los resultados finales salen al cierre del cohorte.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+            <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
+            <select id="cert-cohorte-curso" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+            <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar resultados</button>
+            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar todos los aprobados</button>
+          </div>
+          <div id="cert-cohorte-lista"><div style="color:#7a8a9a;font-size:0.8rem;">Elige el curso y pulsa "Cargar resultados".</div></div>
+        </div>
+
         <!-- Formulario de emisión -->
         <div style="border:1px solid #2a2a5a;border-radius:10px;padding:16px;background:#0f1729;margin-bottom:22px;">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
@@ -3348,7 +3363,7 @@ const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY, ...DIPLOMA_KEYS];
 // del backend (/api/cursos/<id>/admin/docentes); hoy solo Rociadores. Al crear otro diplomado,
 // basta AGREGAR una entrada aquí y su pestaña de docentes ya lo listará.
 const DIPLOMAS = [
-  { id: 'rociadores', nombre: 'Diplomado de Rociadores', semanas: 13 },
+  { id: 'rociadores', nombre: 'Diplomado de Rociadores', semanas: 13, certAlias: 'Rociadores' },
 ];
 // Diplomado seleccionado en la pestaña Docentes (por defecto el primero).
 function _adminDocDiploma() {
@@ -3621,8 +3636,136 @@ async function certEmitir() {
   } catch(e) { msg.textContent = 'No pude emitir: ' + e.message; msg.style.color = '#e87272'; }
 }
 
+// ── Pre-certificados desde los resultados del cohorte (libro de notas → generador) ──
+let _certCohorteData = null;
+function _certDiplomaMeta() {
+  const sel = document.getElementById('cert-cohorte-curso');
+  const id = (sel && sel.value) || (DIPLOMAS[0] && DIPLOMAS[0].id);
+  return DIPLOMAS.find(d => d.id === id) || {};
+}
+function _adminLlenarDiplomasCert() {
+  const sel = document.getElementById('cert-cohorte-curso');
+  if (!sel || sel.options.length) return;
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
+// Curso/horas oficiales del certificado, tomados del catálogo por el alias del diplomado.
+function _certCursoDeCohorte(meta) {
+  const c = (_certCatalogo && _certCatalogo.cursos || []).find(x => x.alias === meta.certAlias);
+  const pl = _certCohorteData && _certCohorteData.planilla;
+  return { nombre: c ? c.nombre : ((pl && pl.nombre_curso) || meta.nombre || ''), horas: c ? c.horas : '' };
+}
+// Meses de inicio/culminación a partir de la fecha de cohorte (+ nº de semanas).
+function _certMesesDeCohorte(cohorte, semanas) {
+  const f = (cohorte && cohorte.fecha_inicio) || '';
+  if (!f) return { inicio: '', culm: '' };
+  const ini = new Date(f + 'T00:00:00');
+  const culm = new Date(ini.getTime() + ((semanas || 13) * 7 - 1) * 86400000);
+  const mm = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  return { inicio: mm(ini), culm: mm(culm) };
+}
+function _certYaEmitidos(cursoNombre) {
+  return new Set((_adminCertLista || [])
+    .filter(c => (c.curso || '').trim().toLowerCase() === (cursoNombre || '').trim().toLowerCase())
+    .map(c => (c.nombre || '').trim().toLowerCase()));
+}
+async function certCargarCohorte() {
+  await _certCargarCatalogo();
+  _adminLlenarDiplomasCert();
+  const meta = _certDiplomaMeta();
+  const box = document.getElementById('cert-cohorte-lista');
+  if (box) box.innerHTML = '<div class="admin-loading">Cargando resultados…</div>';
+  try {
+    const [planilla, cohorte] = await Promise.all([
+      fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/planilla', { headers: { 'x-admin-key': _getAdminKey() } })
+        .then(r => { if (r.status === 401) { _clearAdminKey(); throw new Error('sesión'); } if (!r.ok) throw new Error('Error ' + r.status); return r.json(); }),
+      fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } })
+        .then(r => r.ok ? r.json() : { fecha_inicio: '' }).catch(() => ({ fecha_inicio: '' }))
+    ]);
+    _certCohorteData = { meta, planilla, cohorte };
+    certRenderCohorte();
+  } catch(e) { if (box) box.innerHTML = '<div style="color:#e87272;font-size:0.85rem;">No pude cargar los resultados: ' + e.message + '</div>'; }
+}
+function certRenderCohorte() {
+  const box = document.getElementById('cert-cohorte-lista');
+  if (!box || !_certCohorteData) return;
+  const { meta, planilla } = _certCohorteData;
+  const alumnos = planilla.alumnos || [];
+  const curso = _certCursoDeCohorte(meta);
+  const yaEmit = _certYaEmitidos(curso.nombre);
+  const nAprob = alumnos.filter(a => a.resultado === 'APROBADO').length;
+  const filas = alumnos.map(a => {
+    const nota = (a.promedio_total == null) ? '—' : (Math.round(a.promedio_total * 100) / 100);
+    const est = a.resultado === 'APROBADO' ? ['Aprobado', '#12351f', '#5fd08a']
+              : a.resultado === 'DESAPROBADO' ? ['Desaprobado', '#3a1414', '#e69a9a']
+              : ['En curso', '#222a3d', '#8b95ad'];
+    let accion = '';
+    if (a.resultado === 'APROBADO') {
+      accion = yaEmit.has((a.nombre || '').trim().toLowerCase())
+        ? '<span style="color:#5fd08a;font-size:0.78rem;">✓ Emitido</span>'
+        : `<button class="btn-a btn-dar" style="padding:5px 12px;font-size:0.78rem;" onclick="certPrefillCohorte('${a.uid}')">Generar</button>`;
+    }
+    return `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 12px;border-top:1px solid #1e2740;font-size:0.85rem;color:#e6ecf7;">
+      <span>${_adminEsc(a.nombre || '—')}</span>
+      <span style="color:#8899aa;font-size:0.8rem;white-space:nowrap;">Nota: ${nota}</span>
+      <span style="font-size:0.72rem;padding:3px 10px;border-radius:999px;white-space:nowrap;background:${est[1]};color:${est[2]};">${est[0]}</span>
+      <span style="text-align:right;min-width:90px;">${accion}</span>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:8px;">${alumnos.length} alumno(s) · ${nAprob} aprobado(s)</div>
+    <div style="border:1px solid #1e2740;border-radius:10px;overflow:hidden;">${filas || '<div style="padding:12px;color:#8899aa;font-size:0.82rem;">Sin datos del cohorte todavía.</div>'}</div>`;
+}
+// Rellena el formulario de emisión con los datos del alumno aprobado (para revisar y emitir).
+function certPrefillCohorte(uid) {
+  if (!_certCohorteData) return;
+  const { meta, cohorte, planilla } = _certCohorteData;
+  const a = (planilla.alumnos || []).find(x => x.uid === uid);
+  if (!a) return;
+  const curso = _certCursoDeCohorte(meta);
+  const m = _certMesesDeCohorte(cohorte, meta.semanas);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('cert-f-tipo', 'aprobacion'); certToggleTipo();
+  set('cert-f-nombre', a.nombre || '');
+  set('cert-f-curso', curso.nombre);
+  set('cert-f-horas', curso.horas || '');
+  set('cert-f-cali', a.promedio_total == null ? '' : Math.round(a.promedio_total));
+  set('cert-f-inicio', m.inicio);
+  set('cert-f-culm', m.culm);
+  const msg = document.getElementById('cert-emit-msg');
+  if (msg) { msg.textContent = 'Datos cargados — revisa y pulsa "Emitir certificado".'; msg.style.color = '#8899aa'; }
+  const nom = document.getElementById('cert-f-nombre');
+  if (nom) nom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// Emite de una sola vez el certificado de todos los aprobados que aún no lo tienen.
+async function certEmitirTodosCohorte() {
+  if (!_certCohorteData) { alert('Primero pulsa "Cargar resultados".'); return; }
+  const { meta, planilla, cohorte } = _certCohorteData;
+  const curso = _certCursoDeCohorte(meta);
+  const m = _certMesesDeCohorte(cohorte, meta.semanas);
+  const yaEmit = _certYaEmitidos(curso.nombre);
+  const pend = (planilla.alumnos || []).filter(a => a.resultado === 'APROBADO' && !yaEmit.has((a.nombre || '').trim().toLowerCase()));
+  if (!pend.length) { alert('No hay aprobados pendientes de certificado.'); return; }
+  if (!confirm('Se generarán ' + pend.length + ' certificado(s) para los alumnos aprobados. ¿Continuar?')) return;
+  const instrSel = document.getElementById('cert-f-instructor');
+  const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  let ok = 0, fail = 0;
+  for (const a of pend) {
+    const body = { tipo: 'aprobacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
+      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '',
+      calificacion: String(Math.round(a.promedio_total)), inicio: m.inicio, culminacion: m.culm };
+    try {
+      const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.ok) ok++; else fail++;
+    } catch(_) { fail++; }
+  }
+  await adminCargarCertificados();
+  await certCargarCohorte();
+  alert('Listo. Certificados generados: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+}
+
 async function adminCargarCertificados() {
   await _certCargarCatalogo();
+  _adminLlenarDiplomasCert();
   certToggleTipo();
   const box = document.getElementById('admin-cert-content');
   if (!box) return;
