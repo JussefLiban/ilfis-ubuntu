@@ -49,6 +49,15 @@
   .msg{ text-align:center; padding:70px 20px; color:#555; }
   .msg h2{ margin-bottom:8px; }
 
+  /* Aviso de certificado ANULADO (destino del QR de uno revocado) */
+  .anul{ max-width:560px; margin:50px auto; padding:34px 26px; text-align:center;
+         background:#fdeaea; border:2px solid #d9534f; border-radius:16px; color:#7a1f1c; }
+  .anul .ic{ font-size:54px; line-height:1; }
+  .anul h2{ margin:10px 0 6px; color:#b02020; font-size:1.5rem; letter-spacing:.02em; }
+  .anul p{ margin:6px 0; font-size:1rem; }
+  .anul .chico{ font-size:.85rem; color:#9a5a58; margin-top:14px; }
+  .anul b{ color:#b02020; }
+
   @media print{
     @page{ size:A4 landscape; margin:0; }
     html,body{ margin:0; padding:0; background:#fff; height:100%; overflow:hidden; }
@@ -110,6 +119,18 @@ function aliasCurso(nombre){
 function pintarError(titulo, msg){
   $("root").innerHTML = `<div class="msg"><h2>${esc(titulo)}</h2><p>${esc(msg)}</p></div>`;
   $("barra").style.display = "none";
+}
+
+function pintarAnulado(codigo){
+  $("root").innerHTML = `
+    <div class="anul">
+      <div class="ic">⚠️</div>
+      <h2>CERTIFICADO ANULADO</h2>
+      <p>Este certificado (código <b>${esc(codigo)}</b>) fue <b>anulado por ILFIS</b> y <b>ya no es válido</b>.</p>
+      <p class="chico">Si crees que se trata de un error, comunícate con ILFIS.</p>
+    </div>`;
+  $("barra").style.display = "none";
+  document.title = "Certificado anulado · ILFIS";
 }
 
 function pintar(d){
@@ -191,13 +212,14 @@ async function descargarPDF(){
 async function cargar(){
   await cargarCatalogo();
   if(param("demo") === "1"){ pintar(DEMO); return; }
+  if(param("demo") === "anulado"){ pintarAnulado("DEMO1"); return; }
   const c = param("c");
   if(!c){ pintarError("Falta el código", "El enlace debe terminar en ?c=CÓDIGO"); return; }
   try{
     const r = await fetch(`${API}/api/cursos/certificados/ver/${encodeURIComponent(c)}`);
     const d = await r.json();
     if(!d.valido){
-      if(d.anulado) pintarError("Certificado anulado", `El certificado "${c}" fue anulado y ya no es válido.`);
+      if(d.anulado) pintarAnulado(c);
       else pintarError("Certificado no encontrado", `No existe un certificado con el código "${c}".`);
       return;
     }
