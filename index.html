@@ -766,16 +766,22 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <!-- Sección Cohorte (Plataforma Educativa) -->
       <div class="admin-section" id="admin-sec-cohorte">
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
-          Fecha de inicio de la cohorte del <b style="color:#fff;">Diplomado de Rociadores</b>. Debe ser un <b style="color:#fff;">lunes</b>.
+          Fecha de inicio de la cohorte de cada diplomado. Debe ser un <b style="color:#fff;">lunes</b>.
           Al cambiarla se <b style="color:#fff;">recalcula todo el calendario del aula</b> (apertura de semanas, cierres, publicación de notas). Solo el superadmin.
         </p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
+          <select id="admin-cohorte-curso" onchange="adminCargarCohorte()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:260px;"></select>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
           <label style="font-size:0.8rem;color:#8899aa;">Inicio de cohorte:</label>
           <input type="date" id="admin-cohorte-fecha" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminSetCohorte()">Guardar</button>
           <span id="admin-cohorte-msg" style="font-size:0.8rem;"></span>
         </div>
-        <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;"></div>
+        <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;margin-bottom:22px;"></div>
+        <div style="font-size:0.72rem;color:#66788a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Vistazo rápido · todos los cursos</div>
+        <div id="admin-cohorte-lista"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Suscriptores (General de la plataforma) -->
       <div class="admin-section" id="admin-sec-suscriptores">
@@ -3336,7 +3342,7 @@ const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY, ...DIPLOMA_KEYS];
 // del backend (/api/cursos/<id>/admin/docentes); hoy solo Rociadores. Al crear otro diplomado,
 // basta AGREGAR una entrada aquí y su pestaña de docentes ya lo listará.
 const DIPLOMAS = [
-  { id: 'rociadores', nombre: 'Diplomado de Rociadores' },
+  { id: 'rociadores', nombre: 'Diplomado de Rociadores', semanas: 13 },
 ];
 // Diplomado seleccionado en la pestaña Docentes (por defecto el primero).
 function _adminDocDiploma() {
@@ -3389,29 +3395,92 @@ function adminShowTab(name, btn) {
   if (name === 'educertif') adminCargarCertificados();
 }
 
-// ── Cohorte (fecha de inicio del diplomado; solo superadmin) ──
+// ── Cohorte (fecha de inicio por diplomado; solo superadmin) ──
+// Diplomado elegido en la pestaña Cohorte (por defecto el primero).
+function _adminCohorteCurso() {
+  const sel = document.getElementById('admin-cohorte-curso');
+  return (sel && sel.value) || (DIPLOMAS[0] && DIPLOMAS[0].id) || 'rociadores';
+}
+function _adminLlenarDiplomasCohorte() {
+  const sel = document.getElementById('admin-cohorte-curso');
+  if (!sel || sel.options.length) return;  // ya llenado
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
+// Estado de una cohorte a partir de su fecha de inicio (lunes) y nº de semanas.
+function _cohorteEstado(fecha, semanas) {
+  if (!fecha) return { txt: 'Sin fecha', semana: null };
+  const ini = new Date(fecha + 'T00:00:00');
+  const totSem = semanas || 13;
+  const dias = Math.floor((new Date() - ini) / 86400000);
+  if (dias < 0) return { txt: 'Próximo', semana: null };
+  const sem = Math.floor(dias / 7) + 1;
+  if (sem > totSem) return { txt: 'Cerrado', semana: null };
+  return { txt: 'En curso', semana: sem + ' de ' + totSem };
+}
+const _COHORTE_BADGE = {
+  'En curso':  'background:#12351f;color:#5fd08a;',
+  'Próximo':   'background:#3a2f12;color:#e0b64f;',
+  'Cerrado':   'background:#222a3d;color:#8b95ad;',
+  'Sin fecha': 'background:#222a3d;color:#8b95ad;'
+};
+
 async function adminCargarCohorte() {
+  _adminLlenarDiplomasCohorte();
+  const curso = _adminCohorteCurso();
   const info = document.getElementById('admin-cohorte-info');
   const inp = document.getElementById('admin-cohorte-fecha');
   if (info) info.textContent = 'Cargando…';
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
+    const r = await fetch(BACKEND + '/api/cursos/' + curso + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     if (!r.ok) throw new Error('Error ' + r.status);
     const d = await r.json();
     if (inp) inp.value = d.fecha_inicio || '';
-    if (info) info.textContent = 'Fecha actual del calendario: ' + (d.fecha_inicio || '—') + ' · (por defecto en código: ' + (d.por_defecto || '—') + ')';
+    const meta = DIPLOMAS.find(x => x.id === curso) || {};
+    const est = _cohorteEstado(d.fecha_inicio, meta.semanas);
+    if (info) info.innerHTML = 'Estado: <b style="color:#e6ecf7;">' + est.txt + '</b>'
+      + (est.semana ? ' · Semana ' + est.semana : '')
+      + ' · Fecha actual del calendario: ' + (d.fecha_inicio || '—')
+      + ' · (por defecto en código: ' + (d.por_defecto || '—') + ')';
   } catch(e) { if (info) info.textContent = '⚠ ' + e.message; }
+  adminRenderCohorteLista();
+}
+
+// Vistazo rápido: una fila por diplomado con su fecha de inicio y estado.
+async function adminRenderCohorteLista() {
+  const box = document.getElementById('admin-cohorte-lista');
+  if (!box) return;
+  try {
+    const filas = await Promise.all(DIPLOMAS.map(async d => {
+      let fecha = '';
+      try {
+        const r = await fetch(BACKEND + '/api/cursos/' + d.id + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
+        if (r.ok) { const j = await r.json(); fecha = j.fecha_inicio || ''; }
+      } catch(_) {}
+      const est = _cohorteEstado(fecha, d.semanas);
+      const bs = _COHORTE_BADGE[est.txt] || _COHORTE_BADGE['Sin fecha'];
+      return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid #1e2740;font-size:0.85rem;color:#e6ecf7;">'
+        + '<span>' + d.nombre + '</span>'
+        + '<span style="font-size:0.8rem;color:#8899aa;white-space:nowrap;">' + (fecha || '—') + '</span>'
+        + '<span style="font-size:0.72rem;padding:3px 10px;border-radius:999px;white-space:nowrap;' + bs + '">' + est.txt + '</span>'
+        + '</div>';
+    }));
+    box.innerHTML = '<div style="border:1px solid #1e2740;border-radius:12px;overflow:hidden;">'
+      + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:9px 14px;background:#141b2e;font-size:0.72rem;color:#66788a;">'
+      + '<span>Curso</span><span>Inicio</span><span>Estado</span></div>'
+      + filas.join('') + '</div>';
+  } catch(e) { box.innerHTML = '<div style="color:#f87171;font-size:0.8rem;">⚠ ' + e.message + '</div>'; }
 }
 
 async function adminSetCohorte() {
+  const curso = _adminCohorteCurso();
   const inp = document.getElementById('admin-cohorte-fecha');
   const msg = document.getElementById('admin-cohorte-msg');
   const fecha = (inp.value || '').trim();
   if (!fecha) { if (msg) { msg.textContent = '⚠ elige una fecha'; msg.style.color = '#e6a23c'; } return; }
   if (msg) { msg.textContent = '…'; msg.style.color = '#8899aa'; }
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/cohorte', {
+    const r = await fetch(BACKEND + '/api/cursos/' + curso + '/admin/cohorte', {
       method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ fecha_inicio: fecha }) });
     const d = await r.json().catch(() => ({}));
