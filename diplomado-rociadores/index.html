@@ -1008,27 +1008,44 @@ async function verNotas(){
   // exámenes agrupados por semana
   const exPorSem = {};
   (r.examenes || []).forEach(ex => { (exPorSem[ex.semana] = exPorSem[ex.semana] || []).push(ex); });
-  const exRow = ex => {
-    const pct = Math.round((ex.peso_global || 0) * 100);
-    return `<div class="bolrow bolex"><span>🎯 ${esc(ex.nombre)} · <span class="pct">${pct}% del total</span></span>`
-      + `<span>${_celdaNota(r, ex.codigo, ex.nota)}</span></div>`;
+  // ── Libreta de notas (formato tipo "Alumno de prueba"): cada semana en cuadros ──
+  const est = cod => (r.estados || {})[cod];
+  const valNota = (cod, nota) => {
+    const e = est(cod);
+    if(e === "publicado" && nota !== null && nota !== undefined)
+      return `<b style="color:${nota>=AP?'var(--verde)':'var(--rojoTxt)'};">${nota}</b>`;
+    if(e === "enviado")       return `<span style="color:var(--ambar);">Enviado ✓</span>`;
+    if(e === "por_calificar") return `<span style="color:var(--texto2);">Por calificar</span>`;
+    if(e === "sin_entrega")   return `<b style="color:var(--rojoTxt);">0</b>`;
+    return `<span style="color:var(--texto2);">—</span>`;
   };
+  const box = (nombre, cod, nota, pct) => {
+    const p = (pct || pct === 0) ? ` <span class="lb-pct">${pct}%</span>` : "";
+    const com = (r.comentarios || {})[cod];
+    return `<div class="lb-box"><div class="lb-code">${esc(nombre)}${p}</div>`
+      + `<div class="lb-val">${valNota(cod, nota)}</div>`
+      + (com ? `<div class="lb-com">💬 ${esc(com)}</div>` : "") + `</div>`;
+  };
+  const semPub = evals => (evals || []).some(ev => est(ev.codigo) === "publicado");
 
-  // Crítica de lecturas (semana 0)
-  let cuerpo = `<div class="bolsem"><div class="bolsemh">Semana 0 · Introducción</div>`
-    + `<div class="bolrow"><span>${esc(r.critica.nombre)}</span><span>${_celdaNota(r, r.critica.codigo, r.critica.nota)}</span></div></div>`;
+  // Semana 0 (Crítica de lecturas)
+  let cuerpo = `<div class="lb-sem"><div class="lb-semh"><span>Semana 0 · Introducción</span></div>`
+    + `<div class="lb-grid">${box(r.critica.nombre, r.critica.codigo, r.critica.nota, null)}</div></div>`;
 
   // Semanas 1..12
   (r.semanas || []).forEach(s => {
-    let inner = _rowsEvals(r, s.evals);
-    (exPorSem[s.sem] || []).forEach(ex => { inner += exRow(ex); });
-    cuerpo += `<div class="bolsem"><div class="bolsemh">Semana ${s.sem}</div>${inner}`
-      + `<div class="bolrow bolprom"><span>PROMEDIO SEMANA ${s.sem}</span><span>${_prom(r, s.prom_sem)}</span></div></div>`;
+    let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round((ev.peso_semana || 0) * 100))).join("");
+    (exPorSem[s.sem] || []).forEach(ex => { boxes += box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100)); });
+    const prom = semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);">Pendiente</span>`;
+    cuerpo += `<div class="lb-sem"><div class="lb-semh"><span>Semana ${s.sem}</span>`
+      + `<span class="lb-prom">Prom&nbsp;${prom} <span class="lb-peso">· 5%</span></span></div>`
+      + `<div class="lb-grid">${boxes}</div></div>`;
   });
-  // exámenes cuya semana no cae en 1..12 (Examen Final)
-  const exFinal = (r.examenes || []).filter(ex => !r.semanas.some(s => s.sem === ex.semana));
+  // Examen Final (semana fuera de 1..12)
+  const exFinal = (r.examenes || []).filter(ex => !(r.semanas || []).some(s => s.sem === ex.semana));
   if(exFinal.length){
-    cuerpo += `<div class="bolsem"><div class="bolsemh">Examen Final</div>${exFinal.map(exRow).join("")}</div>`;
+    cuerpo += `<div class="lb-sem"><div class="lb-semh"><span>Examen Final</span></div>`
+      + `<div class="lb-grid">${exFinal.map(ex => box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100))).join("")}</div></div>`;
   }
 
   // Cierre (categorías + total)
@@ -1048,12 +1065,24 @@ async function verNotas(){
     <div class="bolrow"><span>Resultado</span><span><b style="color:${resCol};">${r.resultado || "En curso"}</b></span></div>
   </div>${provi}`;
 
-  c.innerHTML = `<h2>📊 Mi boletín</h2>
+  const estilo = `<style>
+    .lb-sem{border:1px solid var(--borde);border-radius:12px;margin-bottom:12px;overflow:hidden;background:var(--panel);}
+    .lb-semh{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--marino);padding:8px 14px;font-weight:700;font-size:.84rem;}
+    .lb-prom{font-weight:700;font-size:.82rem;color:var(--texto);white-space:nowrap;}
+    .lb-peso{color:var(--texto2);font-weight:600;font-size:.9em;}
+    .lb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;padding:12px 14px;}
+    .lb-box{background:var(--campo);border:1px solid var(--borde);border-radius:9px;padding:8px 10px;}
+    .lb-code{font-size:.72rem;color:var(--texto2);font-weight:600;margin-bottom:5px;line-height:1.3;}
+    .lb-pct{color:var(--azul);}
+    .lb-val{font-size:.95rem;font-weight:700;}
+    .lb-com{font-size:.68rem;color:var(--texto2);margin-top:5px;line-height:1.35;}
+  </style>`;
+  c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
     <div class="meta">Diplomado de Rociadores · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
     <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
     ${cuerpo}
     ${cierre}
-    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado. La nota semanal más baja de las 13 se descarta. “Sin entrega” = el cuestionario cerró sin tus respuestas (0). “Por calificar” = tu profesor aún no revisa esa tarea.</div>`;
+    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = registrado; la nota se publica el lunes 12:00. “Por calificar” = tu profesor aún no revisa esa tarea.</div>`;
 }
 </script>
 </body>
