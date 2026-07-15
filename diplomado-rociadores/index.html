@@ -291,6 +291,26 @@ const ICO = { video:"🎬", manual:"📄", quiz:"📝", tarea:"📤" };
 const $ = id => document.getElementById(id);
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+// Normaliza un título GRITADO (todo mayúsculas) al formato de la plataforma:
+// cada palabra con inicial mayúscula salvo las de menos de 4 letras; siglas/códigos tal cual.
+// Si el texto no está mayormente en mayúsculas, se deja igual.
+const _ACR = new Set(["NFPA","ILFIS","PDF","ZIP","FM","UNE","CTE","IA","CDL","EV","PS","GLP","ESFR","SHC","BIM","CAD","3D","QR"]);
+function _tit(s){
+  if(!s) return s;
+  const letras = (s.match(/[A-Za-zÁÉÍÓÚÜÑ]/g) || []).length;
+  const mays   = (s.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
+  if(!letras || (mays / letras) < 0.7) return s;   // no está gritado → no tocar
+  let out = s.replace(/\S+/g, w => {
+    const m = w.match(/^([^0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]*)([0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ].*?)([^0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]*)$/);
+    if(!m) return w;
+    const pre = m[1], core = m[2], post = m[3];
+    if(_ACR.has(core.toUpperCase()) || /[0-9-]/.test(core)) return pre + core + post;  // siglas/códigos tal cual
+    const low = core.toLowerCase();
+    const corta = (core.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length < 4;
+    return pre + (corta ? low : (low.charAt(0).toUpperCase() + low.slice(1))) + post;
+  });
+  return out.replace(/(\p{L})/u, c => c.toUpperCase());   // primera letra siempre mayúscula
+}
 
 // ═══════════════ HELPERS ═══════════════
 // RELOJ DE PRUEBAS: abre el aula con ?prueba=2026-07-14T13:00 para verla con
@@ -464,7 +484,7 @@ function renderTemario(){
       ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}`
       : `abre lun ${fmtLima(w.abre)}`;
     d.innerHTML = `<div class="sem-cab" onclick="toggleSemana(${w.sem}, this)">
-        <span class="st">${esc(w.titulo)}</span>
+        <span class="st">${esc(_tit(w.titulo))}</span>
         <span class="fechas">${fechas}</span>
         <span class="flecha">▶</span>
       </div><div class="sem-lecs"></div>`;
@@ -482,7 +502,7 @@ function renderTemario(){
         const f = document.createElement("div");
         const comp = hechas.has(l.id);
         f.className = "lec" + (lecActiva && lecActiva.leccion.id === l.id ? " activa" : "");
-        f.innerHTML = `<span>${comp ? '<span class="ok">✓</span>' : (ICO[l.tipo] || "•")}</span><span class="nom">${esc(l.titulo)}</span>`;
+        f.innerHTML = `<span>${comp ? '<span class="ok">✓</span>' : (ICO[l.tipo] || "•")}</span><span class="nom">${esc(_tit(l.titulo))}</span>`;
         f.onclick = () => abrirLeccion(w, l);
         zona.appendChild(f);
       });
@@ -522,7 +542,7 @@ function abrirLeccion(w, l){
 }
 
 function cab(w, l){
-  return `<h2>${ICO[l.tipo]||""} ${esc(l.titulo)}</h2><div class="meta">${esc(w.titulo)}</div>`;
+  return `<h2>${ICO[l.tipo]||""} ${esc(_tit(l.titulo))}</h2><div class="meta">${esc(_tit(w.titulo))}</div>`;
 }
 
 // ── Video ── (reproductor NATIVO de Google Drive incrustado)
@@ -1036,7 +1056,7 @@ async function verNotas(){
   const box = (nombre, cod, nota, pct) => {
     const p = (pct || pct === 0) ? ` <span class="lb-pct">${pct}%</span>` : "";
     const com = (r.comentarios || {})[cod];
-    return `<div class="lb-box"><div class="lb-code">${esc(nombre)}${p}</div>`
+    return `<div class="lb-box"><div class="lb-code">${esc(_tit(nombre))}${p}</div>`
       + `<div class="lb-val">${valNota(cod, nota)}</div>`
       + (com ? `<div class="lb-com">💬 ${esc(com)}</div>` : "") + `</div>`;
   };
