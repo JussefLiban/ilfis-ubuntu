@@ -588,7 +588,7 @@ function lecTarea(w, l, c){
     ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo. Los PDF de evaluación son las preguntas: respóndelas en el cuestionario de esta misma semana (el número de cada pregunta del cuestionario corresponde al PDF).</div>'
     : '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
   const btnZip = (descargable && archivos.length)
-    ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar todo el material de la semana</button>`
+    ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar Todo el Material de la Semana</button>`
     : "";
   c.innerHTML = cab(w, l) + `
     ${btnZip}

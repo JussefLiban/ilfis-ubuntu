@@ -780,7 +780,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <span id="admin-cohorte-msg" style="font-size:0.8rem;"></span>
         </div>
         <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;margin-bottom:22px;"></div>
-        <div style="font-size:0.72rem;color:#66788a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Vistazo rápido · todos los cursos</div>
+        <div style="font-size:0.74rem;color:#66788a;letter-spacing:0.02em;margin-bottom:8px;">Vistazo Rápido · Todos los Cursos</div>
         <div id="admin-cohorte-lista"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Suscriptores (General de la plataforma) -->
@@ -813,7 +813,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
           <select id="admin-edualumnos-curso" onchange="adminRenderEduAlumnos()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
           <span id="admin-edualumnos-count" style="font-size:0.8rem;color:#8899aa;"></span>
-          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosNuevo()">+ Matricular alumno</button>
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosNuevo()">+ Matricular Alumno</button>
         </div>
         <div id="admin-edualumnos-buscarwrap" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
           <input type="text" id="admin-edualumnos-buscar" placeholder="Escribe el nombre o correo del alumno a matricular…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
@@ -836,15 +836,15 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
         <!-- Pre-certificados desde los resultados del cohorte -->
         <div style="border:1px solid #24506b;border-radius:10px;padding:16px;background:#0b1a26;margin-bottom:18px;">
-          <b style="color:#e6ecf7;font-size:0.9rem;"><i class="ti ti-award" style="vertical-align:-2px;"></i> Pre-certificados del cohorte</b>
+          <b style="color:#e6ecf7;font-size:0.9rem;"><i class="ti ti-award" style="vertical-align:-2px;"></i> Pre-Certificados del Cohorte</b>
           <p style="font-size:0.78rem;color:#8899aa;margin:6px 0 12px;line-height:1.6;">
             Trae los <b style="color:#fff;">resultados del diplomado</b> y genera el certificado de cada alumno aprobado con los datos ya llenados (nombre, curso, nota final y fechas). Los resultados finales salen al cierre del cohorte.
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
             <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
             <select id="cert-cohorte-curso" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
-            <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar resultados</button>
-            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar todos los aprobados</button>
+            <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar Resultados</button>
+            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar Todos los Aprobados</button>
           </div>
           <div id="cert-cohorte-lista"><div style="color:#7a8a9a;font-size:0.8rem;">Elige el curso y pulsa "Cargar resultados".</div></div>
         </div>
@@ -3993,7 +3993,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     : (area === 'educativa'
         ? `<div class="admin-loading">${_eduModoMatricular
             ? (_filtro ? `— nadie coincide con "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —` : 'Escribe arriba el nombre o correo del alumno a matricular.')
-            : 'Aún no hay alumnos matriculados en este curso. Pulsa "+ Matricular alumno".'}</div>`
+            : 'Aún no hay alumnos matriculados en este curso. Pulsa "+ Matricular Alumno".'}</div>`
         : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminAccesosFiltro[boxId] || '')}" —</div>`);
 }
 
