@@ -1028,12 +1028,23 @@ async function verNotas(){
   };
   const semPub = evals => (evals || []).some(ev => est(ev.codigo) === "publicado");
 
-  // Semana 0 (Crítica de lecturas)
-  let cuerpo = `<div class="lb-sem"><div class="lb-semh"><span>Semana 0 · Introducción</span></div>`
-    + `<div class="lb-grid">${box(r.critica.nombre, r.critica.codigo, r.critica.nota, null)}</div></div>`;
+  // Solo semanas ya ABIERTAS (progresivo, igual que el temario) para no abrumar al alumno
+  // con todo el trabajo por venir. Docente / "ver como alumno" respetan _semAbiertaVista.
+  const _estAb = new Set();
+  if(estructura && Array.isArray(estructura.semanas))
+    estructura.semanas.forEach(w => { if(_semAbiertaVista(w)) _estAb.add(w.sem); });
+  const semVisible = sem => (!estructura || !Array.isArray(estructura.semanas)) ? true : _estAb.has(sem);
 
-  // Semanas 1..12
+  // Semana 0 (Crítica de lecturas) — solo si ya está abierta
+  let cuerpo = semVisible(0)
+    ? `<div class="lb-sem"><div class="lb-semh"><span>Semana 0 · Introducción</span></div>`
+      + `<div class="lb-grid">${box(r.critica.nombre, r.critica.codigo, r.critica.nota, null)}</div></div>`
+    : "";
+
+  // Semanas 1..12 — solo las abiertas
+  let _ocultas = 0;
   (r.semanas || []).forEach(s => {
+    if(!semVisible(s.sem)){ _ocultas++; return; }
     let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round((ev.peso_semana || 0) * 100))).join("");
     (exPorSem[s.sem] || []).forEach(ex => { boxes += box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100)); });
     const prom = semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);">Pendiente</span>`;
@@ -1041,11 +1052,14 @@ async function verNotas(){
       + `<span class="lb-prom">Prom&nbsp;${prom} <span class="lb-peso">· 5%</span></span></div>`
       + `<div class="lb-grid">${boxes}</div></div>`;
   });
-  // Examen Final (semana fuera de 1..12)
-  const exFinal = (r.examenes || []).filter(ex => !(r.semanas || []).some(s => s.sem === ex.semana));
+  // Examen Final — solo si su semana ya está abierta
+  const exFinal = (r.examenes || []).filter(ex => !(r.semanas || []).some(s => s.sem === ex.semana) && semVisible(ex.semana));
   if(exFinal.length){
     cuerpo += `<div class="lb-sem"><div class="lb-semh"><span>Examen Final</span></div>`
       + `<div class="lb-grid">${exFinal.map(ex => box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100))).join("")}</div></div>`;
+  }
+  if(_ocultas > 0){
+    cuerpo += `<div class="aviso" style="margin-top:2px;">Las demás semanas irán apareciendo aquí a medida que se abran. Concéntrate en lo de esta semana 🙂</div>`;
   }
 
   // Cierre (categorías + total)
