@@ -295,6 +295,15 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&am
 // cada palabra con inicial mayúscula salvo las de menos de 4 letras; siglas/códigos tal cual.
 // Si el texto no está mayormente en mayúsculas, se deja igual.
 const _ACR = new Set(["NFPA","ILFIS","PDF","ZIP","FM","UNE","CTE","IA","CDL","EV","PS","GLP","ESFR","SHC","BIM","CAD","3D","QR"]);
+// Tildes que se pierden al escribir en MAYÚSCULAS; se restituyen al pasar a minúscula.
+const _TILDES = {
+  "evaluacion":"evaluación", "critica":"crítica", "criticas":"críticas",
+  "hidraulica":"hidráulica", "hidraulico":"hidráulico", "deteccion":"detección",
+  "analisis":"análisis", "proteccion":"protección", "instalacion":"instalación",
+  "inspeccion":"inspección", "calculo":"cálculo", "calculos":"cálculos",
+  "numero":"número", "tecnico":"técnico", "tecnica":"técnica",
+  "clasificacion":"clasificación", "dinamica":"dinámica", "basico":"básico", "basica":"básica"
+};
 function _tit(s){
   if(!s) return s;
   const letras = (s.match(/[A-Za-zÁÉÍÓÚÜÑ]/g) || []).length;
@@ -305,7 +314,8 @@ function _tit(s){
     if(!m) return w;
     const pre = m[1], core = m[2], post = m[3];
     if(_ACR.has(core.toUpperCase()) || /[0-9-]/.test(core)) return pre + core + post;  // siglas/códigos tal cual
-    const low = core.toLowerCase();
+    const lc = core.toLowerCase();
+    const low = _TILDES[lc] || lc;
     const corta = (core.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length < 4;
     return pre + (corta ? low : (low.charAt(0).toUpperCase() + low.slice(1))) + post;
   });
