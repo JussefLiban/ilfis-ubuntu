@@ -587,7 +587,11 @@ function lecTarea(w, l, c){
   const nota = descargable
     ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo. Los PDF de evaluación son las preguntas: respóndelas en el cuestionario de esta misma semana (el número de cada pregunta del cuestionario corresponde al PDF).</div>'
     : '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
+  const btnZip = (descargable && archivos.length)
+    ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar todo el material de la semana</button>`
+    : "";
   c.innerHTML = cab(w, l) + `
+    ${btnZip}
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
     <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>
@@ -600,6 +604,16 @@ async function descargarTarea(sem, nombre){
     const t = await usuario.getIdToken(true);
     window.open(`${API}/api/cursos/${CURSO}/tarea/${sem}/${encodeURIComponent(nombre)}?token=${t}`, "_blank");
   }catch(e){ alert("No pude descargar el archivo: " + e.message); }
+}
+
+async function descargarMaterialSemana(sem, btn){
+  const txt = btn ? btn.textContent : "";
+  try{
+    if(btn){ btn.disabled = true; btn.textContent = "📦 Preparando el ZIP…"; }
+    const t = await usuario.getIdToken(true);
+    window.open(`${API}/api/cursos/${CURSO}/material/${sem}/zip?token=${t}`, "_blank");
+  }catch(e){ alert("No pude preparar la descarga: " + e.message); }
+  finally{ if(btn){ setTimeout(() => { btn.disabled = false; btn.textContent = txt; }, 4000); } }
 }
 
 // ── Entrega de trabajos (subida a Cloud Storage) ──
