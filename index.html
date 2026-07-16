@@ -846,6 +846,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar Resultados</button>
             <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar Todos los Aprobados</button>
           </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;border-top:1px dashed #2a3450;padding-top:10px;">
+            <span style="font-size:0.72rem;color:#66788a;">Modo prueba (simulacro):</span>
+            <button class="btn-a" style="padding:6px 12px;font-size:0.8rem;" onclick="simulacroSembrar()">🧪 Sembrar 10 de Prueba</button>
+            <button class="btn-a" style="padding:6px 12px;font-size:0.8rem;" onclick="simulacroLimpiar()">🧹 Limpiar Simulacro</button>
+          </div>
           <div id="cert-cohorte-lista"><div style="color:#7a8a9a;font-size:0.8rem;">Elige el curso y pulsa "Cargar resultados".</div></div>
         </div>
 
@@ -3761,6 +3766,32 @@ async function certEmitirTodosCohorte() {
   await adminCargarCertificados();
   await certCargarCohorte();
   alert('Listo. Certificados generados: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+}
+
+// Modo simulacro (SOLO superadmin): siembra 10 alumnos de prueba y luego los limpia.
+async function simulacroSembrar() {
+  if(!confirm('Se crearán 10 alumnos de PRUEBA ("Alumno 1".."Alumno 10") con notas, para probar el flujo. Luego se pueden borrar con "Limpiar Simulacro". ¿Continuar?')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/simulacro/sembrar', {
+      method:'POST', headers:{ 'x-admin-key':_getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.detail || ('Error '+r.status));
+    alert('✓ ' + (d.creados||0) + ' alumnos de prueba sembrados. Pulsa "Cargar Resultados" para verlos.');
+  } catch(e) { alert('No pude sembrar: ' + e.message); }
+}
+async function simulacroLimpiar() {
+  if(!confirm('Se BORRARÁN todos los alumnos de PRUEBA y sus certificados de prueba. ¿Continuar?')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/simulacro/limpiar', {
+      method:'POST', headers:{ 'x-admin-key':_getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.detail || ('Error '+r.status));
+    const b = d.borrados || {};
+    alert('✓ Simulacro limpiado. Alumnos: ' + (b.alumnos||0) + ' · Notas: ' + ((b.notasManual||0)+(b.quizAttempts||0)) + ' · Certificados: ' + (b.certificados||0));
+    adminCargarCertificados();
+  } catch(e) { alert('No pude limpiar: ' + e.message); }
 }
 
 async function adminCargarCertificados() {
