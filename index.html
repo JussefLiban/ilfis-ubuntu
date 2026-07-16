@@ -3777,7 +3777,11 @@ async function simulacroSembrar() {
     if (r.status === 401) { _clearAdminKey(); return; }
     const d = await r.json().catch(()=>({}));
     if (!r.ok) throw new Error(d.detail || ('Error '+r.status));
-    alert('✓ ' + (d.creados||0) + ' alumnos de prueba sembrados. Pulsa "Cargar Resultados" para verlos.');
+    const rep = (d.reporte||[]).map(x => '• ' + x.alumno + ': nota ' + x.nota_total + ' → ' + x.resultado + ' (' + x.entregas + ' entregas)').join('\n');
+    alert('✓ SIMULACRO SEMBRADO\n\n' +
+          (d.creados||0) + ' alumnos · ' + (d.entregas||0) + ' entregas · ' + (d.mensajes||0) + ' mensajes · ' + (d.calificaciones||0) + ' calificaciones\n' +
+          (d.aprobados||0) + ' aprobados / ' + (d.desaprobados||0) + ' desaprobados\n\n' + rep +
+          '\n\nAhora pulsa "Cargar Resultados", revisa la Planilla, las Entregas y los Boletines.');
   } catch(e) { alert('No pude sembrar: ' + e.message); }
 }
 async function simulacroLimpiar() {
