@@ -3805,10 +3805,20 @@ async function certEmitirTodosCohorte() {
 }
 
 // Modo simulacro (SOLO superadmin): siembra 10 alumnos de prueba y luego los limpia.
+// El simulacro corre sobre el CURSO elegido en el panel de Pre-Certificados.
+// Rociadores (la maqueta) usa su endpoint propio; los cursos nuevos, el genérico.
+function _simRuta(curso, accion) {
+  return (curso === 'rociadores')
+    ? BACKEND + '/api/cursos/rociadores/admin/simulacro/' + accion
+    : BACKEND + '/api/cursos/' + curso + '/admin/simulacro/' + accion;
+}
 async function simulacroSembrar() {
-  if(!confirm('Se crearán 10 alumnos de PRUEBA ("Alumno 1".."Alumno 10") con notas, para probar el flujo. Luego se pueden borrar con "Limpiar Simulacro". ¿Continuar?')) return;
+  const curso = (_certDiplomaMeta() || {}).id || 'rociadores';
+  const meta = (typeof DIPLOMAS !== 'undefined') ? DIPLOMAS.find(d => d.id === curso) : null;
+  const nombre = meta ? meta.nombre : curso;
+  if(!confirm('Se crearán 10 alumnos de PRUEBA en "' + nombre + '" con notas y entregas, para probar el flujo. Luego se borran con "Limpiar Simulacro". ¿Continuar?')) return;
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/simulacro/sembrar', {
+    const r = await fetch(_simRuta(curso, 'sembrar'), {
       method:'POST', headers:{ 'x-admin-key':_getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     const d = await r.json().catch(()=>({}));
@@ -3821,9 +3831,10 @@ async function simulacroSembrar() {
   } catch(e) { alert('No pude sembrar: ' + e.message); }
 }
 async function simulacroLimpiar() {
-  if(!confirm('Se BORRARÁN todos los alumnos de PRUEBA y sus certificados de prueba. ¿Continuar?')) return;
+  const curso = (_certDiplomaMeta() || {}).id || 'rociadores';
+  if(!confirm('Se BORRARÁN los 10 alumnos de PRUEBA de este curso (con sus entregas y certificados de prueba). ¿Continuar?')) return;
   try {
-    const r = await fetch(BACKEND + '/api/cursos/rociadores/admin/simulacro/limpiar', {
+    const r = await fetch(_simRuta(curso, 'limpiar'), {
       method:'POST', headers:{ 'x-admin-key':_getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     const d = await r.json().catch(()=>({}));
