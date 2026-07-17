@@ -136,7 +136,7 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
   <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
   <div class="head-tit">
     <div class="l1">UBUNTU · INSTRUCTOR</div>
-    <div class="l2">Notas e intentos — Diplomado de Rociadores Automáticos</div>
+    <div class="l2" id="panelTitulo">Notas e intentos — Diplomado de Rociadores Automáticos</div>
   </div>
   <a class="volver" href="../">← Volver a UBUNTU</a>
 </header>
@@ -186,6 +186,18 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+// El panel sirve a CUALQUIER curso: el id llega por ?curso=… Si no viene, es Rociadores
+// (así el enlace de siempre del instructor funciona EXACTAMENTE igual que antes).
+const CURSO = new URLSearchParams(location.search).get("curso") || "rociadores";
+const NOMBRE_CURSO = {
+  "rociadores": "Diplomado de Rociadores Automáticos",
+  "calculos-hidraulicos": "Diplomado de Cálculos Hidráulicos"
+}[CURSO] || "Diplomado";
+document.addEventListener("DOMContentLoaded", () => {
+  const t = document.getElementById("panelTitulo");
+  if (t) t.textContent = "Notas e intentos — " + NOMBRE_CURSO;
+  document.title = "Instructor — " + NOMBRE_CURSO + " | ILFIS Ubuntu";
+});
 const firebaseConfig = {
   apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
   authDomain:        "ilfis-ubuntu.firebaseapp.com",
@@ -248,7 +260,7 @@ async function entrar(){
 }
 
 async function cargar(inicial){
-  R = await api("/api/cursos/rociadores/admin/resumen");
+  R = await api(`/api/cursos/${CURSO}/admin/resumen`);
   $("pClave").style.display = "none";
   $("panel").style.display = "block";
   $("stAlumnos").textContent = R.progreso.length;
@@ -256,10 +268,10 @@ async function cargar(inicial){
   const sel = $("selQuiz");
   sel.innerHTML = R.quizzes.map(q => `<option value="${esc(q.quizId)}">S${q.semana} · ${esc(q.titulo)}</option>`).join("");
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
-  try{ E = await api("/api/cursos/rociadores/admin/entregas"); }
+  try{ E = await api(`/api/cursos/${CURSO}/admin/entregas`); }
   catch(e){ E = { entregas: [] }; console.warn("Entregas no disponibles:", e.message); }
   // Planilla / Libro de notas (defensivo: si el backend aún no la soporta, no rompe el panel)
-  try{ P = await api("/api/cursos/rociadores/admin/planilla"); }
+  try{ P = await api(`/api/cursos/${CURSO}/admin/planilla`); }
   catch(e){ P = null; console.warn("Planilla no disponible:", e.message); }
   actualizarKPIs();
   verTab(tab);
@@ -546,7 +558,7 @@ function renderEntregas(){
 
 async function descargarEntrega(uid, sem, nombre){
   try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/archivo/${encodeURIComponent(nombre)}`, { headers: await authHeaders() });
+    const r = await fetch(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/${sem}/archivo/${encodeURIComponent(nombre)}`, { headers: await authHeaders() });
     if(!r.ok){ let d=null; try{ d=await r.json(); }catch(e){} throw new Error(d&&d.detail?d.detail:("Error "+r.status)); }
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
@@ -587,10 +599,10 @@ async function _bajarZip(url, nombreZip, btn){
   finally{ if(btn){ btn.disabled = false; if(txt) btn.textContent = txt; } }
 }
 function descargarTodoZip(btn){
-  _bajarZip(`${API}/api/cursos/rociadores/admin/entregas/zip`, "entregas_todos.zip", btn);
+  _bajarZip(`${API}/api/cursos/${CURSO}/admin/entregas/zip`, "entregas_todos.zip", btn);
 }
 function descargarAlumnoZip(uid, btn){
-  _bajarZip(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/zip`, "entregas_alumno.zip", btn);
+  _bajarZip(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/zip`, "entregas_alumno.zip", btn);
 }
 
 async function guardarNotaEntrega(uid, sem){
@@ -600,7 +612,7 @@ async function guardarNotaEntrega(uid, sem){
   const msg = $(`entS-${key}`);
   if(msg){ msg.textContent = "…"; msg.className = "ent-save"; }
   try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/entrega/${encodeURIComponent(uid)}/${sem}/nota`, {
+    const r = await fetch(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/${sem}/nota`, {
       method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" },
       body: JSON.stringify({ nota: notaStr === "" ? null : Number(notaStr), comentario: com })
     });
@@ -620,7 +632,7 @@ async function verIntento(uid, quizId, email){
   $("detCuerpo").innerHTML = "";
   $("modalDet").classList.add("abierto");
   let d;
-  try{ d = await api(`/api/cursos/rociadores/admin/intento/${encodeURIComponent(uid)}/${encodeURIComponent(quizId)}`); }
+  try{ d = await api(`/api/cursos/${CURSO}/admin/intento/${encodeURIComponent(uid)}/${encodeURIComponent(quizId)}`); }
   catch(e){ $("detTit").textContent = "⚠ " + e.message; return; }
   const it = d.intento, det = it.detalle || [];
   $("detTit").textContent = `${it.email || email} — ${quizId}`;
@@ -665,7 +677,7 @@ async function guardarCalifManual(){
   const body = { nota: notaStr === "" ? null : Number(notaStr), mensaje: ($("calMsg").value || "").trim() };
   if(out){ out.textContent = "…"; out.className = "ent-save"; }
   try{
-    const r = await fetch(`${API}/api/cursos/rociadores/admin/intento/${encodeURIComponent(window._cal.uid)}/${encodeURIComponent(window._cal.quizId)}/calificar`, {
+    const r = await fetch(`${API}/api/cursos/${CURSO}/admin/intento/${encodeURIComponent(window._cal.uid)}/${encodeURIComponent(window._cal.quizId)}/calificar`, {
       method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" }, body: JSON.stringify(body) });
     let d=null; try{ d=await r.json(); }catch(e){}
     if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
@@ -778,9 +790,9 @@ async function guardarEvalNota(uid, codigo){
   const body = { nota: notaStr==="" ? null : Number(notaStr), comentario: ($("evMsg").value||"").trim() };
   if(out){ out.textContent = "…"; out.className = "ent-save"; }
   try{
-    await postJSON(`/api/cursos/rociadores/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`, body);
+    await postJSON(`/api/cursos/${CURSO}/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`, body);
     if(out){ out.textContent = "✓ guardada"; out.className = "ent-save ok"; }
-    P = await api("/api/cursos/rociadores/admin/planilla");   // refresca la matriz
+    P = await api(`/api/cursos/${CURSO}/admin/planilla`);   // refresca la matriz
     actualizarKPIs();
     if(tab === "cola") renderCola(); else renderPlanilla();
     setTimeout(() => $("modalDet").classList.remove("abierto"), 500);
@@ -883,7 +895,7 @@ async function _calcularPrueba(){
   campos.forEach(i => { notas[i.getAttribute("data-cod")] = i.value==="" ? 0 : Number(i.value); });
   const body = { notas, concepto: cVal==="" ? 0 : Number(cVal) };
   try{
-    const r = await postJSON("/api/cursos/rociadores/admin/planilla/calcular", body);
+    const r = await postJSON(`/api/cursos/${CURSO}/admin/planilla/calcular`, body);
     const ap = r.aprobatoria || 60;
     // Las 13 notas semanales: Sem 0 (Crítica Lecturas) + Semanas 1..12
     const vals = [{sem:0, v:(r.critica ? r.critica.nota : null)}];
