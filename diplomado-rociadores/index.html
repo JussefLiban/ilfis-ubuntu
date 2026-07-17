@@ -193,7 +193,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
   <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
   <div class="head-tit">
     <div class="l1">UBUNTU · PLATAFORMA INTERACTIVA ASISTIDA POR IA</div>
-    <div class="l2">Aula — Diplomado de Rociadores Automáticos</div>
+    <div class="l2" id="aulaTitulo">Aula — Diplomado de Rociadores Automáticos</div>
     <div class="l3">Cronograma oficial en hora de Lima (UTC-5) · un intento por cuestionario</div>
   </div>
   <div class="head-right">
@@ -216,7 +216,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 
 <div class="pantalla" id="pSinMatricula">
   <h2>🔒 No tienes matrícula activa en este diplomado</h2>
-  <p id="matriculaMsg">Para entrar al aula necesitas una matrícula vigente del Diplomado de Rociadores Automáticos.</p>
+  <p id="matriculaMsg">Para entrar al aula necesitas una matrícula vigente de este diplomado.</p>
   <a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>
   <p style="margin-top:12px;">¿Ya la activaste o te acaban de dar acceso? <a href="#" onclick="reintentarMatricula();return false;" style="color:var(--azul);">Vuelve a intentar</a> (refresca tu matrícula automáticamente).</p>
 </div>
@@ -264,7 +264,13 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 <script>
 // ═══════════════ CONFIG ═══════════════
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
-const CURSO = "rociadores";
+// El aula sirve a CUALQUIER curso: el id llega por ?curso=… Si no viene, es Rociadores
+// (así los enlaces de siempre siguen funcionando EXACTAMENTE igual que antes).
+const CURSO = new URLSearchParams(location.search).get("curso") || "rociadores";
+// Rociadores (la maqueta) conserva sus rutas de avance de siempre; los cursos nuevos
+// usan las suyas, colgadas del curso. Así no se toca nada de lo que ya funciona.
+const ES_MAQUETA    = (CURSO === "rociadores");
+const RUTA_PROGRESO = ES_MAQUETA ? `/api/progreso/${CURSO}` : `/api/cursos/${CURSO}/progreso`;
 
 const firebaseConfig = {
   apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
@@ -396,9 +402,15 @@ async function cargarAula(){
   try{
     const [est, prog] = await Promise.all([
       api(`/api/cursos/${CURSO}/estructura`),
-      api(`/api/progreso/${CURSO}`)
+      api(RUTA_PROGRESO)
     ]);
     estructura = est;
+    // El aula se titula con el curso que cargó (sirve a cualquier diplomado)
+    if(est.nombre){
+      const t = "Aula — " + est.nombre;
+      const h = $("aulaTitulo"); if(h) h.textContent = t;
+      document.title = t + " | ILFIS Ubuntu";
+    }
     hechas = new Set(Object.keys(prog.lecciones || {}));
     totalLecs = est.semanas.reduce((a,w) => a + w.lecciones.length, 0);
     renderTemario();
@@ -534,7 +546,11 @@ async function marcarCompletada(leccionId){
   hechas.add(leccionId);           // optimista
   renderTemario(); renderProgreso();
   try{
-    await api("/api/progreso", { method:"POST", body: JSON.stringify({ curso: CURSO, leccion_id: leccionId }) });
+    if(ES_MAQUETA){
+      await api("/api/progreso", { method:"POST", body: JSON.stringify({ curso: CURSO, leccion_id: leccionId }) });
+    }else{
+      await api(`/api/cursos/${CURSO}/progreso`, { method:"POST", body: JSON.stringify({ leccion_id: leccionId }) });
+    }
   }catch(e){
     console.warn("No se guardó el avance:", e.message);
   }
@@ -1136,7 +1152,7 @@ async function verNotas(){
     .lb-com{font-size:.68rem;color:var(--texto2);margin-top:5px;line-height:1.35;}
   </style>`;
   c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
-    <div class="meta">Diplomado de Rociadores · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
+    <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
     <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
     ${cuerpo}
     ${cierre}
