@@ -779,7 +779,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminSetCohorte()">Guardar</button>
           <span id="admin-cohorte-msg" style="font-size:0.8rem;"></span>
         </div>
-        <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;margin-bottom:22px;"></div>
+        <div id="admin-cohorte-info" style="font-size:0.75rem;color:#7a8a9a;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px;border-top:1px dashed #2a3450;padding-top:12px;">
+          <span style="font-size:0.75rem;color:#8899aa;">Videos del curso:</span>
+          <button class="btn-a" style="padding:7px 14px;font-size:0.8rem;" onclick="cohorteEnlazarVideos()">🎬 Enlazar Videos con Drive</button>
+          <span id="admin-videos-msg" style="font-size:0.78rem;color:#7a8a9a;"></span>
+        </div>
         <div style="font-size:0.74rem;color:#66788a;letter-spacing:0.02em;margin-bottom:8px;">Vistazo Rápido · Todos los Cursos</div>
         <div id="admin-cohorte-lista"><div class="admin-loading">Cargando...</div></div>
       </div>
@@ -3498,6 +3503,35 @@ async function adminRenderCohorteLista() {
       + '<span>Curso</span><span>Inicio</span><span>Estado</span></div>'
       + filas.join('') + '</div>';
   } catch(e) { box.innerHTML = '<div style="color:#f87171;font-size:0.8rem;">⚠ ' + e.message + '</div>'; }
+}
+
+// Busca en Drive, por nombre, el video de cada clase del curso y los deja enlazados.
+// La maqueta (Rociadores) ya trae los suyos fijos: este botón es para los cursos nuevos.
+async function cohorteEnlazarVideos() {
+  const curso = _adminCohorteCurso();
+  const msg = document.getElementById('admin-videos-msg');
+  if (curso === 'rociadores') {
+    if (msg) { msg.textContent = 'El Diplomado de Rociadores ya tiene sus videos enlazados.'; msg.style.color = '#8899aa'; }
+    return;
+  }
+  if (!confirm('Voy a buscar en tu Drive los videos de este curso y enlazarlos. ¿Continuar?')) return;
+  if (msg) { msg.textContent = 'Buscando en Drive… (puede tardar un minuto)'; msg.style.color = '#8899aa'; }
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + curso + '/admin/videos/descubrir', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    const fall = (d.fallidos || []).length;
+    if (msg) {
+      msg.textContent = '✓ ' + d.encontrados + ' de ' + d.pedidos + ' videos enlazados'
+        + (fall ? ' · ' + fall + ' no se encontraron (revisa que estén compartidos)' : '');
+      msg.style.color = fall ? '#e0b64f' : '#5fd08a';
+    }
+    if (fall) console.warn('Videos no encontrados:', d.fallidos);
+  } catch(e) {
+    if (msg) { msg.textContent = 'No pude enlazarlos: ' + e.message; msg.style.color = '#e87272'; }
+  }
 }
 
 async function adminSetCohorte() {
