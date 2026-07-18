@@ -860,11 +860,13 @@ async function lecQuiz(w, l, c){
   }
 
   if(q.ya_respondido){
-    const pub = fmtLima(q.publicacion_notas, true);
+    const enviado = q.intento && q.intento.enviado ? " el " + fmtLima(q.intento.enviado, true) : "";
+    const cierre = q.diagnostico
+      ? `<div class="aviso">Es un cuestionario de diagnóstico: <b>no cuenta para tu nota</b>. ¡Gracias por responderlo!</div>`
+      : `<div class="aviso">Tu nota se publica el lunes ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
+         <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`;
     c.innerHTML = cab(w, l) + `
-      <div class="aviso okv">✓ Respuestas registradas${q.intento && q.intento.enviado ? " el " + fmtLima(q.intento.enviado, true) : ""}. Se permite un solo intento.</div>
-      <div class="aviso">Tu nota se publica el lunes ${pub} (hora de Lima). La verás en <b>📊 Mis notas</b>.</div>
-      <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mis notas</button>`;
+      <div class="aviso okv">✓ Respuestas registradas${enviado}. Se permite un solo intento.</div>` + cierre;
     marcarCompletada(l.id);
     return;
   }
@@ -877,7 +879,13 @@ async function lecQuiz(w, l, c){
   }
 
   // Formulario
-  let html = cab(w, l) + `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
+  const _intro = q.instruccion
+    ? `<div class="aviso" style="white-space:pre-line;line-height:1.65;">${esc(q.instruccion)}</div>`
+    : "";
+  const _aviso = q.diagnostico
+    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento. Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima).</div>`
+    : `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
+  let html = cab(w, l) + _intro + _aviso;
   (q.preguntas || []).forEach((p, qi) => {
     // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
     const num = (p.num !== undefined && p.num !== null) ? p.num : (qi + 1);
