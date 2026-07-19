@@ -847,12 +847,13 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             if(!curso){ cont.innerHTML=''; return; }
             cont.innerHTML='<div class="admin-loading">Cargando...</div>';
             try{
-              var r = await fetch(BACKEND+'/api/cursos/'+curso+'/admin/solicitudes',{headers:{'x-admin-key':_getAdminKey()}});
+              var r = await fetch(BACKEND+'/api/cursos/'+curso+'/admin/solicitudes?_t='+Date.now(),{cache:'no-store',headers:{'x-admin-key':_getAdminKey()}});
               if(!r.ok) throw new Error('Error '+r.status);
               var d = await r.json(); var sol = d.solicitudes||[];
               var pend = sol.filter(function(x){return x.estado==='pendiente';});
-              var cEl=document.getElementById('edu-sol-count'); if(cEl) cEl.textContent = pend.length? ('· '+pend.length+' pendiente(s)') : '';
-              if(!pend.length){ cont.innerHTML='<div style="font-size:0.8rem;color:#8899aa;padding:8px 0;">No hay solicitudes pendientes.</div>'; return; }
+              var resueltas = sol.length - pend.length;
+              var cEl=document.getElementById('edu-sol-count'); if(cEl) cEl.textContent = '· '+pend.length+' pendiente(s)'+(resueltas?(' · '+resueltas+' ya resuelta(s)'):'');
+              if(!pend.length){ cont.innerHTML='<div style="font-size:0.8rem;color:#8899aa;padding:8px 0;">No hay solicitudes pendientes en este curso'+(resueltas?(' ('+resueltas+' ya aceptada(s)/rechazada(s))'):'')+'.</div>'; return; }
               cont.innerHTML = pend.map(function(s){
                 var paises=[s.pais_nacimiento,s.pais_residencia].filter(Boolean).join(' · ')||'—';
                 return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid #2a3450;padding:9px 0;">'
