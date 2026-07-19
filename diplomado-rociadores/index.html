@@ -215,10 +215,10 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 </div>
 
 <div class="pantalla" id="pSinMatricula">
-  <h2>🔒 No tienes matrícula activa en este diplomado</h2>
-  <p id="matriculaMsg">Para entrar al aula necesitas una matrícula vigente de este diplomado.</p>
-  <a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>
-  <p style="margin-top:12px;">¿Ya la activaste o te acaban de dar acceso? <a href="#" onclick="reintentarMatricula();return false;" style="color:var(--azul);">Vuelve a intentar</a> (refresca tu matrícula automáticamente).</p>
+  <h2>🔒 Aún no tienes acceso a este diplomado</h2>
+  <p id="matriculaMsg">Para entrar al aula necesitas estar matriculado en este diplomado.</p>
+  <div id="matriculaBody"><div class="spinner"></div></div>
+  <p style="margin-top:14px;font-size:.8rem;">¿Ya te dieron acceso? <a href="#" onclick="reintentarMatricula();return false;" style="color:var(--azul);">Vuelve a intentar</a> (refresca tu matrícula automáticamente).</p>
 </div>
 
 <div class="pantalla" id="pError">
@@ -383,6 +383,104 @@ async function reintentarMatricula(){
   location.reload();
 }
 
+// ── Sin matrícula → solicitar acceso (con aprobación de administración) ──
+// El flujo de solicitud existe hoy para el Diplomado de Rociadores (la maqueta).
+// Para otros cursos se mantiene el botón de siempre.
+async function mostrarSinMatricula(){
+  pantalla("pSinMatricula");
+  const box = $("matriculaBody");
+  if(!ES_MAQUETA){
+    $("matriculaMsg").textContent = "Para entrar al aula necesitas una matrícula vigente de este diplomado.";
+    box.innerHTML = `<a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>`;
+    return;
+  }
+  box.innerHTML = '<div class="spinner"></div>';
+  let sol = null;
+  try{ const r = await api(`/api/cursos/rociadores/solicitud`); sol = r.solicitud; }
+  catch(e){ /* si falla, deja pedir acceso igual */ }
+  renderSolicitud(sol);
+}
+
+function renderSolicitud(sol){
+  const box = $("matriculaBody");
+  const est = sol && sol.estado;
+  if(est === "pendiente"){
+    $("matriculaMsg").textContent = "Tu solicitud está en revisión.";
+    box.innerHTML = `<div class="aviso" style="background:#0e2438;border:1px solid var(--azul);color:#bfe0ff;">
+        ✅ <b>Solicitud enviada.</b> La administración de ILFIS la revisará y te dará acceso.
+        Cuando te aprueben, pulsa <b>"Vuelve a intentar"</b> aquí abajo.</div>`;
+    return;
+  }
+  if(est === "aceptada"){
+    $("matriculaMsg").textContent = "¡Tu acceso fue aprobado!";
+    box.innerHTML = `<div class="aviso" style="background:#0e2e1a;border:1px solid #22c55e;color:#bbf7d0;">
+        🎉 <b>Ya tienes acceso.</b> Pulsa <b>"Vuelve a intentar"</b> para entrar al aula.</div>`;
+    return;
+  }
+  if(est === "rechazada"){
+    $("matriculaMsg").textContent = "Tu solicitud no fue aprobada.";
+    const motivo = sol && sol.motivo ? `<br><span style="opacity:.8;">Motivo: ${esc(sol.motivo)}</span>` : "";
+    box.innerHTML = `<div class="aviso err">No se aprobó tu solicitud de acceso.${motivo}</div>
+      <button class="btn" onclick="abrirFormSolicitud()">Volver a solicitar</button>`;
+    return;
+  }
+  // Sin solicitud previa: ofrecer el botón para pedir acceso.
+  $("matriculaMsg").textContent = "Para entrar al aula necesitas estar matriculado en el Diplomado de Rociadores Automáticos.";
+  box.innerHTML = `<button class="btn" onclick="abrirFormSolicitud()">📝 Solicitar acceso</button>
+    <p style="font-size:.78rem;margin-top:10px;color:var(--texto2);">Llena tus datos básicos y la administración de ILFIS aprobará tu matrícula.</p>`;
+}
+
+async function abrirFormSolicitud(){
+  const box = $("matriculaBody");
+  // Prefill con el perfil si ya lo tuviera (no requiere matrícula)
+  let p = {};
+  try{ const r = await api(`/api/cursos/perfil`); p = r.perfil || {}; }catch(e){}
+  $("matriculaMsg").textContent = "Completa tus datos para solicitar el acceso (los mismos que van en tu certificado).";
+  box.innerHTML = `<div class="perfil-form">
+      <label>Nombre completo <span class="req">(tal cual irá en el certificado)</span>
+        <input id="solNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos"></label>
+      <label>Fecha de nacimiento
+        <input id="solNac" type="date" value="${esc(p.fecha_nacimiento||"")}"></label>
+      <label>País de nacimiento
+        <select id="solNacimiento">${opcionesPais(p.pais_nacimiento||"")}</select></label>
+      <label>País de residencia
+        <select id="solResid">${opcionesPais(p.pais_residencia||"")}</select></label>
+      <label>Teléfono
+        <div class="tel-row">
+          <select id="solCod">${opcionesCod(p.telefono_cod||"+51")}</select>
+          <input id="solTel" type="tel" maxlength="30" value="${esc(p.telefono||"")}" placeholder="Número">
+        </div></label>
+      <label>Correo
+        <input type="email" value="${esc(p.email||(usuario&&usuario.email)||"")}" disabled style="opacity:.6;"></label>
+    </div>
+    <div class="ent-msg" id="solMsg"></div>
+    <button class="btn" id="solBtn" onclick="enviarSolicitud()">Enviar solicitud</button>`;
+}
+
+async function enviarSolicitud(){
+  const msg = $("solMsg"), btn = $("solBtn");
+  const body = {
+    nombre_certificado: $("solNombre").value.trim(),
+    fecha_nacimiento: $("solNac").value || null,
+    pais_nacimiento: $("solNacimiento").value,
+    pais_residencia: $("solResid").value,
+    telefono_cod: $("solCod").value,
+    telefono: $("solTel").value.trim()
+  };
+  if((body.nombre_certificado||"").length < 3){
+    if(msg){ msg.className = "ent-msg err"; msg.textContent = "Escribe tu nombre completo tal como irá en el certificado."; }
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.textContent = "Enviando…"; }
+  try{
+    await api(`/api/cursos/rociadores/solicitud`, { method:"POST", body: JSON.stringify(body) });
+    renderSolicitud({ estado: "pendiente" });
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = "Enviar solicitud"; }
+    if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo enviar: " + e.message; }
+  }
+}
+
 auth.onAuthStateChanged(async user => {
   usuario = user;
   if(!user){
@@ -425,8 +523,7 @@ async function cargarAula(){
     cargarCertificadoAlumno();
   }catch(e){
     if(e.status === 403){
-      $("matriculaMsg").textContent = e.message;
-      pantalla("pSinMatricula");
+      mostrarSinMatricula();
     }else if(e.status === 401){
       pantalla("pLogin");
     }else{
