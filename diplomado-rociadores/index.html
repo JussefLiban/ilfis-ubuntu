@@ -670,6 +670,7 @@ async function marcarCompletada(leccionId){
 
 // ═══════════════ LECCIONES ═══════════════
 function abrirLeccion(w, l){
+  if(typeof _quizClearTimer === "function") _quizClearTimer();   // corta cronómetro de un quiz anterior
   lecActiva = { sem: w.sem, leccion: l, semana: w };
   renderTemario();
   actualizarLecNav();
@@ -777,6 +778,7 @@ function lecTarea(w, l, c){
     : "";
   c.innerHTML = cab(w, l) + `
     ${btnZip}
+    <div style="font-weight:600;margin:2px 0 6px;color:var(--texto2);">📄 Material y evaluación de esta semana</div>
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
     <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>`;
@@ -1117,7 +1119,7 @@ async function lecQuiz(w, l, c){
   const _aviso = q.diagnostico
     ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento. Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima).</div>`
     : `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
-  let html = cab(w, l) + _intro + _aviso;
+  let html = cab(w, l) + _intro + _aviso + '<div id="quizTimer" class="aviso" style="display:none;font-weight:700;position:sticky;top:0;z-index:5;"></div>';
   (q.preguntas || []).forEach((p, qi) => {
     // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
     const num = (p.num !== undefined && p.num !== null) ? p.num : (qi + 1);
@@ -1179,11 +1181,43 @@ async function lecQuiz(w, l, c){
   c.innerHTML = html;
   // guardar contexto del quiz activo
   _quizActivo = { quizId: l.quizId, leccionId: l.id, preguntas: q.preguntas || [], w, l };
+  _quizIniciarTimer(q);
 }
 
 let _quizActivo = null;
 
-async function enviarQuiz(){
+// OBS-11 · Cronómetro del cuestionario (si tiene tiempo límite configurado).
+let _quizTimerInt = null, _quizDeadline = 0;
+function _quizClearTimer(){ if(_quizTimerInt){ clearInterval(_quizTimerInt); _quizTimerInt = null; } }
+function _quizIniciarTimer(q){
+  _quizClearTimer();
+  const el = $("quizTimer");
+  if(!el || !(q && q.tiempo_limite_min > 0) || q.segundos_restantes == null) return;
+  el.style.display = "block";
+  if(q.segundos_restantes <= 0){
+    el.textContent = "⏱ El tiempo de este cuestionario se agotó. Envía lo que tengas antes del cierre.";
+    el.style.color = "var(--rojoTxt)";
+    return;
+  }
+  _quizDeadline = Date.now() + q.segundos_restantes * 1000;
+  _quizTick();
+  _quizTimerInt = setInterval(_quizTick, 1000);
+}
+function _quizTick(){
+  const el = $("quizTimer");
+  if(!el){ _quizClearTimer(); return; }
+  const r = Math.max(0, Math.round((_quizDeadline - Date.now()) / 1000));
+  const mm = String(Math.floor(r / 60)).padStart(2, "0"), ss = String(r % 60).padStart(2, "0");
+  el.textContent = `⏱ Tiempo restante: ${mm}:${ss}`;
+  el.style.color = r <= 60 ? "var(--rojoTxt)" : "";
+  if(r <= 0){
+    _quizClearTimer();
+    el.textContent = "⏱ Tiempo agotado — enviando tus respuestas…";
+    enviarQuiz(true);
+  }
+}
+
+async function enviarQuiz(auto){
   if(!_quizActivo) return;
   const { quizId, leccionId, preguntas } = _quizActivo;
 
@@ -1230,9 +1264,12 @@ async function enviarQuiz(){
     }
   });
 
-  let msg = "Vas a enviar tus respuestas. Solo se permite UN intento y no podrás cambiarlas.";
-  if(sinResponder > 0) msg = `Tienes ${sinResponder} pregunta(s) sin responder. ` + msg;
-  if(!confirm(msg + "\n\n¿Enviar ahora?")) return;
+  if(!auto){
+    let msg = "Vas a enviar tus respuestas. Solo se permite UN intento y no podrás cambiarlas.";
+    if(sinResponder > 0) msg = `Tienes ${sinResponder} pregunta(s) sin responder. ` + msg;
+    if(!confirm(msg + "\n\n¿Enviar ahora?")) return;
+  }
+  _quizClearTimer();
 
   const btn = $("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando…";
