@@ -293,6 +293,7 @@ let totalLecs = 0;
 let lecActiva = null;           // {sem, leccion}
 let notasCache = null;
 let boletinCache = null;
+let _entregaSem = null, _entregaLecId = null;   // tarea abierta (para finalizar / completar)
 
 const ICO = { video:"🎬", manual:"📄", quiz:"📝", tarea:"📤" };
 const $ = id => document.getElementById(id);
@@ -778,8 +779,8 @@ function lecTarea(w, l, c){
     ${btnZip}
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
-    <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>
-    <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Revisada'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Revisada":"Marcar como revisada"}</button>`;
+    <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>`;
+  _entregaSem = w.sem; _entregaLecId = l.id;
   cargarEntrega(w.sem);
 }
 
@@ -819,8 +820,24 @@ async function cargarEntrega(sem){
   let e;
   try{ e = await api(`/api/cursos/${CURSO}/entrega/${sem}`); }
   catch(err){ box.innerHTML = `<div class="aviso err">No pude cargar tu entrega: ${esc(err.message)}</div>`; return; }
-  if(!e.habilitado){ box.innerHTML = `<div class="ent-title">📤 Tu entrega</div><div class="aviso">La entrega de trabajos en línea estará disponible muy pronto.</div>`; return; }
+  if(!e.habilitado){
+    const done = hechas.has(_entregaLecId);
+    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div><div class="aviso">La entrega de trabajos en línea estará disponible muy pronto.</div>` +
+      (done ? `<div class="ent-nota">✓ Actividad marcada como completada.</div>`
+            : `<button class="btn" style="margin-top:8px;" onclick="marcarTareaCompletada(${sem})">Marcar como completada</button>`);
+    return;
+  }
   const files = (e.archivos||[]);
+  // OBS-3/6 · Entrega FINALIZADA (sellada): solo lectura, registrada con fecha.
+  if(e.finalizado){
+    const filasF = files.length ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span></div>`).join("") : `<div class="ent-empty">No subiste archivos.</div>`;
+    const msgF = e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "";
+    const califF = e.calificado ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>` : "";
+    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>
+      <div class="ent-nota" style="background:#14532d;">🔒 Entrega finalizada el ${fmtLima(e.finalizado_lima)}. Ya no se puede modificar.</div>
+      ${filasF}${msgF}${califF}`;
+    return;
+  }
   const filasArch = files.length
     ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span>${e.puede_subir?`<button class="ent-del" title="Quitar" onclick="borrarEntrega(${sem}, '${esc(a.nombre).replace(/'/g,"&#39;")}')">✕</button>`:""}</div>`).join("")
     : `<div class="ent-empty">Aún no has subido ningún archivo.</div>`;
@@ -848,7 +865,13 @@ async function cargarEntrega(sem){
   const btnBorrarTodo = (e.puede_subir && (files.length || (e.mensaje_alumno||"").trim()))
     ? `<button class="btn sm" style="margin-top:10px;display:block;background:#7f1d1d;" onclick="borrarEntregaCompleta(${sem})">🗑 Borrar entrega completa</button>`
     : "";
-  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${btnBorrarTodo}${calif}`;
+  const btnFinalizar = e.puede_finalizar
+    ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borde);">
+         <button class="btn" style="background:#065f46;" onclick="finalizarEntrega(${sem})">✅ Entregar (finalizar)</button>
+         <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Al finalizar, tu entrega queda registrada y <b>ya no podrás modificarla</b>. Antes de finalizar puedes seguir subiendo o corrigiendo.</div>
+       </div>`
+    : "";
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${btnBorrarTodo}${btnFinalizar}${calif}`;
 }
 
 // OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.
@@ -862,6 +885,22 @@ async function borrarEntregaCompleta(sem){
     await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje`, { method:"POST", body: JSON.stringify({ mensaje: "" }) });
     await cargarEntrega(sem);
   }catch(e){ alert("No se pudo borrar la entrega: " + e.message); }
+}
+
+// OBS-3/6 · Finaliza (sella) la entrega: queda registrada con fecha y ya no se edita.
+async function finalizarEntrega(sem){
+  if(!confirm("¿Finalizar tu entrega?\n\nUna vez finalizada NO podrás modificarla (ni archivos ni mensaje). Asegúrate de haber subido todo lo que quieres entregar.")) return;
+  try{
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/finalizar`, { method:"POST" });
+    if(_entregaLecId) await marcarCompletada(_entregaLecId);
+    await cargarEntrega(sem);
+  }catch(e){ alert("No se pudo finalizar: " + e.message); }
+}
+
+// Tarea de solo material (sin entrega en línea): marcar la actividad como completada.
+async function marcarTareaCompletada(sem){
+  if(_entregaLecId) await marcarCompletada(_entregaLecId);
+  await cargarEntrega(sem);
 }
 
 async function enviarNotaProfesor(sem){
