@@ -215,7 +215,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
 </div>
 
 <div class="pantalla" id="pSinMatricula">
-  <h2>🔒 Aún no tienes acceso a este diplomado</h2>
+  <h2 id="matriculaTit">🔒 Aún no tienes acceso a este diplomado</h2>
   <p id="matriculaMsg">Para entrar al aula necesitas estar matriculado en este diplomado.</p>
   <div id="matriculaBody"><div class="spinner"></div></div>
   <p style="margin-top:14px;font-size:.8rem;">¿Ya te dieron acceso? <a href="#" onclick="reintentarMatricula();return false;" style="color:var(--azul);">Vuelve a intentar</a> (refresca tu matrícula automáticamente).</p>
@@ -398,6 +398,15 @@ async function mostrarSinMatricula(){
     box.innerHTML = `<a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>`;
     return;
   }
+  // Ya aprobada: refresca el pase y entra al aula SOLO (sin recargar), una vez.
+  if(sol && sol.estado === "aceptada" && !window._reintentoAceptada){
+    window._reintentoAceptada = true;
+    $("matriculaTit").textContent = "✅ ¡Acceso aprobado!";
+    $("matriculaMsg").textContent = "Entrando al aula…";
+    box.innerHTML = '<div class="spinner"></div>';
+    try{ if(usuario) await usuario.getIdToken(true); }catch(e){}
+    return cargarAula();
+  }
   renderSolicitud(sol);
 }
 
@@ -412,9 +421,10 @@ function renderSolicitud(sol){
     return;
   }
   if(est === "aceptada"){
-    $("matriculaMsg").textContent = "¡Tu acceso fue aprobado!";
+    $("matriculaTit").textContent = "✅ ¡Acceso aprobado!";
+    $("matriculaMsg").textContent = "Estamos activando tu acceso…";
     box.innerHTML = `<div class="aviso" style="background:#0e2e1a;border:1px solid #22c55e;color:#bbf7d0;">
-        🎉 <b>Ya tienes acceso.</b> Pulsa <b>"Vuelve a intentar"</b> para entrar al aula.</div>`;
+        🎉 <b>Tu acceso ya fue aprobado.</b> Si el aula no abre sola en unos segundos, pulsa <b>"Vuelve a intentar"</b>.</div>`;
     return;
   }
   if(est === "rechazada"){
