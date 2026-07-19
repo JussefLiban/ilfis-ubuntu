@@ -835,9 +835,13 @@ async function cargarEntrega(sem){
     const filasF = files.length ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span></div>`).join("") : `<div class="ent-empty">No subiste archivos.</div>`;
     const msgF = e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "";
     const califF = e.calificado ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>` : "";
-    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>
-      <div class="ent-nota" style="background:#14532d;">🔒 Entrega finalizada el ${fmtLima(e.finalizado_lima)}. Ya no se puede modificar.</div>
-      ${filasF}${msgF}${califF}`;
+    const cabF = e.puede_reabrir
+      ? `<div class="ent-nota" style="background:#14532d;">✅ <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ¿Necesitas corregir algo? Puedes reabrirla mientras el plazo siga abierto.</div>`
+      : `<div class="ent-nota" style="background:#14532d;">🔒 <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. El plazo cerró: ya es definitiva.</div>`;
+    const btnRe = e.puede_reabrir
+      ? `<button class="btn sm" style="margin-top:12px;display:block;" onclick="reabrirEntrega(${sem})">🔓 Reabrir para modificar</button>`
+      : "";
+    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${cabF}${filasF}${msgF}${califF}${btnRe}`;
     return;
   }
   const filasArch = files.length
@@ -870,7 +874,7 @@ async function cargarEntrega(sem){
   const btnFinalizar = e.puede_finalizar
     ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borde);">
          <button class="btn" style="background:#065f46;" onclick="finalizarEntrega(${sem})">✅ Entregar (finalizar)</button>
-         <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Al finalizar, tu entrega queda registrada y <b>ya no podrás modificarla</b>. Antes de finalizar puedes seguir subiendo o corrigiendo.</div>
+         <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Tu entrega queda <b>registrada con la fecha</b>. Si luego necesitas corregir algo, puedes <b>reabrirla</b> mientras el plazo siga abierto.</div>
        </div>`
     : "";
   box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${btnBorrarTodo}${btnFinalizar}${calif}`;
@@ -892,12 +896,21 @@ async function borrarEntregaCompleta(sem){
 
 // OBS-3/6 · Finaliza (sella) la entrega: queda registrada con fecha y ya no se edita.
 async function finalizarEntrega(sem){
-  if(!confirm("¿Finalizar tu entrega?\n\nUna vez finalizada NO podrás modificarla (ni archivos ni mensaje). Asegúrate de haber subido todo lo que quieres entregar.")) return;
+  if(!confirm("¿Finalizar tu entrega?\n\nQuedará registrada como entregada. Si necesitas corregir algo, podrás reabrirla mientras el plazo siga abierto.")) return;
   try{
     await api(`/api/cursos/${CURSO}/entrega/${sem}/finalizar`, { method:"POST" });
     if(_entregaLecId) await marcarCompletada(_entregaLecId);
     await cargarEntrega(sem);
   }catch(e){ alert("No se pudo finalizar: " + e.message); }
+}
+
+// Reabre la entrega para corregirla (solo mientras el plazo siga abierto).
+// Entregar temprano no debe castigar al alumno quitándole el derecho a modificar.
+async function reabrirEntrega(sem){
+  try{
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/reabrir`, { method:"POST" });
+    await cargarEntrega(sem);
+  }catch(e){ alert("No se pudo reabrir: " + e.message); }
 }
 
 // Tarea de solo material (sin entrega en línea): marcar la actividad como completada.
