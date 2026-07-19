@@ -257,6 +257,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
     <div class="meta">Selecciona una lección en el temario para comenzar.</div>
     <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios cierran el domingo 00:00 de su semana y las notas se publican el lunes siguiente a las 12:00.</div>
   </div>
+  <div id="lecNav" style="display:none;grid-column:1/-1;text-align:right;margin-top:6px;"></div>
 </div>
 
 <footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad · ILFIS Ubuntu</footer>
@@ -586,6 +587,7 @@ function toggleVerComoAlumno(){
   lecActiva = null;
   $("contenido").innerHTML = '<div class="aviso">Elige una lección del temario.</div>';
   renderTemario();
+  ocultarLecNav();
 }
 // ¿esta semana está abierta para lo que se está mostrando? (docente = todo; preview alumno = por fecha)
 function _semAbiertaVista(w){
@@ -669,11 +671,38 @@ async function marcarCompletada(leccionId){
 function abrirLeccion(w, l){
   lecActiva = { sem: w.sem, leccion: l, semana: w };
   renderTemario();
+  actualizarLecNav();
   const c = $("contenido");
   if(l.tipo === "video")       return lecVideo(w, l, c);
   if(l.tipo === "manual")      return lecManual(w, l, c);
   if(l.tipo === "tarea")       return lecTarea(w, l, c);
   if(l.tipo === "quiz")        return lecQuiz(w, l, c);
+}
+
+// OBS-5 · Navegación "Siguiente actividad / Siguiente semana" (solo semanas abiertas).
+function ocultarLecNav(){ const n = $("lecNav"); if(n) n.style.display = "none"; }
+function _lecsAbiertas(){
+  const out = [];
+  (estructura.semanas || []).forEach(w => { if(_semAbiertaVista(w)) (w.lecciones || []).forEach(l => out.push({ w, l })); });
+  return out;
+}
+function _siguienteLec(){
+  if(!lecActiva) return null;
+  const lst = _lecsAbiertas();
+  const i = lst.findIndex(x => x.w.sem === lecActiva.sem && x.l.id === lecActiva.leccion.id);
+  return (i >= 0 && i < lst.length - 1) ? lst[i + 1] : null;
+}
+function actualizarLecNav(){
+  const nav = $("lecNav"); if(!nav) return;
+  const nx = _siguienteLec();
+  if(!nx){ nav.style.display = "none"; return; }
+  const mismaSemana = nx.w.sem === lecActiva.sem;
+  nav.style.display = "block";
+  nav.innerHTML = `<button class="btn" onclick="irSiguienteLec()">${mismaSemana ? "Siguiente actividad ➜" : "Siguiente semana ➜"}</button>`;
+}
+function irSiguienteLec(){
+  const nx = _siguienteLec();
+  if(nx){ abrirLeccion(nx.w, nx.l); window.scrollTo({ top: 0, behavior: "smooth" }); }
 }
 
 function cab(w, l){
@@ -800,7 +829,10 @@ async function cargarEntrega(sem){
     ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}" multiple><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
       <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
   } else {
-    ctrl = `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`;
+    const _cerrado = new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
+    ctrl = _cerrado
+      ? `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
+      : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
   }
   const calif = e.calificado
     ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>`
@@ -813,7 +845,23 @@ async function cargarEntrega(sem){
          <span class="ent-msg" id="notaProfMsg-${sem}"></span>
        </div>`
     : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
-  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${calif}`;
+  const btnBorrarTodo = (e.puede_subir && (files.length || (e.mensaje_alumno||"").trim()))
+    ? `<button class="btn sm" style="margin-top:10px;display:block;background:#7f1d1d;" onclick="borrarEntregaCompleta(${sem})">🗑 Borrar entrega completa</button>`
+    : "";
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${btnBorrarTodo}${calif}`;
+}
+
+// OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.
+async function borrarEntregaCompleta(sem){
+  if(!confirm("¿Borrar TODA tu entrega de esta semana (archivos y mensaje)? Podrás volver a entregar desde cero.")) return;
+  try{
+    const e = await api(`/api/cursos/${CURSO}/entrega/${sem}`);
+    for(const a of (e.archivos||[])){
+      await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(a.nombre)}`, { method:"DELETE" });
+    }
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje`, { method:"POST", body: JSON.stringify({ mensaje: "" }) });
+    await cargarEntrega(sem);
+  }catch(e){ alert("No se pudo borrar la entrega: " + e.message); }
 }
 
 async function enviarNotaProfesor(sem){
@@ -849,6 +897,7 @@ async function subirEntrega(sem){
   const inp = $(`entFile-${sem}`), msg = $(`entMsg-${sem}`), btn = $(`entBtn-${sem}`);
   if(!inp || !inp.files || !inp.files.length){ if(msg){msg.className="ent-msg err"; msg.textContent="Elige uno o varios archivos primero.";} return; }
   const archivos = Array.from(inp.files);
+  const pend = ($(`notaProf-${sem}`) || {}).value;   // OBS-1: conservar el mensaje escrito aunque se suba archivo
   if(btn){ btn.disabled=true; }
   const setMsg = (cls, txt) => { if(msg){ msg.className="ent-msg "+cls; msg.textContent=txt; } };
   try{
@@ -861,6 +910,7 @@ async function subirEntrega(sem){
     }
     setMsg("ok", archivos.length>1 ? `✓ ${archivos.length} archivos subidos` : "✓ archivo subido");
     await cargarEntrega(sem);
+    const _ta = $(`notaProf-${sem}`); if(_ta && pend && pend.trim()){ _ta.value = pend; }   // OBS-1
   }catch(e){
     if(btn){ btn.disabled=false; btn.textContent="Subir entregable"; }
     setMsg("err", "No se pudo subir: " + e.message);
@@ -905,6 +955,7 @@ async function cargarPerfil(){
 }
 
 async function abrirPerfil(){
+  ocultarLecNav();
   const c = $("contenido");
   if(!perfilCache){
     try{ const r = await api(`/api/cursos/perfil`); perfilCache = r.perfil || {}; }
@@ -1169,6 +1220,7 @@ function _rowsEvals(r, evals){
 }
 async function verNotas(){
   lecActiva = null;
+  ocultarLecNav();
   renderTemario();
   const c = $("contenido");
   c.innerHTML = `<h2>📊 Mi boletín</h2><div class="aviso">Cargando…</div>`;
