@@ -384,20 +384,20 @@ async function reintentarMatricula(){
 }
 
 // ── Sin matrícula → solicitar acceso (con aprobación de administración) ──
-// El flujo de solicitud existe hoy para el Diplomado de Rociadores (la maqueta).
-// Para otros cursos se mantiene el botón de siempre.
+// Funciona para CUALQUIER diplomado (usa ?curso=). Si el curso no admite
+// solicitudes (no es un diplomado), el backend responde 404 y se muestra el botón.
 async function mostrarSinMatricula(){
   pantalla("pSinMatricula");
   const box = $("matriculaBody");
-  if(!ES_MAQUETA){
+  box.innerHTML = '<div class="spinner"></div>';
+  let sol = null, noAdmite = false;
+  try{ const r = await api(`/api/cursos/${CURSO}/solicitud`); sol = r.solicitud; }
+  catch(e){ if(e.status === 404) noAdmite = true; }
+  if(noAdmite){
     $("matriculaMsg").textContent = "Para entrar al aula necesitas una matrícula vigente de este diplomado.";
     box.innerHTML = `<a class="btn" href="../">Ir a ILFIS Ubuntu para activarla</a>`;
     return;
   }
-  box.innerHTML = '<div class="spinner"></div>';
-  let sol = null;
-  try{ const r = await api(`/api/cursos/rociadores/solicitud`); sol = r.solicitud; }
-  catch(e){ /* si falla, deja pedir acceso igual */ }
   renderSolicitud(sol);
 }
 
@@ -425,7 +425,7 @@ function renderSolicitud(sol){
     return;
   }
   // Sin solicitud previa: ofrecer el botón para pedir acceso.
-  $("matriculaMsg").textContent = "Para entrar al aula necesitas estar matriculado en el Diplomado de Rociadores Automáticos.";
+  $("matriculaMsg").textContent = "Para entrar al aula necesitas estar matriculado en este diplomado.";
   box.innerHTML = `<button class="btn" onclick="abrirFormSolicitud()">📝 Solicitar acceso</button>
     <p style="font-size:.78rem;margin-top:10px;color:var(--texto2);">Llena tus datos básicos y la administración de ILFIS aprobará tu matrícula.</p>`;
 }
@@ -473,7 +473,7 @@ async function enviarSolicitud(){
   }
   if(btn){ btn.disabled = true; btn.textContent = "Enviando…"; }
   try{
-    await api(`/api/cursos/rociadores/solicitud`, { method:"POST", body: JSON.stringify(body) });
+    await api(`/api/cursos/${CURSO}/solicitud`, { method:"POST", body: JSON.stringify(body) });
     renderSolicitud({ estado: "pendiente" });
   }catch(e){
     if(btn){ btn.disabled = false; btn.textContent = "Enviar solicitud"; }

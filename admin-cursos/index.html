@@ -71,16 +71,6 @@ select:focus{outline:none;border-color:var(--azul);}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);border:1px solid var(--azul);border-radius:10px;padding:12px 20px;font-size:.85rem;display:none;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.6);}
 #toast.err{border-color:var(--rojo);color:var(--rojoTxt);}
 .nota-pie{font-size:.72rem;color:var(--texto2);margin-top:12px;line-height:1.6;}
-
-.sol-card{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
-.sol-card.tiene{border-color:var(--ambar);}
-.sol-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
-.sol-tit{font-weight:700;font-size:.92rem;flex:1;min-width:200px;}
-.est{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.3px;}
-.est.pendiente{background:#3b2a08;color:var(--ambar);border:1px solid var(--ambar);}
-.est.aceptada{background:#0e2e1a;color:var(--verde);border:1px solid #14532d;}
-.est.rechazada{background:#2a1414;color:var(--rojoTxt);border:1px solid #7f1d1d;}
-.btn.verde{background:#16a34a;} .btn.verde:hover{background:#15803d;}
 </style>
 </head>
 <body>
@@ -104,22 +94,6 @@ select:focus{outline:none;border-color:var(--azul);}
 </div>
 
 <div id="panel">
-  <div class="sol-card" id="solCard">
-    <div class="sol-head">
-      <span class="sol-tit">📝 Solicitudes de acceso al Diplomado de Rociadores</span>
-      <span class="stat">Pendientes: <b id="stPend">0</b></span>
-      <button class="btn gris mini" onclick="cargarSolicitudes()">↻ Recargar</button>
-    </div>
-    <div class="tabla-wrap" style="margin-top:10px;">
-      <table>
-        <thead><tr>
-          <th>Alumno</th><th>País (nac. · resid.)</th><th>Teléfono</th><th>Estado</th><th>Acción</th>
-        </tr></thead>
-        <tbody id="tbodySol"></tbody>
-      </table>
-    </div>
-    <div class="nota-pie">Al <b>aceptar</b>, el alumno queda matriculado en el Diplomado (365 días) y sus datos ya quedan cargados para el certificado. Debe cerrar sesión y entrar de nuevo (o pulsar «Vuelve a intentar») para ver el aula.</div>
-  </div>
   <div class="barra">
     <input type="text" id="buscar" placeholder="🔍 Buscar alumno por correo o nombre…" oninput="renderTabla()">
     <span class="stat">Alumnos: <b id="stTotal">0</b></span>
@@ -198,7 +172,6 @@ async function entrar(){
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
-    cargarSolicitudes();
   }catch(e){
     clave = null;
     const el = $("claveErr");
@@ -283,74 +256,12 @@ async function revocar(idx, curso){
   }catch(e){ toast("⚠ " + e.message, true); }
 }
 
-// ── Solicitudes de acceso al Diplomado ──
-let solicitudes = [];
-const ESTADO_TXT = { pendiente:"Pendiente", aceptada:"Aceptada", rechazada:"Rechazada" };
-
-async function cargarSolicitudes(){
-  try{
-    const d = await api("/api/cursos/rociadores/admin/solicitudes");
-    solicitudes = d.solicitudes || [];
-    renderSolicitudes();
-  }catch(e){ toast("⚠ No pude cargar solicitudes: " + e.message, true); }
-}
-
-function renderSolicitudes(){
-  const pend = solicitudes.filter(s => s.estado === "pendiente").length;
-  $("stPend").textContent = pend;
-  $("solCard").classList.toggle("tiene", pend > 0);
-  if(!solicitudes.length){
-    $("tbodySol").innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--texto2);padding:18px;">No hay solicitudes.</td></tr>`;
-    return;
-  }
-  $("tbodySol").innerHTML = solicitudes.map((s, i) => {
-    const paises = [s.pais_nacimiento, s.pais_residencia].filter(Boolean).join(" · ") || "—";
-    const est = s.estado || "pendiente";
-    let accion = "—";
-    if(est === "pendiente"){
-      accion = `<button class="btn verde mini" onclick="aceptarSolicitud(${i})">✓ Aceptar</button>
-                <button class="btn rojo mini" onclick="rechazarSolicitud(${i})">✕ Rechazar</button>`;
-    }else if(est === "rechazada" && s.motivo){
-      accion = `<span class="sin" title="${esc(s.motivo)}">motivo ⓘ</span>`;
-    }
-    return `<tr>
-      <td><div class="alumno-email">${esc(s.nombre_certificado||"(sin nombre)")}</div><div class="alumno-nombre">${esc(s.email||"")}</div></td>
-      <td>${esc(paises)}</td>
-      <td>${esc(s.telefono||"—")}</td>
-      <td><span class="est ${est}">${esc(ESTADO_TXT[est]||est)}</span></td>
-      <td class="acciones-td">${accion}</td>
-    </tr>`;
-  }).join("");
-}
-
-async function aceptarSolicitud(i){
-  const s = solicitudes[i];
-  if(!confirm(`¿Dar acceso al Diplomado a ${s.nombre_certificado||s.email}?`)) return;
-  try{
-    await api("/api/cursos/rociadores/admin/solicitudes/aceptar", { method:"POST", body: JSON.stringify({ uid: s.uid }) });
-    toast(`✓ Acceso concedido a ${s.nombre_certificado||s.email}`);
-    await cargarSolicitudes();
-  }catch(e){ toast("⚠ " + e.message, true); }
-}
-
-async function rechazarSolicitud(i){
-  const s = solicitudes[i];
-  const motivo = prompt(`Rechazar la solicitud de ${s.nombre_certificado||s.email}.\n\nMotivo (opcional, lo verá el alumno):`, "");
-  if(motivo === null) return;   // canceló
-  try{
-    await api("/api/cursos/rociadores/admin/solicitudes/rechazar", { method:"POST", body: JSON.stringify({ uid: s.uid, motivo }) });
-    toast(`Solicitud de ${s.nombre_certificado||s.email} rechazada`);
-    await cargarSolicitudes();
-  }catch(e){ toast("⚠ " + e.message, true); }
-}
-
 // ── Arranque: si hay clave en la sesión de la pestaña, entrar directo ──
 if(clave){
   cargarAlumnos(true).then(() => {
     $("pClave").style.display = "none";
     $("panel").style.display = "block";
     $("btnSalir").style.display = "inline-block";
-    cargarSolicitudes();
   }).catch(() => { clave = null; });  // clave inválida: pide de nuevo sin borrar la de intranet
 }
 </script>

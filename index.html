@@ -824,6 +824,70 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <input type="text" id="admin-edualumnos-buscar" placeholder="Escribe el nombre o correo del alumno a matricular…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
           <button class="btn-a" style="padding:9px 14px;font-size:0.85rem;" onclick="adminEduAlumnosCerrarBuscar()">Cancelar</button>
         </div>
+        <!-- ▼▼ SOLICITUDES DE ACCESO (Plataforma Educativa) — gestionado por el módulo de cursos ▼▼ -->
+        <div id="edu-solicitudes-box" style="border:1px solid #6b5a24;border-radius:10px;padding:14px 16px;background:#1a1608;margin-bottom:16px;">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <b style="color:#f5d06b;font-size:0.9rem;">📝 Solicitudes de acceso pendientes</b>
+            <span id="edu-sol-count" style="font-size:0.78rem;color:#8899aa;"></span>
+            <button class="btn-a" style="padding:6px 12px;font-size:0.8rem;margin-left:auto;" onclick="eduSolCargar()">↻ Recargar</button>
+          </div>
+          <p style="font-size:0.76rem;color:#8899aa;margin:0 0 6px;line-height:1.5;">
+            Alumnos que pidieron acceso a <b style="color:#fff;">este diplomado</b> desde el aula. Al
+            <b style="color:#fff;">aceptar</b>, quedan matriculados (365 días) con sus datos ya cargados para el certificado.
+          </p>
+          <div id="edu-sol-content"><div class="admin-loading">Cargando...</div></div>
+        </div>
+        <script>
+        (function(){
+          function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+          function cursoSel(){ var s=document.getElementById('admin-edualumnos-curso'); return s? s.value : ''; }
+          window.eduSolCargar = async function(){
+            var curso = cursoSel(); var cont=document.getElementById('edu-sol-content');
+            if(!cont) return;
+            if(!curso){ cont.innerHTML=''; return; }
+            cont.innerHTML='<div class="admin-loading">Cargando...</div>';
+            try{
+              var r = await fetch(BACKEND+'/api/cursos/'+curso+'/admin/solicitudes',{headers:{'x-admin-key':_getAdminKey()}});
+              if(!r.ok) throw new Error('Error '+r.status);
+              var d = await r.json(); var sol = d.solicitudes||[];
+              var pend = sol.filter(function(x){return x.estado==='pendiente';});
+              var cEl=document.getElementById('edu-sol-count'); if(cEl) cEl.textContent = pend.length? ('· '+pend.length+' pendiente(s)') : '';
+              if(!pend.length){ cont.innerHTML='<div style="font-size:0.8rem;color:#8899aa;padding:8px 0;">No hay solicitudes pendientes.</div>'; return; }
+              cont.innerHTML = pend.map(function(s){
+                var paises=[s.pais_nacimiento,s.pais_residencia].filter(Boolean).join(' · ')||'—';
+                return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid #2a3450;padding:9px 0;">'
+                  +'<div style="flex:1;min-width:180px;"><div style="color:#e6ecf7;font-weight:600;font-size:0.85rem;">'+esc(s.nombre_certificado||'(sin nombre)')+'</div>'
+                  +'<div style="color:#8899aa;font-size:0.72rem;">'+esc(s.email||'')+' · '+esc(paises)+(s.telefono?(' · '+esc(s.telefono)):'')+'</div></div>'
+                  +'<button class="btn-dar btn-a" style="padding:6px 12px;font-size:0.8rem;" onclick="eduSolAceptar(\''+esc(s.uid)+'\',\''+esc((s.nombre_certificado||s.email||'').replace(/\x27/g,""))+'\')">✓ Aceptar</button>'
+                  +'<button class="btn-a" style="padding:6px 12px;font-size:0.8rem;border-color:#7f1d1d;color:#f8a5a5;" onclick="eduSolRechazar(\''+esc(s.uid)+'\',\''+esc((s.nombre_certificado||s.email||'').replace(/\x27/g,""))+'\')">✕ Rechazar</button>'
+                  +'</div>';
+              }).join('');
+            }catch(e){ cont.innerHTML='<div style="color:#f8a5a5;font-size:0.8rem;">No pude cargar: '+esc(e.message)+'</div>'; }
+          };
+          window.eduSolAceptar = async function(uid,nombre){
+            if(!confirm('¿Dar acceso a '+nombre+'?')) return;
+            try{
+              var r=await fetch(BACKEND+'/api/cursos/'+cursoSel()+'/admin/solicitudes/aceptar',{method:'POST',headers:{'x-admin-key':_getAdminKey(),'Content-Type':'application/json'},body:JSON.stringify({uid:uid})});
+              if(!r.ok){ var e=await r.json().catch(function(){return {};}); throw new Error(e.detail||('Error '+r.status)); }
+              eduSolCargar(); if(window.adminRenderEduAlumnos) adminRenderEduAlumnos();
+              alert('✓ Acceso concedido a '+nombre+'. El alumno debe cerrar sesión y volver a entrar (o pulsar «Vuelve a intentar») para ver el aula.');
+            }catch(e){ alert('⚠ '+e.message); }
+          };
+          window.eduSolRechazar = async function(uid,nombre){
+            var motivo=prompt('Rechazar a '+nombre+'. Motivo (opcional, lo verá el alumno):',''); if(motivo===null) return;
+            try{
+              var r=await fetch(BACKEND+'/api/cursos/'+cursoSel()+'/admin/solicitudes/rechazar',{method:'POST',headers:{'x-admin-key':_getAdminKey(),'Content-Type':'application/json'},body:JSON.stringify({uid:uid,motivo:motivo})});
+              if(!r.ok){ var e=await r.json().catch(function(){return {};}); throw new Error(e.detail||('Error '+r.status)); }
+              eduSolCargar();
+            }catch(e){ alert('⚠ '+e.message); }
+          };
+          var _orig = window.adminRenderEduAlumnos;
+          window.adminRenderEduAlumnos = function(){ if(_orig) _orig.apply(this,arguments); try{ eduSolCargar(); }catch(e){} };
+          var _selEl = document.getElementById('admin-edualumnos-curso');
+          if(_selEl) _selEl.addEventListener('change', function(){ eduSolCargar(); });
+        })();
+        </script>
+        <!-- ▲▲ FIN SOLICITUDES DE ACCESO ▲▲ -->
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Certificados (Plataforma Educativa) — GENERADOR general, emite SOLO el superadmin -->
