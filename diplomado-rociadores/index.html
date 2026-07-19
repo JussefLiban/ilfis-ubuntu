@@ -1001,8 +1001,22 @@ async function abrirPerfil(){
     catch(e){ perfilCache = {}; }
   }
   const p = perfilCache || {};
+  let _tokFoto = ""; try{ _tokFoto = await usuario.getIdToken(); }catch(e){}
+  const fotoSrc = p.tiene_foto ? `${API}/api/cursos/perfil/foto?token=${_tokFoto}&t=${Date.now()}` : "";
   c.innerHTML = `<h2>📋 Mis datos para el certificado</h2>
     <div class="meta">Estos datos se usan solo para emitir tu diploma. No son obligatorios para entrar al aula; complétalos cuando quieras.</div>
+    <div style="display:flex;align-items:center;gap:16px;margin:6px 0 16px;flex-wrap:wrap;">
+      <img id="pfFotoImg" src="${fotoSrc}" alt="" style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:2px solid var(--borde);background:var(--campo);${fotoSrc?"":"display:none;"}">
+      <div id="pfFotoPh" style="width:88px;height:88px;border-radius:50%;${fotoSrc?"display:none;":"display:flex;"}align-items:center;justify-content:center;background:var(--campo);border:2px dashed var(--borde);font-size:1.8rem;">🧑</div>
+      <div>
+        <div style="font-size:.8rem;color:var(--texto2);">Foto (opcional) — la ve tu profesor.</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+          <input type="file" id="pfFoto" accept="image/*">
+          <button class="btn sm" id="pfFotoBtn" onclick="subirFotoPerfil()">Subir foto</button>
+        </div>
+        <span class="ent-msg" id="pfFotoMsg"></span>
+      </div>
+    </div>
     <div class="perfil-form">
       <label>Nombre completo <span class="req">(tal cual irá en el certificado)</span>
         <input id="pfNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos"></label>
@@ -1045,6 +1059,25 @@ async function guardarPerfilForm(){
     if(btn){ btn.disabled = false; btn.textContent = "Guardar mis datos"; }
     if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo guardar: " + e.message; }
   }
+}
+
+// OBS-13 · El alumno sube su foto (la ve el profesor en su panel).
+async function subirFotoPerfil(){
+  const inp = $("pfFoto"), msg = $("pfFotoMsg"), btn = $("pfFotoBtn");
+  if(!inp || !inp.files || !inp.files.length){ if(msg){ msg.className="ent-msg err"; msg.textContent="Elige una imagen primero."; } return; }
+  if(btn){ btn.disabled = true; btn.textContent = "Subiendo…"; }
+  try{
+    const fd = new FormData(); fd.append("archivo", inp.files[0]);
+    await apiForm(`/api/cursos/perfil/foto`, fd);
+    if(perfilCache) perfilCache.tiene_foto = true;
+    const t = await usuario.getIdToken();
+    const img = $("pfFotoImg"), ph = $("pfFotoPh");
+    if(img){ img.src = `${API}/api/cursos/perfil/foto?token=${t}&t=${Date.now()}`; img.style.display = "block"; }
+    if(ph) ph.style.display = "none";
+    if(msg){ msg.className = "ent-msg ok"; msg.textContent = "✓ Foto subida"; }
+  }catch(e){
+    if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo subir: " + e.message; }
+  }finally{ if(btn){ btn.disabled = false; btn.textContent = "Subir foto"; } }
 }
 
 // ── Quiz ──

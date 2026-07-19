@@ -213,6 +213,7 @@ let clave = localStorage.getItem("ilfis_admin_key") || null;  // clave de admini
 let R = null;      // resumen
 let E = null;      // entregas de tareas
 let P = null;      // planilla / libro de notas
+let _fotoTok = ""; // token (login docente) para mostrar las fotos de los alumnos
 let tab = "q";
 let _autoIntentado = false;
 
@@ -261,6 +262,7 @@ async function entrar(){
 
 async function cargar(inicial){
   R = await api(`/api/cursos/${CURSO}/admin/resumen`);
+  try{ if(usuario) _fotoTok = await usuario.getIdToken(); }catch(e){}
   $("pClave").style.display = "none";
   $("panel").style.display = "block";
   $("stAlumnos").textContent = R.progreso.length;
@@ -463,9 +465,12 @@ function renderAlumnos(){
   $("tabla").querySelector("tbody").innerHTML = alumnos.map(a => {
     const prom = a.promedio == null ? '<span style="color:var(--texto2);">—</span>'
       : `<b style="color:${a.promedio >= ap ? 'var(--verde)' : 'var(--rojoTxt)'};">${a.promedio}</b> / 100`;
+    const foto = (_fotoTok && a.uid)
+      ? `<img src="${API}/api/cursos/admin/alumno/${encodeURIComponent(a.uid)}/foto?token=${_fotoTok}" onerror="this.style.display='none'" style="width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;border:1px solid var(--borde);">`
+      : "";
     return `
     <tr>
-      <td>${esc(a.email)}</td>
+      <td>${foto}${esc(a.email)}</td>
       <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
       <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
       <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
