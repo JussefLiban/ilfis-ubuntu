@@ -421,10 +421,12 @@ function renderSolicitud(sol){
     return;
   }
   if(est === "aceptada"){
-    $("matriculaTit").textContent = "✅ ¡Acceso aprobado!";
-    $("matriculaMsg").textContent = "Estamos activando tu acceso…";
-    box.innerHTML = `<div class="aviso" style="background:#0e2e1a;border:1px solid #22c55e;color:#bbf7d0;">
-        🎉 <b>Tu acceso ya fue aprobado.</b> Si el aula no abre sola en unos segundos, pulsa <b>"Vuelve a intentar"</b>.</div>`;
+    // Si llegamos aquí, el ingreso automático YA falló → no hay matrícula activa
+    // (vencida o dada de baja tras aprobar). Ofrecer reintentar y volver a solicitar.
+    $("matriculaTit").textContent = "🔒 Tu acceso no está activo ahora mismo";
+    $("matriculaMsg").textContent = "Tu solicitud fue aprobada antes, pero en este momento no tienes acceso activo (pudo vencer o darse de baja).";
+    box.innerHTML = `<button class="btn" onclick="abrirFormSolicitud()">📝 Solicitar acceso de nuevo</button>
+      <p style="font-size:.78rem;margin-top:10px;color:var(--texto2);">¿Te acaban de reactivar o regularizaste tu pago? Pulsa <b>"Vuelve a intentar"</b> aquí abajo.</p>`;
     return;
   }
   if(est === "rechazada"){

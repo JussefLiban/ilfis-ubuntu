@@ -886,6 +886,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           window.adminRenderEduAlumnos = function(){ if(_orig) _orig.apply(this,arguments); try{ eduSolCargar(); }catch(e){} };
           var _selEl = document.getElementById('admin-edualumnos-curso');
           if(_selEl) _selEl.addEventListener('change', function(){ eduSolCargar(); });
+          // Carga automatica cuando la seccion se vuelve visible (sin tener que pulsar Recargar).
+          var _box2 = document.getElementById('edu-solicitudes-box');
+          if(_box2 && ('IntersectionObserver' in window)){
+            var _io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ eduSolCargar(); } }); }, { threshold: 0.01 });
+            _io.observe(_box2);
+          } else { setTimeout(function(){ eduSolCargar(); }, 800); }
         })();
         </script>
         <!-- ▲▲ FIN SOLICITUDES DE ACCESO ▲▲ -->
