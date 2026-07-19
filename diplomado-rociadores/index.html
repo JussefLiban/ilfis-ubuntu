@@ -864,7 +864,7 @@ async function cargarEntrega(sem){
          <span class="ent-msg" id="notaProfMsg-${sem}"></span>
        </div>`
     : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
-  const btnBorrarTodo = (e.puede_subir && (files.length || (e.mensaje_alumno||"").trim()))
+  const btnBorrarTodo = (e.puede_subir && files.length)
     ? `<button class="btn sm" style="margin-top:10px;display:block;background:#7f1d1d;" onclick="borrarEntregaCompleta(${sem})">🗑 Borrar entrega completa</button>`
     : "";
   const btnFinalizar = e.puede_finalizar
@@ -878,14 +878,15 @@ async function cargarEntrega(sem){
 
 // OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.
 async function borrarEntregaCompleta(sem){
-  if(!confirm("¿Borrar TODA tu entrega de esta semana (archivos y mensaje)? Podrás volver a entregar desde cero.")) return;
+  if(!confirm("¿Borrar toda tu entrega de esta semana?\n\nSe borrarán los archivos que subiste. Tu mensaje al profesor NO se borra.")) return;
+  const pend = ($(`notaProf-${sem}`) || {}).value;   // el mensaje nunca se pierde
   try{
     const e = await api(`/api/cursos/${CURSO}/entrega/${sem}`);
     for(const a of (e.archivos||[])){
       await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(a.nombre)}`, { method:"DELETE" });
     }
-    await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje`, { method:"POST", body: JSON.stringify({ mensaje: "" }) });
     await cargarEntrega(sem);
+    const _ta = $(`notaProf-${sem}`); if(_ta && pend && pend.trim()){ _ta.value = pend; }
   }catch(e){ alert("No se pudo borrar la entrega: " + e.message); }
 }
 
