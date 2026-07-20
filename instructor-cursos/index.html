@@ -426,8 +426,11 @@ function computeCola(){
     if((en.archivos || []).length){ (entregaSem[en.uid] = entregaSem[en.uid] || {})[en.semana] = en; }
   });
   if(P && P.alumnos && P.columnas){
-    // Libro de notas: UNA fila por CADA evaluación de desarrollo pendiente (con entrega subida)
-    const desarrollo = P.columnas.filter(c => c.tipo === "desarrollo");
+    // Libro de notas: UNA fila por CADA evaluación pendiente que el profesor
+    // califica a mano y ya tiene entrega subida. Incluye "manual" (la Crítica de
+    // Lecturas de la Semana 0), no solo "desarrollo": si no, ese ensayo nunca
+    // aparece como pendiente.
+    const desarrollo = P.columnas.filter(c => c.tipo === "desarrollo" || c.tipo === "manual");
     P.alumnos.forEach(a => {
       desarrollo.forEach(c => {
         const est = a.estados ? a.estados[c.codigo] : null;
