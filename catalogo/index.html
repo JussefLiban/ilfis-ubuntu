@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oferta Académica — ILFIS Ubuntu</title>
+<title>¿Cuál me conviene? — ILFIS Ubuntu</title>
 <link rel="icon" href="../logo-nuevo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --fondo:#0e1117; --panel:#161b26; --campo:#1e2433; --borde:#2a3144;
@@ -17,91 +17,59 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans','Segoe UI',Arial,sans-serif;background:var(--fondo);color:var(--texto);}
 
-header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:10;}
+header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .marca{display:flex;align-items:center;gap:12px;}
 .logo-box{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
 .logo-box img{height:32px;display:block;}
 .titulos .l1{font-weight:700;font-size:20px;color:#fff;letter-spacing:1px;}
 .titulos .l2{font-size:10px;color:#9fb0d0;text-transform:uppercase;letter-spacing:1.2px;}
-header nav{display:flex;gap:8px;align-items:center;}
-header nav a{color:#d7deed;text-decoration:none;font-size:13.5px;padding:8px 14px;border-radius:8px;}
-header nav a:hover{background:rgba(255,255,255,.08);}
-header nav a.cta{background:var(--rojo);color:#fff;font-weight:600;}
-header nav a.cta:hover{background:#d9483a;}
+header nav a{color:#d7deed;text-decoration:none;font-size:13.5px;padding:8px 14px;border-radius:8px;border:1px solid #2a3a5e;}
+header nav a:hover{background:rgba(255,255,255,.08);color:#fff;}
 
-.hero{background:linear-gradient(135deg,var(--navy) 0%,#0e1117 100%);border-bottom:1px solid var(--borde);text-align:center;padding:44px 24px 62px;}
-.hero h1{font-size:30px;margin-bottom:10px;color:#fff;}
-.hero p{font-size:16px;color:#9fb0d0;max-width:660px;margin:0 auto;}
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#0e1117 100%);border-bottom:1px solid var(--borde);text-align:center;padding:46px 24px 62px;}
+.hero h1{font-size:30px;margin-bottom:12px;color:#fff;}
+.hero p{font-size:16.5px;color:#9fb0d0;max-width:620px;margin:0 auto;line-height:1.6;}
 
-.contenedor{max-width:1180px;margin:-30px auto 40px;padding:0 24px;}
+.contenedor{max-width:1000px;margin:-32px auto 40px;padding:0 24px;}
 
-/* ── Explicación de las DOS modalidades (son productos distintos) ── */
-.modalidades{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
-@media(max-width:820px){.modalidades{grid-template-columns:1fr;}}
-.mod{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:18px 20px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
-.mod.edu{border-left:4px solid var(--rojo);}
-.mod.prem{border-left:4px solid var(--morado);}
-.mod h2{font-size:16px;margin-bottom:6px;}
-.mod .qes{font-size:13px;color:#a7b1c7;margin-bottom:10px;line-height:1.6;}
-.mod ul{list-style:none;font-size:12.5px;color:#a7b1c7;line-height:1.9;}
-.mod li.si::before{content:"✔ ";color:var(--verde);font-weight:700;}
-.mod li.no::before{content:"✖ ";color:#7a8299;font-weight:700;}
-.mod li.no{color:#7a8299;}
+/* ── LOS DOS MUNDOS ── */
+.mundos{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:820px){.mundos{grid-template-columns:1fr;}.hero h1{font-size:24px;}}
 
-.seccion{margin-top:34px;}
-.sec-cab{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--borde);padding-bottom:10px;margin-bottom:18px;}
-.sec-cab h2{font-size:21px;}
-.sec-cab .sub{font-size:13px;color:var(--texto2);}
-.sec-cab .cinta{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:4px 10px;border-radius:12px;}
-.cinta.edu{background:rgba(192,57,43,.18);color:#f09083;}
-.cinta.prem{background:rgba(124,92,255,.18);color:#b9a7ff;}
+.mundo{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:26px 24px 24px;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .15s,border-color .15s;}
+.mundo:hover{transform:translateY(-3px);}
+.mundo.edu{border-top:4px solid var(--rojo);}
+.mundo.edu:hover{border-color:var(--rojo);}
+.mundo.prem{border-top:4px solid var(--morado);}
+.mundo.prem:hover{border-color:var(--morado);}
 
-.filtros{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.4);}
-.filtros input{flex:1;min-width:180px;font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--borde);border-radius:8px;background:var(--campo);color:var(--texto);}
-.filtros input::placeholder{color:var(--texto2);}
-.filtros input:focus{outline:none;border-color:var(--azul);}
+.icono{font-size:44px;margin-bottom:10px;}
+.mundo h2{font-size:22px;margin-bottom:4px;}
+.comoes{font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px;}
+.mundo.edu .comoes{color:#f09083;}
+.mundo.prem .comoes{color:#b9a7ff;}
+.explica{font-size:14.5px;color:#c3ccdd;line-height:1.7;margin-bottom:18px;}
 
-.grilla{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-@media(max-width:980px){.grilla{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:640px){.grilla{grid-template-columns:1fr;}.hero h1{font-size:24px;}}
-.card{background:var(--panel);border:1px solid var(--borde);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s,border-color .15s;}
-.card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.5);border-color:#3a4560;}
-.card.destacada{border-color:var(--rojo);box-shadow:0 0 0 1px var(--rojo);}
-.banda{height:96px;display:flex;align-items:center;justify-content:center;font-size:40px;}
-.b0{background:linear-gradient(135deg,#c0392b,#7c2318);}
-.b1{background:linear-gradient(135deg,#16213e,#1d3358);}
-.b2{background:linear-gradient(135deg,#1a1f2e,#2a3144);}
-.b3{background:linear-gradient(135deg,#16213e,#0f2f26);}
-.b4{background:linear-gradient(135deg,#2a1215,#6e2318);}
-.b5{background:linear-gradient(135deg,#16213e,#123a44);}
-.cuerpo{padding:14px 16px;flex:1;display:flex;flex-direction:column;}
-.pill{display:inline-block;font-size:10.5px;padding:3px 10px;border-radius:12px;font-weight:600;margin:0 5px 6px 0;}
-.pill.diplomado{background:rgba(192,57,43,.18);color:#f09083;}
-.pill.curso{background:rgba(59,130,246,.15);color:#7fb0f9;}
-.pill.capacitacion{background:rgba(217,160,56,.15);color:#eec36a;}
-.pill.disp{background:rgba(46,168,111,.15);color:#4ade80;}
-.pill.pronto{background:#242b3d;color:var(--texto2);}
-.card h3{font-size:15px;margin-bottom:6px;line-height:1.35;}
-.datos{font-size:12.5px;color:#a7b1c7;margin-bottom:12px;line-height:1.7;flex:1;}
-.acciones{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--borde);padding-top:12px;}
-.btn{display:block;text-align:center;font-size:13px;padding:9px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;text-decoration:none;font-family:inherit;}
-.btn.rojo{background:var(--rojo);color:#fff;}
-.btn.rojo:hover{background:#d9483a;}
-.btn.morado{background:#5b3fd6;color:#fff;}
-.btn.morado:hover{background:var(--morado);}
-.btn.azul{background:var(--azul-osc);color:#fff;}
-.btn.azul:hover{background:var(--azul);}
-.btn.outline{background:transparent;color:#7fb0f9;border:1px solid var(--borde);}
-.btn.outline:hover{background:var(--campo);}
+.mundo ul{list-style:none;font-size:14px;line-height:2.1;margin-bottom:22px;flex:1;}
+.mundo li.si::before{content:"✔";color:var(--verde);font-weight:700;display:inline-block;width:22px;}
+.mundo li.no::before{content:"✖";color:#6b7286;font-weight:700;display:inline-block;width:22px;}
+.mundo li.si{color:#d5dcea;}
+.mundo li.no{color:#7a8299;}
 
-.vacio{font-size:13px;color:var(--texto2);padding:18px;text-align:center;border:1px dashed var(--borde);border-radius:12px;}
-.nota-sec{font-size:12.5px;color:var(--texto2);margin-top:14px;padding:12px 16px;background:var(--campo);border:1px solid var(--borde);border-radius:10px;line-height:1.7;}
+.entrar{display:block;text-align:center;font-size:15.5px;font-weight:700;padding:14px 18px;border-radius:10px;text-decoration:none;color:#fff;}
+.entrar.edu{background:var(--rojo);}
+.entrar.edu:hover{background:#d9483a;}
+.entrar.prem{background:#5b3fd6;}
+.entrar.prem:hover{background:var(--morado);}
+.pie-mundo{text-align:center;font-size:12px;color:var(--texto2);margin-top:9px;line-height:1.6;}
 
-.franja{background:var(--panel);border:1px solid var(--borde);border-radius:12px;margin-top:34px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.franja h2{font-size:16px;margin-bottom:4px;}
-.franja p{font-size:13px;color:var(--texto2);}
+.duda{background:var(--panel);border:1px solid var(--borde);border-radius:12px;margin-top:26px;padding:20px 24px;text-align:center;}
+.duda h3{font-size:16px;margin-bottom:6px;}
+.duda p{font-size:13.5px;color:var(--texto2);line-height:1.7;margin-bottom:14px;}
+.duda a{display:inline-block;background:var(--azul-osc);color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px;}
+.duda a:hover{background:var(--azul);}
 
-footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-top:1px solid var(--borde);margin-top:30px;line-height:1.8;}
+footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-top:1px solid var(--borde);margin-top:34px;line-height:1.8;}
 </style>
 </head>
 <body>
@@ -114,76 +82,64 @@ footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-
       <div class="l2">Plataforma Interactiva Asistida por IA</div>
     </div>
   </div>
-  <nav>
-    <a href="https://ilfislatinoamerica.com" target="_blank" rel="noopener">ILFIS Latinoamérica</a>
-    <a href="../" class="cta">Ingresar a la plataforma</a>
-  </nav>
+  <nav><a href="../">← Volver a la plataforma</a></nav>
 </header>
 
 <div class="hero">
-  <h1>Formación especializada en Protección Contra Incendios</h1>
-  <p>ILFIS ofrece su formación de dos maneras distintas. Elige la que te sirve: estudiar con profesor y certificado, o ver las clases por tu cuenta.</p>
+  <h1>¿Cuál me conviene?</h1>
+  <p>ILFIS enseña de dos maneras muy distintas. Mira en qué se diferencian y entra a la que va contigo.</p>
 </div>
 
 <div class="contenedor">
 
-  <!-- Las dos modalidades, explicadas antes de mostrar nada -->
-  <div class="modalidades">
-    <div class="mod edu">
-      <h2>🎓 Plataforma Educativa</h2>
-      <div class="qes">Es un aula de clases. Te matriculas en un grupo que empieza en una fecha, sigues un cronograma semanal y un profesor te acompaña.</div>
+  <div class="mundos">
+
+    <!-- ══ MUNDO 1 · PLATAFORMA EDUCATIVA ══ -->
+    <div class="mundo edu">
+      <div class="icono">🎓</div>
+      <h2>Plataforma Educativa</h2>
+      <div class="comoes">Es un aula de clases</div>
+      <div class="explica">
+        Te matriculas en un grupo que empieza en una fecha. Sigues un cronograma semanal,
+        entregas tareas y un profesor te las corrige y te responde. Al aprobar, recibes tu certificado.
+      </div>
       <ul>
         <li class="si">Profesor que te corrige y te responde</li>
-        <li class="si">Evaluaciones y tareas con nota</li>
+        <li class="si">Tareas y evaluaciones con nota</li>
         <li class="si">Certificado al aprobar</li>
-        <li class="si">Cronograma semanal y fecha de inicio</li>
+        <li class="si">Cronograma semanal con fecha de inicio</li>
+        <li class="si">Compañeros de grupo</li>
       </ul>
+      <a class="entrar edu" href="../plataforma-educativa/">🎓 Entrar a la Plataforma Educativa</a>
+      <div class="pie-mundo">Para quien quiere estudiar acompañado y llevarse un certificado.</div>
     </div>
-    <div class="mod prem">
-      <h2>▶ Clases Premium</h2>
-      <div class="qes">Es una videoteca. Pagas, entras y ves las clases que quieras, a tu ritmo, durante tu período de acceso. Nadie te enseña ni te evalúa.</div>
+
+    <!-- ══ MUNDO 2 · CLASES PREMIUM ══ -->
+    <div class="mundo prem">
+      <div class="icono">▶</div>
+      <h2>Clases Premium</h2>
+      <div class="comoes">Es una videoteca</div>
+      <div class="explica">
+        Pagas, entras y ves las clases que quieras, a tu ritmo, durante tu período de acceso.
+        Empiezas hoy mismo, sin esperar a que abra ningún grupo. Nadie te enseña ni te evalúa.
+      </div>
       <ul>
-        <li class="si">Todas las clases grabadas, disponibles al instante</li>
-        <li class="si">A tu ritmo, cuando quieras</li>
+        <li class="si">Todas las clases grabadas, desde el primer día</li>
+        <li class="si">A tu ritmo, a la hora que quieras</li>
+        <li class="si">Empiezas al instante</li>
         <li class="no">Sin profesor</li>
         <li class="no">Sin evaluaciones ni certificado</li>
       </ul>
+      <a class="entrar prem" href="../#clases-premium">▶ Entrar a Clases Premium</a>
+      <div class="pie-mundo">Para quien solo quiere el conocimiento y se organiza solo.</div>
     </div>
+
   </div>
 
-  <div class="filtros">
-    <input id="buscar" placeholder="🔍 Buscar: rociadores, bombas, NFPA, hidráulica…" oninput="filtrar()">
-  </div>
-
-  <!-- ════════ SECCIÓN 1 · PLATAFORMA EDUCATIVA ════════ -->
-  <div class="seccion" id="sec-edu">
-    <div class="sec-cab">
-      <span class="cinta edu">Con profesor</span>
-      <h2>🎓 Plataforma Educativa</h2>
-      <span class="sub">Diplomados con aula virtual, evaluaciones y certificado</span>
-    </div>
-    <div class="grilla" id="grilla-edu"></div>
-    <div class="vacio" id="vacio-edu" style="display:none;">Ningún programa coincide con tu búsqueda.</div>
-    <div class="nota-sec">Estamos llevando el resto de los diplomados de ILFIS al aula virtual, uno por uno. Si te interesa alguno que aún no aparece aquí, escríbenos y te avisamos cuando abra su grupo.</div>
-  </div>
-
-  <!-- ════════ SECCIÓN 2 · CLASES PREMIUM ════════ -->
-  <div class="seccion" id="sec-prem">
-    <div class="sec-cab">
-      <span class="cinta prem">A tu ritmo</span>
-      <h2>▶ Clases Premium</h2>
-      <span class="sub">Videoteca de clases grabadas · sin profesor, sin evaluaciones, sin certificado</span>
-    </div>
-    <div class="grilla" id="grilla-prem"></div>
-    <div class="vacio" id="vacio-prem" style="display:none;">Ningún curso coincide con tu búsqueda.</div>
-  </div>
-
-  <div class="franja">
-    <div>
-      <h2>¿Ya eres alumno de ILFIS?</h2>
-      <p>Ingresa a la plataforma para continuar tus cursos, usar el asistente IA y las herramientas de cálculo.</p>
-    </div>
-    <a class="btn azul" href="../" style="min-width:200px;">Ingresar a mi cuenta</a>
+  <div class="duda">
+    <h3>¿Sigues sin decidirte?</h3>
+    <p>Escríbenos y te decimos cuál te conviene según lo que necesitas y el tiempo que tengas.</p>
+    <a href="mailto:contacto@ilfislatinoamerica.com?subject=Consulta%20—%20%C2%BFCu%C3%A1l%20modalidad%20me%20conviene%3F">✉ Consultar con ILFIS</a>
   </div>
 
 </div>
@@ -193,123 +149,5 @@ footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-
   ilfis-ubuntu.ilfislatinoamerica.com · contacto@ilfislatinoamerica.com
 </footer>
 
-<script>
-/* ─────────────────────────────────────────────────────────────
-   DOS PRODUCTOS DISTINTOS, DOS LISTAS DISTINTAS.
-   Un mismo tema (ej. Rociadores) puede existir en las dos, pero
-   NUNCA se describen juntos en una sola tarjeta.
-   ───────────────────────────────────────────────────────────── */
-
-// ── 1) PLATAFORMA EDUCATIVA: solo lo que tiene aula construida ──
-const EDUCATIVA = [
-  { n:"Diplomado de Rociadores Automáticos", tipo:"diplomado", ico:"💧", banda:"b0", destacada:true,
-    aula:"../diplomado-rociadores/", inicio:"13/07/2026",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" },
-];
-
-// ── 2) CLASES PREMIUM: la videoteca. clases = cuántos videos trae ──
-const PREMIUM = [
-  { n:"Diplomado de Rociadores Automáticos", tipo:"diplomado", disp:true, clases:49, ico:"💧", banda:"b0",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" },
-  { n:"Diplomado Especializado en Cálculos Hidráulicos", tipo:"diplomado", disp:true, clases:35, ico:"🧮", banda:"b1",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/" },
-  { n:"Diplomado de Bombas Contra Incendios", tipo:"diplomado", disp:true, clases:51, ico:"⚙️", banda:"b3",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-bombas-contra-incendios/" },
-  { n:"Diplomado de Protección de Mercancías", tipo:"diplomado", disp:true, clases:52, ico:"📦", banda:"b5",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-proteccion-de-mercancias/" },
-  { n:"Diplomado de Detección y Alarmas de Incendios", tipo:"diplomado", disp:true, clases:57, ico:"🚨", banda:"b2",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-internacional-de-deteccion-y-alarmas-de-incendios/" },
-  { n:"Curso de Hidráulica Básica", tipo:"curso", disp:false, ico:"💦", banda:"b1",
-    info:"https://ilfislatinoamerica.com/producto/curso-de-hidraulica-basica/" },
-  { n:"Curso Diseño y Cálculo de Sistemas de Montantes y Mangueras", tipo:"curso", disp:false, ico:"🚿", banda:"b3",
-    info:"https://ilfislatinoamerica.com/producto/curso-sistemas-de-montantes-y-mangueras/" },
-  { n:"Diplomado de IPM de Sistemas de Extinción a Base de Agua", tipo:"diplomado", disp:false, ico:"🔍", banda:"b5",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-de-ipm-de-sistemas-de-extincion-a-base-de-agua/" },
-  { n:"Diplomado Especializado para el Modelado Revit de SCI", tipo:"diplomado", disp:false, ico:"🏗️", banda:"b2",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-especializado-para-el-modelado-revit/" },
-  { n:"Diplomado Internacional de Detección y Alarmas de Incendios", tipo:"diplomado", disp:false, ico:"📡", banda:"b1",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-internacional-de-deteccion-y-alarmas-de-incendios/" },
-  { n:"Diplomado en Dinámica de Incendios", tipo:"diplomado", disp:false, ico:"🔥", banda:"b4",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-en-dinamica-de-incendios/" },
-  { n:"Diplomado Avanzado en Dinámica de Incendios", tipo:"diplomado", disp:false, ico:"🌡️", banda:"b4",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-dinamica-de-incendios/" },
-  { n:"Diplomado Avanzado de Cálculos Hidráulicos", tipo:"diplomado", disp:false, ico:"📐", banda:"b1",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-avanzado-de-calculos-hidraulicos/" },
-  { n:"Curso Análisis de Seguridad Humana en Edificaciones", tipo:"curso", disp:false, ico:"🚪", banda:"b3",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-i/" },
-  { n:"Diplomado Avanzado en Seguridad Humana Fase I", tipo:"diplomado", disp:false, ico:"🧍", banda:"b5",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-i/" },
-  { n:"Diplomado Avanzado en Seguridad Humana Fase II", tipo:"diplomado", disp:false, ico:"🏃", banda:"b5",
-    info:"https://ilfislatinoamerica.com/producto/diplomado-avanzado-en-seguridad-humana-fase-ii/" },
-  { n:"Notificación de Alarma en Grandes Espacios y Exteriores", tipo:"capacitacion", disp:false, ico:"📢", banda:"b2",
-    info:"https://ilfislatinoamerica.com/producto/notificacion-de-alarma-en-grandes-espacios-y-exteriores/" },
-];
-
-const TIPO_TXT = { diplomado:"Diplomado", curso:"Curso", capacitacion:"Capacitación" };
-
-function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-
-function preinscribir(nombre, modalidad){
-  const sub = encodeURIComponent("Preinscripción — " + nombre + " (" + modalidad + ")");
-  const body = encodeURIComponent("Hola ILFIS,\n\nQuiero preinscribirme en: " + nombre + "\nModalidad: " + modalidad + "\n\nNombre completo:\nPaís:\nTeléfono / WhatsApp:\n\nQuedo atento(a) a la información de matrícula.\n\nGracias.");
-  window.open(`mailto:contacto@ilfislatinoamerica.com?subject=${sub}&body=${body}`);
-}
-
-function armazon(p, pills, datos, acciones){
-  return `<div class="card${p.destacada ? " destacada" : ""}" data-txt="${esc(p.n.toLowerCase())}">
-    <div class="banda ${p.banda}">${p.ico}</div>
-    <div class="cuerpo">
-      <div>${pills}</div>
-      <h3>${esc(p.n)}</h3>
-      <div class="datos">${datos}</div>
-      <div class="acciones">${acciones}</div>
-    </div>
-  </div>`;
-}
-
-// Tarjeta de AULA: habla de profesor, cronograma y certificado. Nunca de "acceso 30 días".
-function cardEducativa(p){
-  const pills = `<span class="pill ${p.tipo}">${TIPO_TXT[p.tipo]}</span>` +
-    `<span class="pill disp">● Matrícula abierta</span>`;
-  const datos = `👨‍🏫 Profesor que te corrige las tareas y te responde<br>` +
-    `📝 Evaluaciones con nota · 🎖️ Certificado al aprobar<br>` +
-    `🗓️ Cronograma semanal · el grupo inicia el ${p.inicio}`;
-  const acciones =
-    `<a class="btn rojo" href="${p.aula}">🎓 Entrar al aula</a>` +
-    `<button class="btn azul" onclick="preinscribir('${esc(p.n).replace(/'/g,"\\'")}','Plataforma Educativa')">✉ Quiero matricularme</button>` +
-    `<a class="btn outline" href="${p.info}" target="_blank" rel="noopener">Información del programa</a>`;
-  return armazon(p, pills, datos, acciones);
-}
-
-// Tarjeta de VIDEOTECA: habla de clases grabadas y acceso. Nunca de notas ni certificado.
-function cardPremium(p){
-  const pills = `<span class="pill ${p.tipo}">${TIPO_TXT[p.tipo]}</span>` +
-    (p.disp ? `<span class="pill disp">● Disponible · acceso inmediato</span>` : `<span class="pill pronto">Próximamente</span>`);
-  const datos = p.disp
-    ? `🎬 ${p.clases} clases grabadas en alta calidad<br>⏱️ A tu ritmo · acceso 30 días<br>🤖 Asistente IA de ILFIS incluido`
-    : `📚 En preparación para ILFIS Ubuntu`;
-  let acciones = "";
-  if(p.disp) acciones += `<a class="btn morado" href="../#clases-premium">▶ Ver las clases</a>`;
-  acciones += `<button class="btn azul" onclick="preinscribir('${esc(p.n).replace(/'/g,"\\'")}','Clases Premium')">✉ ${p.disp ? "Comprar / consultar" : "Avísenme cuando salga"}</button>`;
-  acciones += `<a class="btn outline" href="${p.info}" target="_blank" rel="noopener">Información del programa</a>`;
-  return armazon(p, pills, datos, acciones);
-}
-
-document.getElementById("grilla-edu").innerHTML  = EDUCATIVA.map(cardEducativa).join("");
-document.getElementById("grilla-prem").innerHTML = PREMIUM.map(cardPremium).join("");
-
-function filtrar(){
-  const q = document.getElementById("buscar").value.trim().toLowerCase();
-  [["grilla-edu","vacio-edu"],["grilla-prem","vacio-prem"]].forEach(([gid,vid]) => {
-    let visibles = 0;
-    document.querySelectorAll("#" + gid + " .card").forEach(c => {
-      const ok = !q || c.dataset.txt.includes(q);
-      c.style.display = ok ? "flex" : "none";
-      if(ok) visibles++;
-    });
-    document.getElementById(vid).style.display = visibles ? "none" : "block";
-  });
-}
-</script>
 </body>
 </html>
