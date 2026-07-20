@@ -1580,6 +1580,54 @@ const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // ── AUTH STATE ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// PORTERO DE LA PLATAFORMA (acceso de pago)
+// La plataforma es GRATIS hasta el 31/12/2026. Desde el 01/01/2027 exige acceso
+// vigente (llave 'plataforma'). Durante el periodo gratis NO bloquea a nadie:
+// publicar esto hoy no cambia nada para los usuarios actuales. Para probar el
+// bloqueo antes de tiempo, abrir la web con  ?probar_pago=1  en el enlace.
+// ─────────────────────────────────────────────────────────────────────────
+const FIN_GRATIS = new Date('2027-01-01T00:00:00-05:00');   // gratis hasta 31/12/2026 (hora Lima)
+function _plataformaEsDePago() {
+  try { if (new URLSearchParams(location.search).has('probar_pago')) return true; } catch(e) {}
+  return new Date() >= FIN_GRATIS;
+}
+function _puedeEntrarPlataforma() {
+  if (!_plataformaEsDePago()) return true;            // periodo gratis → pasan todos
+  if (_getAdminKey && _getAdminKey()) return true;    // superadmin con clave → nunca se bloquea
+  return _tieneAcceso('plataforma');                  // resto → solo con pago vigente
+}
+function mostrarBloqueoPago(user) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-overlay').style.display = 'none';
+  let ov = document.getElementById('pago-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'pago-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;'
+      + 'justify-content:center;z-index:1100;padding:20px;overflow-y:auto;';
+    document.body.appendChild(ov);
+  }
+  const correo = (user && user.email) || '';
+  ov.innerHTML = `
+    <div style="max-width:440px;background:#161b2e;border:1px solid #2a2a5a;border-radius:16px;padding:30px 26px;text-align:center;color:#e6ecf7;">
+      <div style="background:#fff;display:inline-flex;padding:6px 12px;border-radius:10px;margin-bottom:16px;">
+        <img src="logo-nuevo.png" alt="ILFIS" style="height:34px;display:block;">
+      </div>
+      <h2 style="font-size:1.15rem;margin-bottom:10px;">Tu acceso a ILFIS Ubuntu no está activo</h2>
+      <p style="font-size:.9rem;color:#9fb0d0;line-height:1.6;margin-bottom:18px;">
+        La plataforma pasó a ser de pago. Para volver a entrar necesitas una suscripción vigente.
+        Si ya realizaste tu pago, escríbenos y activamos tu acceso.</p>
+      <a href="https://ilfislatinoamerica.com" target="_blank" rel="noopener"
+         style="display:block;background:#c0392b;color:#fff;text-decoration:none;font-weight:600;padding:12px;border-radius:9px;margin-bottom:10px;">Quiero suscribirme</a>
+      <a href="mailto:contacto@ilfislatinoamerica.com?subject=Activar%20mi%20acceso%20a%20ILFIS%20Ubuntu&body=Hola,%20ya%20realic%C3%A9%20mi%20pago.%20Mi%20correo%20es%3A%20${encodeURIComponent(correo)}"
+         style="display:block;background:transparent;color:#7fb0f9;border:1px solid #2a2a5a;text-decoration:none;font-weight:600;padding:11px;border-radius:9px;margin-bottom:10px;">Ya pagué — activar mi acceso</a>
+      <button onclick="location.reload()" style="width:100%;background:transparent;color:#9fb0d0;border:1px solid #2a2a5a;padding:10px;border-radius:9px;cursor:pointer;margin-bottom:8px;">Ya me activaron — volver a entrar</button>
+      <button onclick="logout()" style="width:100%;background:transparent;color:#6b7280;border:none;padding:8px;cursor:pointer;font-size:.85rem;">Cerrar sesión${correo ? ' ('+correo+')' : ''}</button>
+    </div>`;
+  ov.style.display = 'flex';
+}
+
 auth.onAuthStateChanged(async function(user) {
   document.getElementById('loading-screen').style.display = 'none';
   if (user) {
@@ -1587,6 +1635,8 @@ auth.onAuthStateChanged(async function(user) {
     const token = await user.getIdTokenResult(true);
     const isPremium = token.claims.premium === true;
     _cursosActivos = token.claims.cursos_activos || {};
+    // Portero: si la plataforma ya es de pago y no tiene acceso vigente, se bloquea aquí.
+    if (!_puedeEntrarPlataforma()) { mostrarBloqueoPago(user); return; }
     // Mostrar app
     const app = document.getElementById('app');
     app.style.display = 'flex';
