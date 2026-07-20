@@ -4396,9 +4396,18 @@ function adminRenderSuscriptores() {
     return;
   }
   const _f = (_adminSuscFiltro || '').toLowerCase();
-  const _fuente = _f
+  const _fuente = (_f
     ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_f) || (u.email || '').toLowerCase().includes(_f))
-    : _adminAlumnos;
+    : _adminAlumnos.slice())
+    // Primero los que tienen el acceso quitado (para verlos de un vistazo) y,
+    // dentro de cada grupo, en orden alfabético por nombre (o correo si no hay nombre).
+    .sort((a, b) => {
+      const ba = _bloqueados.has(a.uid) ? 0 : 1, bb = _bloqueados.has(b.uid) ? 0 : 1;
+      if (ba !== bb) return ba - bb;
+      const na = (a.nombre || a.email || '').toLowerCase();
+      const nb = (b.nombre || b.email || '').toLowerCase();
+      return na.localeCompare(nb, 'es');
+    });
   // Hoy la plataforma es gratis: TODOS tienen acceso. El control es quitárselo
   // a alguien puntual (y dárselo de vuelta). Si está bloqueado → "Dar acceso";
   // si tiene acceso → "Quitar acceso".
