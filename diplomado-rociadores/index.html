@@ -887,7 +887,10 @@ async function cargarEntrega(sem){
     const btnRe = e.puede_reabrir
       ? `<button class="btn sm" style="margin-top:12px;display:block;" onclick="reabrirEntrega(${sem})">🔓 Reabrir para modificar</button>`
       : "";
-    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${cabF}${filasF}${msgF}${califF}${btnRe}`;
+    // Primero lo que dijo el profesor y solo DESPUÉS el aviso de Telegram: al
+    // revés se lee "tu profesor te respondió, escríbele por Telegram" antes de
+    // mostrar la respuesta.
+    box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${cabF}${filasF}${califF}${msgF}${btnRe}`;
     return;
   }
   const filasArch = files.length
@@ -920,7 +923,9 @@ async function cargarEntrega(sem){
          <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Tu entrega queda <b>registrada con la fecha</b>. Si luego necesitas corregir algo, puedes <b>reabrirla</b> mientras el plazo siga abierto.</div>
        </div>`
     : "";
-  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${notaProf}${btnBorrarTodo}${btnFinalizar}${calif}`;
+  // Mismo orden que en la vista sellada: la respuesta del profesor va ANTES de
+  // la caja de escribirle (o del aviso de Telegram).
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}${notaProf}${btnBorrarTodo}${btnFinalizar}`;
 }
 
 // OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.
