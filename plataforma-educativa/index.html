@@ -40,7 +40,8 @@ header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 2
 @media(max-width:760px){.grilla{grid-template-columns:1fr;}}
 .card{background:var(--panel);border:1px solid var(--borde);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
 .card.activa{border-color:var(--rojo);box-shadow:0 0 0 1px var(--rojo);}
-.banda{height:88px;display:flex;align-items:center;justify-content:center;font-size:38px;background:linear-gradient(135deg,#c0392b,#7c2318);}
+.banda{height:120px;display:flex;align-items:center;justify-content:center;font-size:38px;background:linear-gradient(135deg,#c0392b,#7c2318);overflow:hidden;}
+.banda img{width:100%;height:100%;object-fit:cover;display:block;}
 .banda.gris{background:linear-gradient(135deg,#1a1f2e,#2a3144);}
 .cuerpo{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:8px;}
 .pill{display:inline-block;font-size:10.5px;padding:3px 10px;border-radius:12px;font-weight:600;margin-right:5px;}
@@ -78,34 +79,13 @@ footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-
 <div class="contenedor">
 
   <div class="dif">
-    <b>¿Cómo funciona?</b> Cada cohorte inicia un lunes. Las semanas se desbloquean automáticamente (lunes 00:00, hora de Lima), los cuestionarios cierran el domingo 00:00 de su semana — con un solo intento — y las notas se publican el lunes siguiente a las 12:00. Tu avance queda guardado en tu cuenta.
+    <b>¿Cómo funciona?</b> Cada cohorte inicia un lunes. Las semanas se desbloquean automáticamente (lunes 00:00, hora de Lima) y los cuestionarios cierran el domingo 00:00 de su semana, con un solo intento. Los resultados de los <b>cuestionarios</b> se publican el lunes siguiente a las 12:00. Las <b>tareas</b> las revisa y califica tu profesor. Tu avance queda guardado en tu cuenta.
   </div>
 
-  <div class="grilla">
-
-    <div class="card activa">
-      <div class="banda">💧</div>
-      <div class="cuerpo">
-        <div><span class="pill abierta">● Cohorte inicia lunes 13/07/2026</span></div>
-        <h3>Diplomado de Rociadores Automáticos</h3>
-        <div class="datos">🎬 49 clases · 📝 35 cuestionarios calificados · 📄 manual completo · 🗓 13 semanas<br>👨‍🏫 Tutoría de expertos ILFIS · 📊 libreta de notas en línea</div>
-        <a class="btn rojo" href="../diplomado-rociadores/">🎓 Entrar al aula</a>
-        <a class="btn outline" href="https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/" target="_blank" rel="noopener">Información y matrícula</a>
-      </div>
-    </div>
-
-    <div class="card activa">
-      <div class="banda">🧮</div>
-      <div class="cuerpo">
-        <div><span class="pill abierta">● Cohorte inicia lunes 27/07/2026</span></div>
-        <h3>Diplomado Especializado en Cálculos Hidráulicos</h3>
-        <div class="datos">🎬 35 clases + repaso en vivo · 📝 3 cuestionarios + 14 trabajos calificados · 📄 manual completo · 🗓 12 semanas<br>👨‍🏫 Tutoría de expertos ILFIS · 📊 libreta de notas en línea</div>
-        <a class="btn rojo" href="../diplomado-rociadores/?curso=calculos-hidraulicos">🎓 Entrar al aula</a>
-        <a class="btn outline" href="https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/" target="_blank" rel="noopener">Información del programa</a>
-      </div>
-    </div>
-
-  </div>
+  <!-- Las tarjetas se arman solas desde la lista CURSOS_EDU (al final del archivo).
+       Para agregar un diplomado nuevo: añade UNA entrada allí y sale con el mismo
+       formato, su imagen del catálogo y los mismos botones. No dupliques HTML. -->
+  <div class="grilla" id="grilla"></div>
 
   <div class="franja">
     <div>¿Quieres ver toda la oferta académica de ILFIS (incluidos los programas por incorporarse)?</div>
@@ -118,6 +98,48 @@ footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-
   ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad<br>
   contacto@ilfislatinoamerica.com
 </footer>
+
+<script>
+// ── Diplomados de la PLATAFORMA EDUCATIVA ────────────────────────────────────
+// PLATAFORMA EDUCATIVA = CON tutoría, CON evaluaciones, CON certificados.
+// (No confundir con CLASES PREMIUM: sin tutoría, sin evaluaciones, sin certificados.)
+//
+// Para agregar un diplomado nuevo: añade UNA entrada aquí abajo. Usa la MISMA
+// imagen que el curso tiene en el catálogo, para que se vea igual en toda la
+// plataforma. Los botones y el formato salen solos e iguales para todos.
+const CURSOS_EDU = [
+  {
+    nombre: "Diplomado de Rociadores Automáticos",
+    img:    "https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Sistemas-de-Rociadores-Automaticos-Contra-Incendios-300x300.jpg",
+    inicio: "lunes 13/07/2026",
+    datos:  "🎬 49 clases · 📝 35 cuestionarios calificados · 📄 manual completo · 🗓 13 semanas",
+    aula:   "../diplomado-rociadores/",
+    info:   "https://ilfislatinoamerica.com/producto/diplomado-de-rociadores-automaticos-2/"
+  },
+  {
+    nombre: "Diplomado Especializado en Cálculos Hidráulicos",
+    img:    "https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Calculos-Hidraulicos-de-Sistemas-de-Agua-Contra-Incendios-300x300.jpg",
+    inicio: "lunes 27/07/2026",
+    datos:  "🎬 35 clases + repaso en vivo · 📝 3 cuestionarios + 14 trabajos calificados · 📄 manual completo · 🗓 12 semanas",
+    aula:   "../diplomado-rociadores/?curso=calculos-hidraulicos",
+    info:   "https://ilfislatinoamerica.com/producto/diplomado-de-calculos-hidraulicos/"
+  }
+];
+
+function escHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+document.getElementById("grilla").innerHTML = CURSOS_EDU.map(c => `
+  <div class="card activa">
+    <div class="banda"><img src="${escHtml(c.img)}" alt="${escHtml(c.nombre)}" loading="lazy"></div>
+    <div class="cuerpo">
+      <div><span class="pill abierta">● Cohorte inicia ${escHtml(c.inicio)}</span></div>
+      <h3>${escHtml(c.nombre)}</h3>
+      <div class="datos">${c.datos}<br>👨‍🏫 Tutoría de expertos ILFIS · 📊 libreta de notas en línea · 🎓 certificado al aprobar</div>
+      <a class="btn rojo" href="${escHtml(c.aula)}">🎓 Entrar al aula</a>
+      <a class="btn outline" href="${escHtml(c.info)}" target="_blank" rel="noopener">Información del programa</a>
+    </div>
+  </div>`).join("");
+</script>
 
 </body>
 </html>
