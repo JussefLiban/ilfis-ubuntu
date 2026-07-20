@@ -824,7 +824,7 @@ function _celdaManual(a, c, v, est, ap, extraCls){
   return `<td class="num colman celed ${extraCls||''}" tabindex="0"
     data-uid="${esc(a.uid)}" data-cod="${esc(c.codigo)}" data-val="${v!=null?esc(v):''}"
     title="Escribe la nota aquí (0-100). El 💬 es para dejar comentario."
-    onclick="editarCelda(event,this)" onkeydown="if(event.key==='Enter'){editarCelda(event,this);}">
+    onclick="editarCelda(event,this)" onkeydown="if(event.key==='Enter'&&event.target===this){editarCelda(event,this);}">
     <span class="celv">${inner}</span>
     <span class="celcom${com?' tiene':''}" title="${com?'Comentario: '+esc(com).slice(0,120):'Dejar un comentario al alumno'}"
       onclick="event.stopPropagation();comentarEval(${arg});">💬</span>
@@ -849,10 +849,14 @@ function editarCelda(ev, td){
   };
   inp.onblur    = () => cerrar(true);
   inp.onkeydown = (e) => {
-    if(e.key === "Enter"){ e.preventDefault(); cerrar(true); _saltarCelda(td, 1); }
-    else if(e.key === "Escape"){ e.preventDefault(); cerrar(false); }
-    else if(e.key === "ArrowDown"){ e.preventDefault(); cerrar(true); _saltarCelda(td, 1); }
-    else if(e.key === "ArrowUp"){ e.preventDefault(); cerrar(true); _saltarCelda(td, -1); }
+    // stopPropagation es CLAVE: sin él la tecla sube hasta la celda, que
+    // vuelve a abrir el editor encima y parece que Enter no hace nada.
+    if(e.key === "Enter" || e.key === "Escape" || e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault(); e.stopPropagation();
+    }
+    if(e.key === "Enter" || e.key === "ArrowDown"){ cerrar(true); _saltarCelda(td, 1); }
+    else if(e.key === "ArrowUp"){ cerrar(true); _saltarCelda(td, -1); }
+    else if(e.key === "Escape"){ cerrar(false); }
   };
 }
 
