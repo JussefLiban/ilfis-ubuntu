@@ -1672,8 +1672,14 @@ async function recuperarPassword() {
   }
   try {
     await auth.sendPasswordResetEmail(email);
+    // OJO: Firebase NO dice si la cuenta existe (proteccion contra enumeracion
+    // de correos, para que nadie averigue quien esta registrado probando uno a
+    // uno). Por eso el aviso NO puede afirmar "te enviamos el correo": si la
+    // direccion no tiene cuenta, no se envia nada y aqui igual llega "exito".
     errEl.style.color = '#4ade80';
-    showErr(errEl, '✓ Te enviamos un correo a ' + email + ' para cambiar tu contraseña. Revisa tambien la carpeta de spam.');
+    showErr(errEl, 'Si ' + email + ' tiene una cuenta con contraseña, le acaba de llegar un correo para cambiarla. '
+                 + 'Revisa también la carpeta de spam. Si no te llega en unos minutos, es que esa dirección no está '
+                 + 'registrada o entraste con Google (en ese caso usa "Continuar con Google").');
   } catch(e) {
     errEl.style.color = '';
     showErr(errEl, tradErr(e.code));
