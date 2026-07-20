@@ -66,6 +66,19 @@ th.colcalc,td.colcalc{background:rgba(59,130,246,.06);}
 th.colcierre,td.colcierre{background:rgba(74,222,128,.05);}
 td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .calpend{color:var(--ambar);font-weight:700;}
+/* ── Celda calificable estilo Excel: se escribe dentro de la tabla ── */
+td.celed{position:relative;cursor:cell;}
+td.celed:focus{outline:2px solid var(--ambar);outline-offset:-2px;}
+td.celed .celv{display:inline-block;min-width:26px;}
+td.celed .celinp{width:100%;max-width:70px;font-family:inherit;font-size:.82rem;text-align:right;
+  padding:2px 4px;border:2px solid var(--ambar);border-radius:4px;background:#0d1117;color:var(--texto);}
+td.celed .celinp::-webkit-outer-spin-button,td.celed .celinp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+td.celed .celcom{position:absolute;top:1px;right:2px;font-size:.6rem;opacity:.22;cursor:pointer;line-height:1;}
+td.celed:hover .celcom{opacity:.75;}
+td.celed .celcom.tiene{opacity:1;filter:saturate(1.4);}
+td.celed.guardando{background:rgba(251,191,36,.28);}
+td.celed.guardada{background:rgba(74,222,128,.22);transition:background .8s;}
+td.celed.errorcel{background:rgba(239,68,68,.25);}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
 .pedificios{display:flex;gap:10px;align-items:flex-start;}
@@ -298,8 +311,8 @@ function verTab(t){
     q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
     a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El botón <b>Exportar notas</b> baja este resumen a Excel.",
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
-    e: "📤 <b>Entregas de tareas:</b> los archivos que suben los alumnos por semana. Puedes descargarlos (uno por uno, todo del alumno, o todo en un ZIP) y dejarles un comentario.",
-    planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel — cada alumno con todas sus evaluaciones y su promedio total. Las <b>objetivas se llenan solas</b> del cuestionario; las celdas con <b>✎</b> las calificas tú con un clic. El botón <b>Exportar planilla</b> baja todo a Excel.",
+    e: "📤 <b>Entregas de tareas:</b> aquí solo se <b>descargan</b> los archivos que suben los alumnos (uno por uno, todo del alumno, o todo en un ZIP). Revísalos en tu PC y después pon las notas en la <b>Planilla</b>.",
+    planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
@@ -541,7 +554,7 @@ function renderEntregas(){
     `<tr><th colspan="6" style="background:transparent;border:none;padding:0 0 12px;text-align:right;">
        <button class="btn" onclick="descargarTodoZip(this)">⬇ Descargar TODAS las entregas (ZIP por carpetas)</button>
      </th></tr>
-     <tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th style="text-align:right;">Nota</th><th>Comentario</th><th></th></tr>`;
+     <tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th></th></tr>`;
   const rows = (E && E.entregas) ? E.entregas : [];
   tb.querySelector("tbody").innerHTML = rows.map(x => {
     const files = (x.archivos||[]).length
@@ -553,12 +566,10 @@ function renderEntregas(){
       <td>${esc(x.email||x.uid)}</td>
       <td class="num">${x.semana}</td>
       <td>${files}${notaAl}</td>
-      <td class="num"><input id="entN-${key}" type="number" min="0" max="100" value="${x.nota!=null?esc(x.nota):""}" placeholder="—" style="width:62px;"></td>
-      <td><input id="entC-${key}" type="text" value="${esc(x.comentario||"")}" placeholder="comentario para el alumno" style="width:100%;min-width:150px;"></td>
-      <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="guardarNotaEntrega('${esc(x.uid)}',${x.semana})">Guardar</button> <button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button> <span class="ent-save" id="entS-${key}"></span></td>
+      <td style="white-space:nowrap;"><button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button></td>
     </tr>`;
   }).join("") ||
-    `<tr><td colspan="6" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
+    `<tr><td colspan="4" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
 }
 
 async function descargarEntrega(uid, sem, nombre){
@@ -737,12 +748,9 @@ function renderPlanilla(){
       if(c.grupo==="prom_sem"){
         tds += `<td class="num colcalc">${v==null?'—':`<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`}</td>`;
       } else if(manuales.has(c.codigo)){
-        // celda calificable a mano → clic para calificar
-        let inner;
-        if(v!=null) inner = `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`;
-        else if(est==="enviado") inner = `<span style="color:var(--ambar);font-size:.7rem;">enviado</span>`;
-        else inner = `<span class="calpend">✎</span>`;
-        tds += `<td class="num colman" title="Calificar ${esc(c.nombre)}" onclick="calificarEval('${esc(a.uid)}','${esc(c.codigo)}',${JSON.stringify(c.nombre).replace(/"/g,'&quot;')},${JSON.stringify(a.nombre).replace(/"/g,'&quot;')},${c.semana||0})">${inner}</td>`;
+        // celda calificable a mano → se escribe DENTRO de la tabla, como en Excel.
+        // El icono 💬 abre la ventana SOLO para dejar comentario.
+        tds += _celdaManual(a, c, v, est, ap);
       } else {
         // objetiva (autocalificada) → solo lectura
         let inner = "—";
@@ -753,7 +761,8 @@ function renderPlanilla(){
       }
     });
     // cierre
-    const conceptoCell = `<td class="num colman" title="Poner Nota Concepto (0-100)" onclick="calificarEval('${esc(a.uid)}','NOTA_CONCEPTO','Nota Concepto',${JSON.stringify(a.nombre).replace(/"/g,'&quot;')},0)">${a.concepto!=null?`<b>${fmtN(a.concepto)}</b>`:'<span class="calpend">✎</span>'}</td>`;
+    const conceptoCell = _celdaManual(a, { codigo:"NOTA_CONCEPTO", nombre:"Nota Concepto", semana:0 },
+                                      a.concepto, null, ap, "colcierre");
     const resCol = a.resultado==="APROBADO" ? "var(--verde)" : (a.resultado==="DESAPROBADO" ? "var(--rojoTxt)" : "var(--texto2)");
     tds += `<td class="num colcierre">${_colNota(a.promedio_semanal, ap)}</td>`
          + `<td class="num colcierre">${_colNota(a.promedio_examenes, ap)}</td>`
@@ -765,6 +774,144 @@ function renderPlanilla(){
   }).join("");
   tb.querySelector("tbody").innerHTML = rows ||
     `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">Aún no hay alumnos matriculados con datos.</td></tr>`;
+}
+
+// ═══════ CALIFICAR EN LA PROPIA TABLA, COMO EN EXCEL ═══════
+// El profesor baja las tareas, las revisa en su PC y escribe la nota en la celda.
+// La ventana SOLO se abre si quiere dejar un comentario (icono 💬).
+
+function _celdaManual(a, c, v, est, ap, extraCls){
+  const com = (a.comentarios && a.comentarios[c.codigo]) || "";
+  let inner;
+  if(v!=null)                 inner = `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`;
+  else if(est==="enviado")    inner = `<span style="color:var(--ambar);font-size:.7rem;">enviado</span>`;
+  else                        inner = `<span class="calpend">✎</span>`;
+  const arg = `'${esc(a.uid)}','${esc(c.codigo)}',${JSON.stringify(c.nombre).replace(/"/g,'&quot;')},${JSON.stringify(a.nombre).replace(/"/g,'&quot;')},${c.semana||0}`;
+  return `<td class="num colman celed ${extraCls||''}" tabindex="0"
+    data-uid="${esc(a.uid)}" data-cod="${esc(c.codigo)}" data-val="${v!=null?esc(v):''}"
+    title="Escribe la nota aquí (0-100). El 💬 es para dejar comentario."
+    onclick="editarCelda(event,this)" onkeydown="if(event.key==='Enter'){editarCelda(event,this);}">
+    <span class="celv">${inner}</span>
+    <span class="celcom${com?' tiene':''}" title="${com?'Comentario: '+esc(com).slice(0,120):'Dejar un comentario al alumno'}"
+      onclick="event.stopPropagation();comentarEval(${arg});">💬</span>
+  </td>`;
+}
+
+// Clic en la celda → input dentro de la tabla. Enter guarda y baja. Esc cancela.
+function editarCelda(ev, td){
+  if(td.querySelector("input")) return;
+  const previo = td.dataset.val || "";
+  const com    = td.querySelector(".celcom");
+  const comHTML = com ? com.outerHTML : "";
+  td.innerHTML = `<input class="celinp" type="number" min="0" max="100" step="0.01" value="${previo}">` + comHTML;
+  const inp = td.querySelector("input");
+  inp.focus(); inp.select();
+  let cerrado = false;
+  const cerrar = (guardar) => {
+    if(cerrado) return; cerrado = true;
+    const nuevo = (inp.value||"").trim();
+    if(!guardar || nuevo === previo){ _pintarCelda(td, previo===""?null:Number(previo)); return; }
+    _guardarCelda(td, nuevo);
+  };
+  inp.onblur    = () => cerrar(true);
+  inp.onkeydown = (e) => {
+    if(e.key === "Enter"){ e.preventDefault(); cerrar(true); _saltarCelda(td, 1); }
+    else if(e.key === "Escape"){ e.preventDefault(); cerrar(false); }
+    else if(e.key === "ArrowDown"){ e.preventDefault(); cerrar(true); _saltarCelda(td, 1); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); cerrar(true); _saltarCelda(td, -1); }
+  };
+}
+
+// Baja (o sube) a la misma columna de la fila siguiente, si es calificable.
+function _saltarCelda(td, paso){
+  const tr = td.parentElement, tbody = tr.parentElement;
+  const filas = Array.from(tbody.children);
+  const i = filas.indexOf(tr) + paso;
+  const sig = filas[i] && filas[i].children[td.cellIndex];
+  if(sig && sig.classList.contains("celed")) setTimeout(() => editarCelda(null, sig), 0);
+}
+
+function _pintarCelda(td, v){
+  const ap = (P && P.aprobatoria) || 60;
+  const com = td.querySelector(".celcom");
+  const comHTML = com ? com.outerHTML : "";
+  const inner = v!=null
+    ? `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`
+    : `<span class="calpend">✎</span>`;
+  td.innerHTML = `<span class="celv">${inner}</span>` + comHTML;
+}
+
+async function _guardarCelda(td, valorStr){
+  const uid = td.dataset.uid, cod = td.dataset.cod;
+  const nota = valorStr==="" ? null : Number(valorStr);
+  const a = (P.alumnos||[]).find(x => x.uid===uid) || {};
+  td.classList.add("guardando");
+  _pintarCelda(td, nota);
+  try{
+    // Se manda SOLO la nota: sin el campo "comentario", el backend conserva el
+    // que ya estuviera guardado (el comentario se edita con el icono 💬).
+    await postJSON(`/api/cursos/${CURSO}/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(cod)}`,
+                   { nota: nota });
+    td.dataset.val = valorStr;
+    if(a.celdas) a.celdas[cod] = nota;
+    if(cod === "NOTA_CONCEPTO") a.concepto = nota;
+    td.classList.remove("guardando"); td.classList.add("guardada");
+    setTimeout(() => td.classList.remove("guardada"), 900);
+    _refrescarPlanillaPronto();          // recalcula PROM SEM y totales
+  }catch(e){
+    td.classList.remove("guardando"); td.classList.add("errorcel");
+    _pintarCelda(td, td.dataset.val==="" ? null : Number(td.dataset.val));
+    alert("No pude guardar la nota: " + e.message);
+  }
+}
+
+// Tras escribir varias notas seguidas, refresca UNA vez (para no recargar en cada tecla).
+let _refTimer = null;
+function _refrescarPlanillaPronto(){
+  clearTimeout(_refTimer);
+  _refTimer = setTimeout(async () => {
+    try{
+      P = await api(`/api/cursos/${CURSO}/admin/planilla`);
+      actualizarKPIs();
+      if(tab === "planilla" && !document.querySelector(".celinp")) renderPlanilla();
+    }catch(e){}
+  }, 1500);
+}
+
+// Ventana SOLO de comentario (la nota se escribe en la tabla).
+function comentarEval(uid, codigo, nombreEval, nombreAlumno, semana){
+  const a = (P.alumnos||[]).find(x => x.uid===uid) || {};
+  const com = (a.comentarios && a.comentarios[codigo]) || "";
+  $("detTit").textContent = `Comentario: ${nombreEval}`;
+  $("detSub").textContent = `${nombreAlumno}${semana?" · Semana "+semana:""}`;
+  const zip = (semana && codigo.indexOf("EV-")===0)
+    ? `<button class="btn mini" onclick="descargarAlumnoZip('${esc(uid)}',this)">⬇ Descargar entregas del alumno (ZIP)</button>` : "";
+  $("detCuerpo").innerHTML = `${zip}
+    <div class="calif-box">
+      <label>Comentario para el alumno<br>
+        <textarea id="evMsg" placeholder="Corrección, felicitación… (opcional)" style="width:100%;min-height:130px;box-sizing:border-box;resize:vertical;">${esc(com)}</textarea>
+      </label>
+      <button class="btn rojo mini" style="margin-top:10px;" onclick="guardarComentario('${esc(uid)}','${esc(codigo)}')">Guardar comentario</button>
+      <span class="ent-save" id="evOut"></span>
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:8px;">La <b>nota</b> se escribe directamente en la casilla de la planilla. Aquí solo va el comentario.</div>
+    </div>`;
+  $("modalDet").classList.add("abierto");
+}
+
+async function guardarComentario(uid, codigo){
+  const out = $("evOut");
+  const a = (P.alumnos||[]).find(x => x.uid===uid) || {};
+  const nota = codigo==="NOTA_CONCEPTO" ? a.concepto : (a.celdas ? a.celdas[codigo] : null);
+  if(out){ out.textContent = "…"; out.className = "ent-save"; }
+  try{
+    await postJSON(`/api/cursos/${CURSO}/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`,
+                   { nota: nota==null?null:Number(nota), comentario: ($("evMsg").value||"").trim() });
+    if(out){ out.textContent = "✓ guardado"; out.className = "ent-save ok"; }
+    P = await api(`/api/cursos/${CURSO}/admin/planilla`);
+    actualizarKPIs();
+    if(tab === "cola") renderCola(); else renderPlanilla();
+    setTimeout(() => $("modalDet").classList.remove("abierto"), 500);
+  }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
 }
 
 // Calificar UNA evaluación manual (desarrollo/examen/crítica/concepto) → fluye a la planilla
