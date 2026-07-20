@@ -801,8 +801,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="admin-section" id="admin-sec-suscriptores">
         <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
           Todas las personas <b style="color:#fff;">registradas en ILFIS Ubuntu</b> (con solo iniciar sesión).
-          La plataforma es <b style="color:#fff;">gratis hasta el 31/12/2026</b>: este control de acceso queda
-          listo para cuando sea de pago. Dar o revocar aquí NO toca Clases Premium, Aplicativos ni diplomados.
+          Hoy la plataforma es <b style="color:#fff;">gratis</b>, así que <b style="color:#fff;">todos tienen acceso</b>.
+          Usa <b style="color:#fff;">Quitar acceso</b> para bloquear a alguien puntual y <b style="color:#fff;">Dar acceso</b> para devolvérselo.
+          Su cuenta y sus datos se conservan. Esto NO toca Clases Premium, Aplicativos ni diplomados.
         </p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
           <input type="text" placeholder="Buscar suscriptor por nombre o correo…" oninput="adminFiltrarSuscriptores(this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
@@ -1627,15 +1628,66 @@ function mostrarBloqueoPago(user) {
     </div>`;
   ov.style.display = 'flex';
 }
+// Pantalla cuando el admin le QUITÓ el acceso a este usuario (distinto del paywall).
+function mostrarBloqueoAcceso(user) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-overlay').style.display = 'none';
+  let ov = document.getElementById('pago-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'pago-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;'
+      + 'justify-content:center;z-index:1100;padding:20px;overflow-y:auto;';
+    document.body.appendChild(ov);
+  }
+  const correo = (user && user.email) || '';
+  ov.innerHTML = `
+    <div style="max-width:440px;background:#161b2e;border:1px solid #2a2a5a;border-radius:16px;padding:30px 26px;text-align:center;color:#e6ecf7;">
+      <div style="background:#fff;display:inline-flex;padding:6px 12px;border-radius:10px;margin-bottom:16px;">
+        <img src="logo-nuevo.png" alt="ILFIS" style="height:34px;display:block;">
+      </div>
+      <h2 style="font-size:1.15rem;margin-bottom:10px;">Tu acceso a la plataforma fue suspendido</h2>
+      <p style="font-size:.9rem;color:#9fb0d0;line-height:1.6;margin-bottom:18px;">
+        La administración de ILFIS suspendió tu acceso a ILFIS Ubuntu. Si crees que es un error o quieres reactivarlo, escríbenos.</p>
+      <a href="mailto:contacto@ilfislatinoamerica.com?subject=Acceso%20suspendido%20en%20ILFIS%20Ubuntu&body=Hola,%20mi%20acceso%20fue%20suspendido.%20Mi%20correo%20es%3A%20${encodeURIComponent(correo)}"
+         style="display:block;background:#c0392b;color:#fff;text-decoration:none;font-weight:600;padding:12px;border-radius:9px;margin-bottom:10px;">Escribir a ILFIS</a>
+      <button onclick="location.reload()" style="width:100%;background:transparent;color:#9fb0d0;border:1px solid #2a2a5a;padding:10px;border-radius:9px;cursor:pointer;margin-bottom:8px;">Ya me reactivaron — volver a entrar</button>
+      <button onclick="logout()" style="width:100%;background:transparent;color:#6b7280;border:none;padding:8px;cursor:pointer;font-size:.85rem;">Cerrar sesión${correo ? ' ('+correo+')' : ''}</button>
+    </div>`;
+  ov.style.display = 'flex';
+}
 
 auth.onAuthStateChanged(async function(user) {
   document.getElementById('loading-screen').style.display = 'none';
   if (user) {
+    // PUERTA 1 · correo sin verificar: esta es la puerta REAL (se abre sola al
+    // detectar la sesión). Antes solo se comprobaba al pulsar "Ingresar", así que
+    // al registrarse —que deja logueado— se colaba sin validar. Google no pasa por
+    // aquí (su correo ya viene verificado).
+    const _esPassword = user.providerData.some(p => p.providerId === 'password');
+    if (_esPassword && !user.emailVerified) {
+      try { await user.sendEmailVerification(); } catch(e) {}
+      await auth.signOut();
+      document.getElementById('auth-overlay').style.display = 'flex';
+      const le = document.getElementById('login-error');
+      if (le) { le.style.color=''; le.textContent = 'Tu correo aún no está confirmado. Te reenviamos el enlace a '
+        + user.email + ': ábrelo, pulsa para confirmar y vuelve a entrar. Revisa también el spam.'; le.style.display='block'; }
+      return;
+    }
+    // PUERTA 2 · acceso a la plataforma quitado por el admin (bloqueo). El superadmin
+    // con clave nunca se consulta (no se bloquea a sí mismo).
+    if (!(_getAdminKey && _getAdminKey())) {
+      try {
+        const _t = await user.getIdToken();
+        const _r = await fetch(BACKEND + '/api/cursos/plataforma/mi-acceso', { headers: { 'Authorization': 'Bearer ' + _t } });
+        if (_r.ok && (await _r.json()).bloqueado) { mostrarBloqueoAcceso(user); return; }
+      } catch(e) { /* si el chequeo falla, no bloqueamos: mejor dejar entrar que trancar por un error de red */ }
+    }
     // Verificar premium via custom claims
     const token = await user.getIdTokenResult(true);
     const isPremium = token.claims.premium === true;
     _cursosActivos = token.claims.cursos_activos || {};
-    // Portero: si la plataforma ya es de pago y no tiene acceso vigente, se bloquea aquí.
+    // PUERTA 3 · si la plataforma ya es de pago y no tiene acceso vigente, se bloquea aquí.
     if (!_puedeEntrarPlataforma()) { mostrarBloqueoPago(user); return; }
     // Mostrar app
     const app = document.getElementById('app');
@@ -3571,6 +3623,7 @@ function _adminLlenarDiplomasDocentes() {
 // "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
 const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
 let _adminAlumnos    = [];
+let _bloqueados      = new Set();   // uids con el acceso a la plataforma quitado
 let _adminModalUid   = null;
 let _adminModalEmail = null;
 let _adminModalArea  = null;   // área desde la que se abrió el modal (para saber si es diplomado)
@@ -4096,6 +4149,12 @@ async function adminCargar() {
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) { throw new Error('Error ' + r.status); }
     const data = await r.json();
     _adminAlumnos = data.alumnos || [];
+    // Quiénes tienen el acceso a la plataforma QUITADO (bloqueados). Para pintar
+    // "Dar acceso" en ellos y "Quitar acceso" en el resto.
+    try {
+      const rb = await fetch(BACKEND + '/api/cursos/admin/plataforma/bloqueados', { headers: { 'x-admin-key': _getAdminKey() } });
+      _bloqueados = rb.ok ? new Set((await rb.json()).uids || []) : new Set();
+    } catch(e) { _bloqueados = new Set(); }
     adminRenderRecaud();
     adminRenderAlumnos();
     adminRenderAplicativos();
@@ -4340,18 +4399,18 @@ function adminRenderSuscriptores() {
   const _fuente = _f
     ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_f) || (u.email || '').toLowerCase().includes(_f))
     : _adminAlumnos;
+  // Hoy la plataforma es gratis: TODOS tienen acceso. El control es quitárselo
+  // a alguien puntual (y dárselo de vuelta). Si está bloqueado → "Dar acceso";
+  // si tiene acceso → "Quitar acceso".
   const filas = _fuente.map(u => {
-    const exp = (u.cursos_activos || {})[PLATAFORMA_KEY];
-    let estado = '', acciones = '';
-    if (exp) {
-      const dias = Math.ceil((new Date(exp) - ahora) / 86400000);
-      const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
-      estado = `<span class="cbadge ${cls}">${dias <= 0 ? 'Vencido' : dias + 'd'}</span> `;
-      acciones = `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${PLATAFORMA_KEY}')">+30d</button>
-                  <button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${PLATAFORMA_KEY}','${u.email}')">${dias > 0 ? 'Revocar' : 'Quitar'}</button>`;
-    } else {
-      acciones = `<button class="btn-a btn-dar" onclick="adminDarPlataforma('${u.uid}','${u.email}')">Dar acceso</button>`;
-    }
+    const bloqueado = _bloqueados.has(u.uid);
+    const _em = (u.email||'').replace(/'/g,"\\'");
+    const estado = bloqueado
+      ? `<span class="cbadge cb-exp">Sin acceso</span> `
+      : `<span class="cbadge cb-ok">Con acceso</span> `;
+    const acciones = bloqueado
+      ? `<button class="btn-a btn-dar" onclick="adminDarAcceso('${u.uid}','${_em}')">Dar acceso</button>`
+      : `<button class="btn-a btn-rev" onclick="adminQuitarAcceso('${u.uid}','${_em}')">Quitar acceso</button>`;
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
       <td style="white-space:nowrap;min-width:200px;">${estado}${acciones}</td>
@@ -4363,6 +4422,30 @@ function adminRenderSuscriptores() {
       <tbody>${filas}</tbody>
     </table>`
     : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminSuscFiltro || '')}" —</div>`;
+}
+
+// Quitar / dar acceso a la plataforma (bloqueo). Funciona desde ya, aunque sea
+// periodo gratis: el portero respeta el bloqueo.
+async function _plataformaAcceso(uid, email, bloquear) {
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/admin/plataforma/acceso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, email, bloquear })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ('Error ' + r.status));
+    if (bloquear) _bloqueados.add(uid); else _bloqueados.delete(uid);
+    adminRenderSuscriptores();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+async function adminQuitarAcceso(uid, email) {
+  if (!confirm(`¿Quitar el acceso a la plataforma a ${email}?\nNo podrá entrar hasta que se lo devuelvas. Su cuenta y sus datos se conservan.`)) return;
+  await _plataformaAcceso(uid, email, true);
+}
+async function adminDarAcceso(uid, email) {
+  if (!confirm(`¿Dar acceso a la plataforma a ${email}?`)) return;
+  await _plataformaAcceso(uid, email, false);
 }
 
 async function adminDarPlataforma(uid, email) {
