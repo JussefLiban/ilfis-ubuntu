@@ -1368,22 +1368,32 @@ async function verNotas(){
   (r.examenes || []).forEach(ex => { (exPorSem[ex.semana] = exPorSem[ex.semana] || []).push(ex); });
   // ── Libreta de notas (formato tipo "Alumno de prueba"): cada semana en cuadros ──
   const est = cod => (r.estados || {})[cod];
+  // Un 0 solo se muestra cuando de verdad NO hubo entrega y el plazo ya cerró.
+  // Si el alumno entregó y el profesor aún no califica, ve "Enviado" — nunca un
+  // cero que parezca su nota.
   const valNota = (cod, nota) => {
     const e = est(cod);
     if(e === "publicado" && nota !== null && nota !== undefined)
       return `<b style="color:${nota>=AP?'var(--verde)':'var(--rojoTxt)'};">${nota}</b>`;
-    if(e === "enviado")       return `<span style="color:var(--ambar);">Enviado ✓</span>`;
-    if(e === "por_calificar") return `<span style="color:var(--texto2);">Por calificar</span>`;
-    if(e === "sin_entrega")   return `<b style="color:var(--rojoTxt);">0</b>`;
+    if(e === "enviado" || e === "por_calificar")
+      return `<span style="color:var(--ambar);">Enviado ✓</span><div class="lb-sub">en revisión</div>`;
+    if(e === "sin_entrega")
+      return `<b style="color:var(--rojoTxt);">0</b><div class="lb-sub">sin entrega</div>`;
     return `<span style="color:var(--texto2);">—</span>`;
   };
-  const box = (nombre, cod, nota, pct) => {
-    const p = (pct || pct === 0) ? ` <span class="lb-pct">${pct}%</span>` : "";
+  const box = (nombre, cod, nota, pct, auto) => {
+    const p = (pct || pct === 0) ? `<span class="lb-pct">${pct}%</span>` : "";
     const com = (r.comentarios || {})[cod];
-    return `<div class="lb-box"><div class="lb-code">${esc(_tit(nombre))}${p}</div>`
+    return `<div class="lb-box${auto?' auto':''}"><div class="lb-code"><span>${esc(_tit(nombre))}</span>${p}</div>`
       + `<div class="lb-val">${valNota(cod, nota)}</div>`
       + (com ? `<div class="lb-com">💬 ${esc(com)}</div>` : "") + `</div>`;
   };
+  // Un piso del edificio: etiqueta a la izquierda, casillas al centro, Prom/Peso a la derecha.
+  const piso = (etq, boxes, prom) => `<div class="lb-sem"><div class="lb-lab">${etq}</div>`
+    + `<div class="lb-evs">${boxes}</div>`
+    + (prom ? `<div class="lb-cierres"><div class="lb-pf">Prom.<b>${prom}</b></div>`
+              + `<div class="lb-pf">Peso<b>5%</b></div></div>` : "")
+    + `</div>`;
   const semPub = evals => (evals || []).some(ev => est(ev.codigo) === "publicado");
 
   // Solo semanas ya ABIERTAS (progresivo, igual que el temario) para no abrumar al alumno
@@ -1395,26 +1405,23 @@ async function verNotas(){
 
   // Semana 0 (Crítica de lecturas) — solo si ya está abierta
   let cuerpo = semVisible(0)
-    ? `<div class="lb-sem"><div class="lb-semh"><span>Semana 0 · Introducción</span></div>`
-      + `<div class="lb-grid">${box(r.critica.nombre, r.critica.codigo, r.critica.nota, null)}</div></div>`
+    ? piso("Sem 0", box(r.critica.nombre, r.critica.codigo, r.critica.nota, 5), null)
     : "";
 
   // Semanas 1..12 — solo las abiertas
   let _ocultas = 0;
   (r.semanas || []).forEach(s => {
     if(!semVisible(s.sem)){ _ocultas++; return; }
-    let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round((ev.peso_semana || 0) * 100))).join("");
+    let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round((ev.peso_semana || 0) * 100), ev.quizId != null)).join("");
     (exPorSem[s.sem] || []).forEach(ex => { boxes += box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100)); });
-    const prom = semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);">Pendiente</span>`;
-    cuerpo += `<div class="lb-sem"><div class="lb-semh"><span>Semana ${s.sem}</span>`
-      + `<span class="lb-prom">Prom&nbsp;${prom} <span class="lb-peso">· 5%</span></span></div>`
-      + `<div class="lb-grid">${boxes}</div></div>`;
+    const prom = semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);font-size:.72rem;">Pendiente</span>`;
+    cuerpo += piso("Sem " + s.sem, boxes, prom);
   });
   // Examen Final — solo si su semana ya está abierta
   const exFinal = (r.examenes || []).filter(ex => !(r.semanas || []).some(s => s.sem === ex.semana) && semVisible(ex.semana));
   if(exFinal.length){
-    cuerpo += `<div class="lb-sem"><div class="lb-semh"><span>Examen Final</span></div>`
-      + `<div class="lb-grid">${exFinal.map(ex => box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100))).join("")}</div></div>`;
+    cuerpo += piso("Ex. final",
+      exFinal.map(ex => box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100))).join(""), null);
   }
   if(_ocultas > 0){
     cuerpo += `<div class="aviso" style="margin-top:2px;">Las demás semanas irán apareciendo aquí a medida que se abran. Concéntrate en lo de esta semana 🙂</div>`;
@@ -1438,16 +1445,29 @@ async function verNotas(){
   </div>${provi}`;
 
   const estilo = `<style>
-    .lb-sem{border:1px solid var(--borde);border-radius:12px;margin-bottom:12px;overflow:hidden;background:var(--panel);}
-    .lb-semh{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--marino);padding:8px 14px;font-weight:700;font-size:.84rem;}
-    .lb-prom{font-weight:700;font-size:.82rem;color:var(--texto);white-space:nowrap;}
-    .lb-peso{color:var(--texto2);font-weight:600;font-size:.9em;}
-    .lb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;padding:12px 14px;}
-    .lb-box{background:var(--campo);border:1px solid var(--borde);border-radius:9px;padding:8px 10px;}
-    .lb-code{font-size:.72rem;color:var(--texto2);font-weight:600;margin-bottom:5px;line-height:1.3;}
+    /* "Edificio": un PISO por semana — mismo formato del simulador del profesor. */
+    .lb-sem{display:flex;align-items:stretch;gap:10px;border:1px solid var(--borde);
+      border-radius:11px;margin-bottom:8px;background:var(--panel);padding:8px 11px;}
+    .lb-lab{flex:0 0 62px;display:flex;align-items:center;font-weight:700;font-size:.79rem;line-height:1.25;}
+    .lb-evs{flex:1;display:flex;flex-wrap:wrap;gap:7px;align-content:flex-start;}
+    .lb-cierres{flex:0 0 auto;display:flex;gap:9px;align-items:center;}
+    .lb-pf{text-align:center;font-size:.62rem;color:var(--texto2);font-weight:600;
+      background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:5px 9px;min-width:52px;}
+    .lb-pf b{display:block;font-size:.86rem;color:var(--texto);margin-top:2px;}
+    .lb-box{background:var(--campo);border:1px solid var(--borde);border-radius:8px;
+      padding:6px 9px;min-width:106px;flex:0 1 auto;}
+    .lb-box.auto{border-color:#2f4d7a;}
+    .lb-code{font-size:.68rem;color:var(--texto2);font-weight:600;margin-bottom:3px;line-height:1.3;
+      display:flex;justify-content:space-between;gap:6px;}
     .lb-pct{color:var(--azul);}
-    .lb-val{font-size:.95rem;font-weight:700;}
-    .lb-com{font-size:.68rem;color:var(--texto2);margin-top:5px;line-height:1.35;}
+    .lb-val{font-size:.9rem;font-weight:700;}
+    .lb-sub{font-size:.6rem;color:var(--texto2);font-weight:600;margin-top:1px;}
+    .lb-com{font-size:.66rem;color:var(--azul);margin-top:4px;line-height:1.35;}
+    @media(max-width:760px){
+      .lb-sem{flex-wrap:wrap;}
+      .lb-lab{flex:0 0 100%;}
+      .lb-cierres{flex:0 0 100%;justify-content:flex-end;}
+    }
   </style>`;
   c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
     <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
