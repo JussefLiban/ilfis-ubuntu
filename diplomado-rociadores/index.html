@@ -773,7 +773,7 @@ function _cajaMensaje(sem, e){
   // Ya respondió el profesor → se cierra el circuito y se deriva a Telegram.
   if(e.comentario){
     const mio = e.mensaje_alumno
-      ? `<div style="margin-top:12px;font-size:.8rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>`
+      ? `<div style="margin-top:12px;font-size:.8rem;color:var(--texto2);line-height:1.6;">📝 Tu mensaje al profesor: <i>${_nl(e.mensaje_alumno)}</i></div>`
       : "";
     return mio + `<div class="ent-nota" style="background:var(--campo);color:var(--texto2);font-size:.82rem;line-height:1.55;">
         💬 Tu profesor ya te respondió sobre esta tarea. ¿Quieres seguir conversándolo?
@@ -792,11 +792,15 @@ function _cajaMensaje(sem, e){
     </div>`;
 }
 
+// Los saltos de línea del profesor se respetan: si escribe párrafos, el alumno
+// los lee como párrafos y no como un ladrillo de texto.
+function _nl(t){ return esc(t).replace(/\n/g, "<br>"); }
+
 function _respuestaProfe(e){
   let out = "";
   if(e.comentario)
-    out += `<div class="ent-nota" style="background:#12233f;border-left:3px solid #4a90d9;">`
-         + `💬 <b>Tu profesor te respondió:</b><br><i>${esc(e.comentario)}</i></div>`;
+    out += `<div class="ent-nota" style="background:#12233f;border-left:3px solid #4a90d9;line-height:1.6;">`
+         + `💬 <b>Tu profesor te respondió:</b><br><i>${_nl(e.comentario)}</i></div>`;
   if(e.calificado && e.nota != null)
     out += `<div class="ent-nota">✅ Nota de esta tarea: <b>${e.nota}</b>/100</div>`;
   return out;
