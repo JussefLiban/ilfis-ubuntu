@@ -765,6 +765,33 @@ function badgeDe(n){
 // Respuesta del profesor SOBRE LA TAREA (la conversación vive aquí, no en el
 // boletín). Se muestra aunque todavía no haya nota: el alumno pregunta en su
 // tarea y le contestan en su tarea.
+// La tarea admite DOS comunicaciones y se acabó: un mensaje del alumno y una
+// respuesta del profesor. A partir de ahí, la conversación sigue por Telegram
+// (grupal o individual), que es la herramienta buena para eso. Ubuntu no
+// pretende ser un chat.
+function _cajaMensaje(sem, e){
+  // Ya respondió el profesor → se cierra el circuito y se deriva a Telegram.
+  if(e.comentario){
+    const mio = e.mensaje_alumno
+      ? `<div style="margin-top:12px;font-size:.8rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>`
+      : "";
+    return mio + `<div class="ent-nota" style="background:var(--campo);color:var(--texto2);font-size:.82rem;line-height:1.55;">
+        💬 Tu profesor ya te respondió sobre esta tarea. ¿Quieres seguir conversándolo?
+        Escríbele por <b>Telegram</b>, en el grupo del diplomado o por privado: es más rápido y ahí sí puedes ir y venir.
+      </div>`;
+  }
+  // Todavía no hay respuesta → el alumno puede escribir (o corregir su mensaje),
+  // aunque ya haya finalizado la entrega: preguntar no es modificarla.
+  return `<div style="margin-top:14px;">
+      <label style="display:block;font-size:.8rem;color:var(--texto2);margin-bottom:6px;">📝 Escríbele a tu profesor <span style="font-weight:400;">(un mensaje sobre esta tarea):</span></label>
+      <textarea id="notaProf-${sem}" class="np-ta" style="width:100%;max-width:none;min-height:150px;box-sizing:border-box;"
+        oninput="this.style.height='auto';this.style.height=Math.max(150,this.scrollHeight+4)+'px'"
+        placeholder="Dudas, en qué te costó, aclaraciones… Puedes escribir todo lo que necesites; la caja crece sola. Para conversar de ida y vuelta, usa el Telegram del diplomado.">${esc(e.mensaje_alumno||"")}</textarea>
+      <button class="btn sm" style="margin-top:10px;display:block;" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
+      <span class="ent-msg" id="notaProfMsg-${sem}"></span>
+    </div>`;
+}
+
 function _respuestaProfe(e){
   let out = "";
   if(e.comentario)
@@ -846,7 +873,9 @@ async function cargarEntrega(sem){
   // OBS-3/6 · Entrega FINALIZADA (sellada): solo lectura, registrada con fecha.
   if(e.finalizado){
     const filasF = files.length ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span></div>`).join("") : `<div class="ent-empty">No subiste archivos.</div>`;
-    const msgF = e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "";
+    // Los ARCHIVOS quedan sellados, pero escribirle al profesor sigue abierto:
+    // si no, él responde su corrección y el alumno no puede contestarle.
+    const msgF = _cajaMensaje(sem, e);
     const califF = _respuestaProfe(e);
     const cabF = e.puede_reabrir
       ? `<div class="ent-nota" style="background:#14532d;">✅ <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ¿Necesitas corregir algo? Puedes reabrirla mientras el plazo siga abierto.</div>`
@@ -877,14 +906,7 @@ async function cargarEntrega(sem){
     }
   }
   const calif = _respuestaProfe(e);
-  const notaProf = e.puede_subir
-    ? `<div style="margin-top:12px;">
-         <label style="display:block;font-size:.8rem;color:var(--texto2);margin-bottom:6px;">📝 Mensaje para el profesor (opcional):</label>
-         <textarea id="notaProf-${sem}" class="np-ta" style="width:100%;max-width:none;min-height:200px;box-sizing:border-box;" oninput="this.style.height='auto';this.style.height=Math.max(200,this.scrollHeight+4)+'px'" placeholder="Escríbele al profesor sobre tu entrega: dudas, en qué te costó, aclaraciones… Puedes escribir todo lo que necesites; la caja crece sola.">${esc(e.mensaje_alumno||"")}</textarea>
-         <button class="btn sm" style="margin-top:10px;display:block;" onclick="enviarNotaProfesor(${sem})">Enviar mensaje</button>
-         <span class="ent-msg" id="notaProfMsg-${sem}"></span>
-       </div>`
-    : (e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "");
+  const notaProf = _cajaMensaje(sem, e);
   const btnBorrarTodo = (e.puede_subir && files.length)
     ? `<button class="btn sm" style="margin-top:10px;display:block;background:#7f1d1d;" onclick="borrarEntregaCompleta(${sem})">🗑 Borrar entrega completa</button>`
     : "";
