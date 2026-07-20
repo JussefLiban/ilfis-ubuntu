@@ -311,7 +311,7 @@ function verTab(t){
     q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
     a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El botón <b>Exportar notas</b> baja este resumen a Excel.",
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
-    e: "📤 <b>Entregas de tareas:</b> aquí solo se <b>descargan</b> los archivos que suben los alumnos (uno por uno, todo del alumno, o todo en un ZIP). Revísalos en tu PC y después pon las notas en la <b>Planilla</b>.",
+    e: "📤 <b>Entregas de tareas:</b> aquí <b>descargas</b> los archivos (uno por uno, todo del alumno, o todo en un ZIP) y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel."
   };
@@ -554,7 +554,7 @@ function renderEntregas(){
     `<tr><th colspan="6" style="background:transparent;border:none;padding:0 0 12px;text-align:right;">
        <button class="btn" onclick="descargarTodoZip(this)">⬇ Descargar TODAS las entregas (ZIP por carpetas)</button>
      </th></tr>
-     <tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th></th></tr>`;
+     <tr><th>Alumno</th><th style="text-align:right;">Sem</th><th>Archivos entregados</th><th>Tu respuesta al alumno</th><th></th></tr>`;
   const rows = (E && E.entregas) ? E.entregas : [];
   tb.querySelector("tbody").innerHTML = rows.map(x => {
     const files = (x.archivos||[]).length
@@ -566,10 +566,11 @@ function renderEntregas(){
       <td>${esc(x.email||x.uid)}</td>
       <td class="num">${x.semana}</td>
       <td>${files}${notaAl}</td>
-      <td style="white-space:nowrap;"><button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button></td>
+      <td><textarea id="entC-${key}" placeholder="Contéstale sobre su tarea…" style="width:100%;min-width:190px;min-height:58px;box-sizing:border-box;resize:vertical;font-family:inherit;font-size:.82rem;">${esc(x.comentario||"")}</textarea></td>
+      <td style="white-space:nowrap;"><button class="btn mini rojo" onclick="responderEntrega('${esc(x.uid)}',${x.semana})">Responder</button><br><button class="btn mini" style="margin-top:5px;" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button> <span class="ent-save" id="entS-${key}"></span></td>
     </tr>`;
   }).join("") ||
-    `<tr><td colspan="4" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
+    `<tr><td colspan="5" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
 }
 
 async function descargarEntrega(uid, sem, nombre){
@@ -621,10 +622,13 @@ function descargarAlumnoZip(uid, btn){
   _bajarZip(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/zip`, "entregas_alumno.zip", btn);
 }
 
-async function guardarNotaEntrega(uid, sem){
+// Responder al alumno SOBRE SU TAREA. Solo texto: la nota va en la planilla.
+// Se reenvía la nota que ya tuviera la entrega para no borrarla.
+async function responderEntrega(uid, sem){
   const key = `${uid}-${sem}`;
-  const notaStr = ($(`entN-${key}`).value || "").trim();
   const com = ($(`entC-${key}`).value || "").trim();
+  const en0 = (E && E.entregas || []).find(x => x.uid === uid && x.semana === sem);
+  const notaStr = (en0 && en0.nota != null) ? String(en0.nota) : "";
   const msg = $(`entS-${key}`);
   if(msg){ msg.textContent = "…"; msg.className = "ent-save"; }
   try{
@@ -634,10 +638,9 @@ async function guardarNotaEntrega(uid, sem){
     });
     let d=null; try{ d=await r.json(); }catch(e){}
     if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
-    if(msg){ msg.textContent = "✓ guardada"; msg.className = "ent-save ok"; }
-    // Refleja la nota en memoria para que la cola/KPIs se actualicen sin recargar
+    if(msg){ msg.textContent = "✓ enviada"; msg.className = "ent-save ok"; }
     const en = (E && E.entregas || []).find(x => x.uid === uid && x.semana === sem);
-    if(en){ en.nota = (notaStr === "" ? null : Number(notaStr)); en.comentario = com; }
+    if(en){ en.comentario = com; }
     actualizarKPIs();
   }catch(e){ if(msg){ msg.textContent = "⚠ " + e.message; msg.className = "ent-save err"; } }
 }

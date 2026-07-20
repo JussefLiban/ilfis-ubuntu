@@ -762,6 +762,19 @@ function badgeDe(n){
   if(/\.xlsx?$/i.test(n)) return '<span class="badge xls">XLS</span>';
   return '<span class="badge pdf">PDF</span>';
 }
+// Respuesta del profesor SOBRE LA TAREA (la conversación vive aquí, no en el
+// boletín). Se muestra aunque todavía no haya nota: el alumno pregunta en su
+// tarea y le contestan en su tarea.
+function _respuestaProfe(e){
+  let out = "";
+  if(e.comentario)
+    out += `<div class="ent-nota" style="background:#12233f;border-left:3px solid #4a90d9;">`
+         + `💬 <b>Tu profesor te respondió:</b><br><i>${esc(e.comentario)}</i></div>`;
+  if(e.calificado && e.nota != null)
+    out += `<div class="ent-nota">✅ Nota de esta tarea: <b>${e.nota}</b>/100</div>`;
+  return out;
+}
+
 function lecTarea(w, l, c){
   const archivos = (l.archivos || []);
   const descargable = !!(estructura && estructura.tareas_descargables);
@@ -834,7 +847,7 @@ async function cargarEntrega(sem){
   if(e.finalizado){
     const filasF = files.length ? files.map(a => `<div class="ent-file"><span>📎 ${esc(a.nombre)} <span class="ent-size">(${fmtSize(a.size)})</span></span></div>`).join("") : `<div class="ent-empty">No subiste archivos.</div>`;
     const msgF = e.mensaje_alumno ? `<div style="margin-top:10px;font-size:.78rem;color:var(--texto2);">📝 Tu mensaje al profesor: <i>${esc(e.mensaje_alumno)}</i></div>` : "";
-    const califF = e.calificado ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>` : "";
+    const califF = _respuestaProfe(e);
     const cabF = e.puede_reabrir
       ? `<div class="ent-nota" style="background:#14532d;">✅ <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ¿Necesitas corregir algo? Puedes reabrirla mientras el plazo siga abierto.</div>`
       : `<div class="ent-nota" style="background:#14532d;">🔒 <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. El plazo cerró: ya es definitiva.</div>`;
@@ -863,9 +876,7 @@ async function cargarEntrega(sem){
         : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
     }
   }
-  const calif = e.calificado
-    ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>`
-    : "";
+  const calif = _respuestaProfe(e);
   const notaProf = e.puede_subir
     ? `<div style="margin-top:12px;">
          <label style="display:block;font-size:.8rem;color:var(--texto2);margin-bottom:6px;">📝 Mensaje para el profesor (opcional):</label>
@@ -1373,20 +1384,25 @@ async function verNotas(){
   // cero que parezca su nota.
   const valNota = (cod, nota) => {
     const e = est(cod);
-    if(e === "publicado" && nota !== null && nota !== undefined)
-      return `<b style="color:${nota>=AP?'var(--verde)':'var(--rojoTxt)'};">${nota}</b>`;
+    if(e === "publicado" && nota !== null && nota !== undefined){
+      // Un 0 calificado (entregó y sacó cero) se distingue del 0 por no entregar.
+      const sub = Number(nota) === 0 ? `<div class="lb-sub">calificado</div>` : "";
+      return `<b style="color:${nota>=AP?'var(--verde)':'var(--rojoTxt)'};">${nota}</b>` + sub;
+    }
     if(e === "enviado" || e === "por_calificar")
       return `<span style="color:var(--ambar);">Enviado ✓</span><div class="lb-sub">en revisión</div>`;
     if(e === "sin_entrega")
       return `<b style="color:var(--rojoTxt);">0</b><div class="lb-sub">sin entrega</div>`;
     return `<span style="color:var(--texto2);">—</span>`;
   };
+  // El comentario NO se escribe dentro de la casilla (recargaba el edificio):
+  // queda una marca 💬 que lo muestra al pasar el ratón o tocarla.
   const box = (nombre, cod, nota, pct, auto) => {
     const p = (pct || pct === 0) ? `<span class="lb-pct">${pct}%</span>` : "";
     const com = (r.comentarios || {})[cod];
-    return `<div class="lb-box${auto?' auto':''}"><div class="lb-code"><span>${esc(_tit(nombre))}</span>${p}</div>`
-      + `<div class="lb-val">${valNota(cod, nota)}</div>`
-      + (com ? `<div class="lb-com">💬 ${esc(com)}</div>` : "") + `</div>`;
+    const mk = com ? `<span class="lb-mk" title="Comentario del profesor: ${esc(com)}">💬</span>` : "";
+    return `<div class="lb-box ${auto?'auto':'man'}"><div class="lb-code"><span>${esc(_tit(nombre))}${mk}</span>${p}</div>`
+      + `<div class="lb-val">${valNota(cod, nota)}</div></div>`;
   };
   // Un piso del edificio: etiqueta a la izquierda, casillas al centro, Prom/Peso a la derecha.
   const piso = (etq, boxes, prom) => `<div class="lb-sem"><div class="lb-lab">${etq}</div>`
@@ -1404,8 +1420,21 @@ async function verNotas(){
   const semVisible = sem => (!estructura || !Array.isArray(estructura.semanas)) ? true : _estAb.has(sem);
 
   // Semana 0 (Crítica de lecturas) — solo si ya está abierta
+  // La Semana 0 también lleva su Prom. y su Peso: la Crítica de Lecturas es una
+  // de las 13 notas semanales, con el mismo 5% que cada semana.
+  const promS0 = est(r.critica.codigo) === "publicado"
+    ? _prom(r, r.critica.nota)
+    : `<span style="color:var(--texto2);font-size:.72rem;">Pendiente</span>`;
+  // Leyenda: el color del borde le dice al alumno qué tipo de evaluación es.
+  const leyenda = `<div class="lb-ley">
+    <span class="it"><span class="mu a"></span><span><b>Borde azul</b> · cuestionario: se califica solo</span></span>
+    <span class="it"><span class="mu m"></span><span><b>Borde rojo</b> · tarea: la revisa y califica tu profesor</span></span>
+    <span class="it"><span style="color:var(--ambar);font-weight:700;">Enviado ✓</span><span>ya la entregaste, falta que la califiquen</span></span>
+    <span class="it">💬<span>tu profesor te dejó un comentario (pasa el ratón)</span></span>
+  </div>`;
+
   let cuerpo = semVisible(0)
-    ? piso("Sem 0", box(r.critica.nombre, r.critica.codigo, r.critica.nota, 5), null)
+    ? piso("Sem 0", box(r.critica.nombre, r.critica.codigo, r.critica.nota, 5), promS0)
     : "";
 
   // Semanas 1..12 — solo las abiertas
@@ -1454,15 +1483,26 @@ async function verNotas(){
     .lb-pf{text-align:center;font-size:.62rem;color:var(--texto2);font-weight:600;
       background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:5px 9px;min-width:52px;}
     .lb-pf b{display:block;font-size:.86rem;color:var(--texto);margin-top:2px;}
-    .lb-box{background:var(--campo);border:1px solid var(--borde);border-radius:8px;
+    /* El borde dice QUÉ TIPO de evaluación es: azul = se califica sola
+       (cuestionario); rojo = la revisa y califica el profesor (tarea). */
+    .lb-box{background:var(--campo);border:2px solid var(--borde);border-radius:8px;
       padding:6px 9px;min-width:106px;flex:0 1 auto;}
-    .lb-box.auto{border-color:#2f4d7a;}
+    .lb-box.auto{border-color:var(--azul);}
+    .lb-box.man{border-color:var(--rojo);}
+    .lb-ley{display:flex;flex-wrap:wrap;gap:9px 16px;align-items:center;
+      background:var(--panel);border:1px solid var(--borde);border-radius:10px;
+      padding:10px 13px;margin-bottom:12px;font-size:.75rem;color:var(--texto2);}
+    .lb-ley .it{display:flex;align-items:center;gap:7px;}
+    .lb-ley .mu{width:22px;height:14px;border-radius:4px;background:var(--campo);border:2px solid var(--borde);}
+    .lb-ley .mu.a{border-color:var(--azul);}
+    .lb-ley .mu.m{border-color:var(--rojo);}
+    .lb-ley b{color:var(--texto);font-weight:600;}
     .lb-code{font-size:.68rem;color:var(--texto2);font-weight:600;margin-bottom:3px;line-height:1.3;
       display:flex;justify-content:space-between;gap:6px;}
     .lb-pct{color:var(--azul);}
     .lb-val{font-size:.9rem;font-weight:700;}
     .lb-sub{font-size:.6rem;color:var(--texto2);font-weight:600;margin-top:1px;}
-    .lb-com{font-size:.66rem;color:var(--azul);margin-top:4px;line-height:1.35;}
+    .lb-mk{color:var(--azul);margin-left:4px;cursor:help;font-size:.9em;}
     @media(max-width:760px){
       .lb-sem{flex-wrap:wrap;}
       .lb-lab{flex:0 0 100%;}
@@ -1472,9 +1512,10 @@ async function verNotas(){
   c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
     <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
     <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
+    ${leyenda}
     ${cuerpo}
     ${cierre}
-    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = registrado; la nota se publica el lunes 12:00. “Por calificar” = tu profesor aún no revisa esa tarea.</div>`;
+    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`;
 }
 </script>
 </body>
