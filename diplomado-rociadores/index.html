@@ -853,9 +853,15 @@ async function cargarEntrega(sem){
       <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
   } else {
     const _cerrado = new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
-    ctrl = _cerrado
-      ? `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
-      : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
+    const _w = ((estructura && estructura.semanas) || []).find(x => x.sem === sem);
+    if(e.abierta === false){
+      // La semana todavía no abre: decirlo claro (no hablar del cierre, confunde).
+      ctrl = `<div class="aviso">🔒 Esta semana aún no abre${_w && _w.abre ? ` (abre el lun ${fmtLima(_w.abre)})` : ""}. Desde ese día podrás subir tu entrega.</div>`;
+    } else {
+      ctrl = _cerrado
+        ? `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
+        : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
+    }
   }
   const calif = e.calificado
     ? `<div class="ent-nota">✅ Nota del profesor: <b>${e.nota}</b>/100${e.comentario?` — <i>${esc(e.comentario)}</i>`:""}</div>`
