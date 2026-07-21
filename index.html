@@ -1746,6 +1746,24 @@ auth.onAuthStateChanged(async function(user) {
   }
 });
 
+// VIGILANTE ANTI-PANTALLA-NEGRA. Regla única e innegociable: la app NUNCA puede
+// estar visible sin sesión. Si por una carrera de eventos (sesión que se cae,
+// cuenta borrada, token que no refresca) la app queda abierta sin usuario, aquí
+// se fuerza el login limpio. Es la red de seguridad definitiva: pase lo que pase
+// en el arranque, el alumno ve el login, no una pantalla negra.
+setInterval(function () {
+  try {
+    var app = document.getElementById('app');
+    if (app && app.style.display !== 'none' && !(window.auth && auth.currentUser)) {
+      app.style.display = 'none';
+      var ov = document.getElementById('auth-overlay');
+      if (ov) ov.style.display = 'flex';
+      var pg = document.getElementById('pago-overlay');
+      if (pg) pg.style.display = 'none';
+    }
+  } catch (e) {}
+}, 1500);
+
 // ── LOGIN EMAIL ────────────────────────────────────────────
 async function loginEmail() {
   const email = document.getElementById('login-email').value.trim();
