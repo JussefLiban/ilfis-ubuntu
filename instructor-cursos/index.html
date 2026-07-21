@@ -310,10 +310,14 @@ async function cargar(inicial){
   // Planilla / Libro de notas (defensivo: si el backend aún no la soporta, no rompe el panel)
   try{ P = await api(`/api/cursos/${CURSO}/admin/planilla`); }
   catch(e){ P = null; console.warn("Planilla no disponible:", e.message); }
-  // Mapa uid -> nombre real (viene de la planilla / libro de notas). Con esto todas
-  // las vistas muestran el NOMBRE del alumno y no su correo.
+  // Mapa uid -> NOMBRE real del alumno. Fuente de verdad: el resumen del backend
+  // (`R.nombres`, resuelto desde el certificado o el displayName). La planilla solo
+  // como respaldo, y nunca metemos el correo como si fuera nombre.
   NOMBRES = {};
-  if(P && P.alumnos){ P.alumnos.forEach(a => { if(a.uid && a.nombre) NOMBRES[a.uid] = a.nombre; }); }
+  if(R && R.nombres){ Object.assign(NOMBRES, R.nombres); }
+  if(P && P.alumnos){ P.alumnos.forEach(a => {
+    if(a.uid && a.nombre && !NOMBRES[a.uid] && a.nombre !== a.email) NOMBRES[a.uid] = a.nombre;
+  }); }
   actualizarKPIs();
   verTab(tab);
 }

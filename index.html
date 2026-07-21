@@ -835,7 +835,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
           <select id="admin-edualumnos-curso" onchange="adminRenderEduAlumnos()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
           <span id="admin-edualumnos-count" style="font-size:0.8rem;color:#8899aa;"></span>
-          <button id="admin-edualumnos-todas" class="btn-a" style="padding:8px 14px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosToggleTodas()" title="Muestra TODAS las cuentas, incluidas las que no están matriculadas (útil para borrar cuentas de prueba)">🧹 Ver todas / prueba</button>
+          <button id="admin-edualumnos-datos" class="btn-a" style="padding:8px 14px;font-size:0.85rem;margin-left:auto;" onclick="eduVerTabla()" title="Muestra todos los datos de los alumnos en una tabla (como Excel)">📋 Datos (tabla)</button>
+          <button id="admin-edualumnos-todas" class="btn-a" style="padding:8px 14px;font-size:0.85rem;" onclick="adminEduAlumnosToggleTodas()" title="Muestra TODAS las cuentas, incluidas las que no están matriculadas (útil para borrar cuentas de prueba)">🧹 Ver todas / prueba</button>
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminEduAlumnosNuevo()">+ Matricular Alumno</button>
         </div>
         <div id="admin-edualumnos-buscarwrap" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
@@ -913,6 +914,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         })();
         </script>
         <!-- ▲▲ FIN SOLICITUDES DE ACCESO ▲▲ -->
+        <div id="edu-datos-tabla" style="display:none;overflow-x:auto;margin-bottom:16px;"></div>
         <div id="admin-edualumnos-content"><div class="admin-loading">Cargando...</div></div>
       </div>
       <!-- Sección Certificados (Plataforma Educativa) — GENERADOR general, emite SOLO el superadmin -->
@@ -4352,8 +4354,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     // administrativos y se limpian los alumnos de prueba desde el mismo panel.
     const _nomJs = (u.nombre||'').replace(/'/g,"\\'");
     const extraEdu = (area === 'educativa')
-      ? `<button class="btn-a" style="border-color:#2a3450;" onclick="eduVerDatos('${u.uid}')">📋 Datos</button>
-         <button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`
+      ? `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`
       : '';
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
@@ -4398,6 +4399,7 @@ function _adminLlenarDiplomasEdu() {
 function adminRenderEduAlumnos() {
   _adminLlenarDiplomasEdu();
   _adminRenderAccesos('admin-edualumnos-content', k => DIPLOMA_KEYS.includes(k), 'Alumno', 'educativa');
+  if (_eduTablaVisible) eduRenderTabla();   // mantener la tabla de datos en sync
 }
 // Abre el buscador para matricular a alguien de toda la base.
 function adminEduAlumnosNuevo() {
@@ -4558,26 +4560,71 @@ async function adminBorrarCuenta(uid, email, nombre) {
   } catch(e) { alert('Error: ' + e.message); }
 }
 
-// Ficha completa de datos administrativos del alumno (para certificado): nombre
-// completo, correo, país de nacimiento/residencia, teléfono y fecha de nacimiento.
-function eduVerDatos(uid) {
-  const cta = _adminAlumnos.find(u => u.uid === uid) || {};
-  const d = _adminDatos[uid] || {};
-  const nombre = d.nombre_certificado || cta.nombre || '(sin nombre)';
-  const L = [];
-  L.push('👤  ' + nombre);
-  L.push('✉  ' + (d.email || cta.email || '—'));
-  L.push('');
-  if (Object.keys(d).length === 0) {
-    L.push('Este alumno todavía NO ha llenado sus datos del certificado');
-    L.push('(los llena en el aula → "Mis datos").');
-  } else {
-    L.push('🌎  País de nacimiento:  ' + (d.pais_nacimiento || '—'));
-    L.push('🏠  País de residencia:  ' + (d.pais_residencia || '—'));
-    L.push('📞  Teléfono:  ' + (d.telefono || '—'));
-    L.push('🎂  Fecha de nacimiento:  ' + (d.fecha_nacimiento || '—'));
-  }
-  alert(L.join('\n'));
+// Datos administrativos de los alumnos como TABLA (estilo Excel): columnas de
+// datos, filas por alumno. Toma los matriculados del curso elegido (o TODAS las
+// cuentas si está activado "Ver todas"). Con botón para exportar a Excel.
+let _eduTablaVisible = false;
+function _eduListaActual() {
+  const selC = document.getElementById('admin-edualumnos-curso');
+  const cursoKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
+  let lista = _eduVerTodas
+    ? _adminAlumnos.slice()
+    : _adminAlumnos.filter(u => cursoKey && Object.keys(u.cursos_activos || {}).includes(cursoKey));
+  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || u.email || '';
+  lista.sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
+  return lista;
+}
+function eduVerTabla() {
+  const cont = document.getElementById('edu-datos-tabla');
+  const btn = document.getElementById('admin-edualumnos-datos');
+  if (!cont) return;
+  _eduTablaVisible = !_eduTablaVisible;
+  if (btn) { btn.classList.toggle('btn-dar', _eduTablaVisible); btn.textContent = _eduTablaVisible ? '✕ Ocultar tabla' : '📋 Datos (tabla)'; }
+  if (!_eduTablaVisible) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+  eduRenderTabla();
+  cont.style.display = 'block';
+}
+function eduRenderTabla() {
+  const cont = document.getElementById('edu-datos-tabla');
+  if (!cont || !_eduTablaVisible) return;
+  const lista = _eduListaActual();
+  const g = (u, k) => (_adminDatos[u.uid] || {})[k] || '';
+  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '—';
+  const filas = lista.map((u, i) => `<tr>
+      <td style="color:#8899aa;">${i + 1}</td>
+      <td><b>${_adminEsc(nom(u))}</b></td>
+      <td>${_adminEsc(u.email || g(u, 'email'))}</td>
+      <td>${_adminEsc(g(u, 'pais_nacimiento') || '—')}</td>
+      <td>${_adminEsc(g(u, 'pais_residencia') || '—')}</td>
+      <td style="white-space:nowrap;">${_adminEsc(g(u, 'telefono') || '—')}</td>
+      <td style="white-space:nowrap;">${_adminEsc(g(u, 'fecha_nacimiento') || '—')}</td>
+    </tr>`).join('');
+  cont.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+      <span style="font-size:0.8rem;color:#8899aa;">${lista.length} alumno(s) · datos para el certificado. Los "—" son alumnos que aún no llenaron "Mis datos" en el aula.</span>
+      <button class="btn-a" style="padding:7px 13px;font-size:0.82rem;" onclick="eduExportarDatos()">⬇ Exportar a Excel</button>
+    </div>
+    <table class="admin-table" style="min-width:820px;">
+      <thead><tr>
+        <th>#</th><th>Nombre completo</th><th>Correo</th><th>País nacimiento</th>
+        <th>País residencia</th><th>Teléfono</th><th>Fecha nac.</th>
+      </tr></thead>
+      <tbody>${filas || '<tr><td colspan="7" style="text-align:center;color:#8899aa;padding:18px;">No hay alumnos para mostrar.</td></tr>'}</tbody>
+    </table>`;
+}
+function eduExportarDatos() {
+  const lista = _eduListaActual();
+  const g = (u, k) => (_adminDatos[u.uid] || {})[k] || '';
+  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '';
+  const q = s => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
+  const cab = ['#', 'Nombre completo', 'Correo', 'Pais nacimiento', 'Pais residencia', 'Telefono', 'Fecha nacimiento'];
+  const filas = lista.map((u, i) => [i + 1, nom(u), u.email || g(u, 'email'),
+    g(u, 'pais_nacimiento'), g(u, 'pais_residencia'), g(u, 'telefono'), g(u, 'fecha_nacimiento')].map(q).join(';'));
+  const csv = '﻿' + [cab.map(q).join(';'), ...filas].join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'datos_alumnos.csv'; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
 }
 
 async function adminDarPlataforma(uid, email) {
