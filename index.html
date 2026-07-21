@@ -835,7 +835,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
           <select id="admin-edualumnos-curso" onchange="adminRenderEduAlumnos()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
           <span id="admin-edualumnos-count" style="font-size:0.8rem;color:#8899aa;"></span>
-          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosNuevo()">+ Matricular Alumno</button>
+          <button id="admin-edualumnos-todas" class="btn-a" style="padding:8px 14px;font-size:0.85rem;margin-left:auto;" onclick="adminEduAlumnosToggleTodas()" title="Muestra TODAS las cuentas, incluidas las que no están matriculadas (útil para borrar cuentas de prueba)">🧹 Ver todas / prueba</button>
+          <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminEduAlumnosNuevo()">+ Matricular Alumno</button>
         </div>
         <div id="admin-edualumnos-buscarwrap" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
           <input type="text" id="admin-edualumnos-buscar" placeholder="Escribe el nombre o correo del alumno a matricular…" oninput="adminFiltrarAccesos('admin-edualumnos-content', this.value)" style="flex:1;min-width:240px;padding:9px 11px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
@@ -3659,6 +3660,7 @@ function _adminLlenarDiplomasDocentes() {
 // "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
 const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
 let _adminAlumnos    = [];
+let _adminDatos      = {};   // uid -> datos del certificado (nombre, país, teléfono, fecha nac.)
 let _bloqueados      = new Set();   // uids con el acceso a la plataforma quitado
 let _adminModalUid   = null;
 let _adminModalEmail = null;
@@ -4191,6 +4193,13 @@ async function adminCargar() {
       const rb = await fetch(BACKEND + '/api/cursos/admin/plataforma/bloqueados', { headers: { 'x-admin-key': _getAdminKey() } });
       _bloqueados = rb.ok ? new Set((await rb.json()).uids || []) : new Set();
     } catch(e) { _bloqueados = new Set(); }
+    // Datos del certificado (nombre completo, país, teléfono, fecha nac.) por alumno.
+    // Sirven para el botón "Datos" de cada matriculado. No rompe el panel si falla.
+    try {
+      const rd = await fetch(BACKEND + '/api/cursos/admin/alumnos', { headers: { 'x-admin-key': _getAdminKey() } });
+      _adminDatos = {};
+      if (rd.ok) { ((await rd.json()).alumnos || []).forEach(a => { if (a.uid) _adminDatos[a.uid] = a; }); }
+    } catch(e) { _adminDatos = {}; }
     adminRenderRecaud();
     adminRenderAlumnos();
     adminRenderAplicativos();
@@ -4297,13 +4306,18 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     const selC = document.getElementById('admin-edualumnos-curso');
     const cursoKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
     if (cursoKey) perteneceProducto = (k => k === cursoKey);
-    if (_eduModoMatricular) {
+    if (_eduVerTodas) {
+      // TODAS las cuentas (matriculadas o no) — para ver datos y borrar cuentas de prueba.
+      // _fuente ya viene filtrado por el texto de búsqueda.
+    } else if (_eduModoMatricular) {
       _fuente = _filtro ? _fuente : [];
     } else {
       _fuente = _adminAlumnos.filter(u => Object.keys(u.cursos_activos || {}).some(perteneceProducto));
     }
     const cnt = document.getElementById('admin-edualumnos-count');
-    if (cnt) cnt.textContent = _eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' matriculado' : ' matriculados'));
+    if (cnt) cnt.textContent = _eduVerTodas
+      ? (_fuente.length + ' cuenta(s) — TODAS (matriculadas y de prueba)')
+      : (_eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' matriculado' : ' matriculados')));
   }
   const filas = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
@@ -4333,12 +4347,21 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
               <button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">${dias > 0 ? 'Revocar' : 'Quitar'} ${ADMIN_NAMES[k]||k}</button>`;
     }).join(' ');
+    // En la Plataforma Educativa: "Datos" (ficha completa del certificado) y
+    // "Eliminar" (borra la cuenta de prueba por completo). Así se ven los datos
+    // administrativos y se limpian los alumnos de prueba desde el mismo panel.
+    const _nomJs = (u.nombre||'').replace(/'/g,"\\'");
+    const extraEdu = (area === 'educativa')
+      ? `<button class="btn-a" style="border-color:#2a3450;" onclick="eduVerDatos('${u.uid}')">📋 Datos</button>
+         <button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`
+      : '';
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
-        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${(u.nombre||'').replace(/'/g,"\\'")}','${area}')">${area === 'educativa' ? 'Matricular' : 'Dar acceso'}</button>
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">${area === 'educativa' ? 'Matricular' : 'Dar acceso'}</button>
+        ${extraEdu}
       </td>
     </tr>`;
   }).join('');
@@ -4383,6 +4406,19 @@ function adminEduAlumnosNuevo() {
   if (w) w.style.display = 'flex';
   const inp = document.getElementById('admin-edualumnos-buscar');
   if (inp) inp.focus();
+  adminRenderEduAlumnos();
+}
+// "Ver todas": muestra TODAS las cuentas (no solo las matriculadas en el curso).
+// Sirve para encontrar y BORRAR cuentas de prueba que no están matriculadas y que
+// igual aparecen en la planilla del profesor.
+let _eduVerTodas = false;
+function adminEduAlumnosToggleTodas() {
+  _eduVerTodas = !_eduVerTodas;
+  _eduModoMatricular = false;
+  const b = document.getElementById('admin-edualumnos-todas');
+  if (b) { b.classList.toggle('btn-dar', _eduVerTodas); b.textContent = _eduVerTodas ? '✓ Viendo todas' : '🧹 Ver todas / prueba'; }
+  const w = document.getElementById('admin-edualumnos-buscarwrap');
+  if (w) w.style.display = _eduVerTodas ? 'flex' : 'none';
   adminRenderEduAlumnos();
 }
 // Vuelve a la vista de solo matriculados.
@@ -4512,10 +4548,36 @@ async function adminBorrarCuenta(uid, email, nombre) {
     if (r.status === 401) { _clearAdminKey(); return; }
     if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ('Error ' + r.status));
     _bloqueados.delete(uid);
+    delete _adminDatos[uid];
     _adminAlumnos = _adminAlumnos.filter(u => u.uid !== uid);   // sacarla de la lista al instante
-    adminRenderSuscriptores();
-    alert('Cuenta eliminada. El correo ' + email + ' queda libre.');
+    // Refresca todas las vistas donde podía aparecer (Suscriptores y Plataforma Educativa)
+    try { adminRenderSuscriptores(); } catch(e) {}
+    try { adminRenderEduAlumnos(); } catch(e) {}
+    try { adminRenderAlumnos(); } catch(e) {}
+    alert('Cuenta eliminada. El correo ' + email + ' queda libre.\n\nEn el panel del profesor desaparece al recargar (la planilla ya no lo incluye).');
   } catch(e) { alert('Error: ' + e.message); }
+}
+
+// Ficha completa de datos administrativos del alumno (para certificado): nombre
+// completo, correo, país de nacimiento/residencia, teléfono y fecha de nacimiento.
+function eduVerDatos(uid) {
+  const cta = _adminAlumnos.find(u => u.uid === uid) || {};
+  const d = _adminDatos[uid] || {};
+  const nombre = d.nombre_certificado || cta.nombre || '(sin nombre)';
+  const L = [];
+  L.push('👤  ' + nombre);
+  L.push('✉  ' + (d.email || cta.email || '—'));
+  L.push('');
+  if (Object.keys(d).length === 0) {
+    L.push('Este alumno todavía NO ha llenado sus datos del certificado');
+    L.push('(los llena en el aula → "Mis datos").');
+  } else {
+    L.push('🌎  País de nacimiento:  ' + (d.pais_nacimiento || '—'));
+    L.push('🏠  País de residencia:  ' + (d.pais_residencia || '—'));
+    L.push('📞  Teléfono:  ' + (d.telefono || '—'));
+    L.push('🎂  Fecha de nacimiento:  ' + (d.fecha_nacimiento || '—'));
+  }
+  alert(L.join('\n'));
 }
 
 async function adminDarPlataforma(uid, email) {
