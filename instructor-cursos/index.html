@@ -156,6 +156,8 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
 .resp-texto{background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:9px 12px;white-space:pre-wrap;color:#cdd6ea;}
 .c-ok{color:var(--verde);font-weight:700;}
 .c-mal{color:var(--rojoTxt);font-weight:700;}
+.a-nom{font-weight:600;color:var(--texto);line-height:1.2;}
+.a-mail{font-size:.72rem;color:var(--texto2);line-height:1.2;margin-top:1px;}
 </style>
 </head>
 <body>
@@ -241,7 +243,12 @@ let clave = localStorage.getItem("ilfis_admin_key") || null;  // clave de admini
 let R = null;      // resumen
 let E = null;      // entregas de tareas
 let P = null;      // planilla / libro de notas
+let NOMBRES = {};  // uid -> nombre del alumno (el alumno se llama por su NOMBRE, no por el correo)
 let _fotoTok = ""; // token (login docente) para mostrar las fotos de los alumnos
+
+// Nombre del alumno para mostrar en pantalla. Orden: nombre real (de la planilla)
+// → correo → uid. Nunca dejamos el correo como "nombre" si tenemos el real.
+function nomDe(uid, email){ return NOMBRES[uid] || email || uid || "—"; }
 let tab = "q";
 let _autoIntentado = false;
 
@@ -303,6 +310,10 @@ async function cargar(inicial){
   // Planilla / Libro de notas (defensivo: si el backend aún no la soporta, no rompe el panel)
   try{ P = await api(`/api/cursos/${CURSO}/admin/planilla`); }
   catch(e){ P = null; console.warn("Planilla no disponible:", e.message); }
+  // Mapa uid -> nombre real (viene de la planilla / libro de notas). Con esto todas
+  // las vistas muestran el NOMBRE del alumno y no su correo.
+  NOMBRES = {};
+  if(P && P.alumnos){ P.alumnos.forEach(a => { if(a.uid && a.nombre) NOMBRES[a.uid] = a.nombre; }); }
   actualizarKPIs();
   verTab(tab);
 }
@@ -479,11 +490,11 @@ function renderQuiz(){
     `<tr><th>Alumno</th><th style="text-align:right;">Nota auto</th><th>Texto manual</th><th>Enviado (Lima)</th><th></th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = rows.map(x => `
     <tr>
-      <td>${esc(x.email || x.uid)}</td>
+      <td><div class="a-nom">${esc(nomDe(x.uid, x.email))}</div>${x.email ? `<div class="a-mail">${esc(x.email)}</div>` : ""}</td>
       <td class="num">${x.es_encuesta ? "encuesta" : (x.nota !== undefined && x.nota !== null ? `${x.nota} / 100` : `${x.puntaje} / ${x.sobre}`)}</td>
       <td>${x.pendiente_manual ? `<span class="pill manual">⚠ ${x.sobre_manual} pts por calificar</span>` : `<span class="pill ok">—</span>`}</td>
       <td>${fmtLima(x.enviado)}</td>
-      <td><button class="btn mini" onclick="verIntento('${esc(x.uid)}','${esc(x.quiz_id)}','${esc(x.email)}')">Ver respuestas</button></td>
+      <td><button class="btn mini" onclick="verIntento('${esc(x.uid)}','${esc(x.quiz_id)}','${esc(nomDe(x.uid, x.email))}')">Ver respuestas</button></td>
     </tr>`).join("") ||
     `<tr><td colspan="5" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay intentos en este cuestionario</td></tr>`;
 }
@@ -501,7 +512,7 @@ function renderAlumnos(){
       : "";
     return `
     <tr>
-      <td>${foto}${esc(a.email)}</td>
+      <td>${foto}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(a.uid, a.email))}</span>${a.email ? `<br><span class="a-mail">${esc(a.email)}</span>` : ""}</span></td>
       <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
       <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
       <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
@@ -520,7 +531,7 @@ function renderCola(){
   $("tabla").querySelector("tbody").innerHTML = cola.map(c => {
     let accion, pill;
     if(c.tipo === "texto"){
-      accion = `<button class="btn mini primario" onclick="verIntento('${esc(c.uid)}','${esc(c.quiz_id)}','${esc(c.email)}')">Revisar respuesta</button>`;
+      accion = `<button class="btn mini primario" onclick="verIntento('${esc(c.uid)}','${esc(c.quiz_id)}','${esc(nomDe(c.uid, c.email))}')">Revisar respuesta</button>`;
       pill = `<span class="pill texto">Texto</span>`;
     } else if(c.tipo === "eval"){
       accion = `<button class="btn mini" onclick="descargarAlumnoZip('${esc(c.uid)}',this)">⬇ Entregas (ZIP)</button> `
@@ -534,7 +545,7 @@ function renderCola(){
     }
     return `<tr>
       <td>${pill}</td>
-      <td>${esc(c.email || c.uid)}</td>
+      <td><div class="a-nom">${esc(nomDe(c.uid, c.email))}</div>${c.email ? `<div class="a-mail">${esc(c.email)}</div>` : ""}</td>
       <td>${esc(c.actividad)}</td>
       <td style="white-space:nowrap;color:var(--texto2);">${fmtLima(c.cuando)}</td>
       <td style="white-space:nowrap;">${accion}</td>
@@ -546,11 +557,11 @@ function renderCola(){
 function exportarNotas(){
   if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
-  const cab = ["Alumno","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
+  const cab = ["Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
   const q = s => `"${String(s == null ? "" : s).replace(/"/g,'""')}"`;
   const filas = alumnos.map(a => [
-    a.email, a.avance, a.comp, a.total, txtDias(a.dias),
+    nomDe(a.uid, a.email), a.email, a.avance, a.comp, a.total, txtDias(a.dias),
     a.enviados, a.aprobados, (a.promedio == null ? "" : a.promedio), a.manual, a.estado.txt
   ].map(q).join(";"));
   const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
@@ -587,7 +598,7 @@ function renderEntregas(){
     return `<tr><td colspan="9" style="padding:0 0 14px;border:none;">
       <div class="ficha">
         <div class="ficha-cab">
-          <span><b>${esc(x.email||x.uid)}</b> <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
+          <span><b>${esc(nomDe(x.uid, x.email))}</b>${x.email ? ` <span style="color:var(--texto2);">· ${esc(x.email)}</span>` : ""} <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
           <button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button>
         </div>
         <div class="ficha-cuerpo">
@@ -688,7 +699,7 @@ async function verIntento(uid, quizId, email){
   try{ d = await api(`/api/cursos/${CURSO}/admin/intento/${encodeURIComponent(uid)}/${encodeURIComponent(quizId)}`); }
   catch(e){ $("detTit").textContent = "⚠ " + e.message; return; }
   const it = d.intento, det = it.detalle || [];
-  $("detTit").textContent = `${it.email || email} — ${quizId}`;
+  $("detTit").textContent = `${nomDe(uid, it.email || email)} — ${quizId}`;
   const notaTxt = (it.nota !== undefined && it.nota !== null) ? `Nota ${it.nota}/100 (bruto ${it.puntaje}/${it.sobre})` : `Nota automática ${it.puntaje}/${it.sobre}`;
   $("detSub").textContent = `${notaTxt} · enviado ${fmtLima(it.enviado_lima)} · S${it.semana}`;
   $("detCuerpo").innerHTML = d.preguntas.map(p => {
