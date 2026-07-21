@@ -1663,86 +1663,79 @@ function mostrarBloqueoAcceso(user) {
   ov.style.display = 'flex';
 }
 
-auth.onAuthStateChanged(async function(user) {
+// NO async a propósito: la decisión de mostrar u ocultar la app es SÍNCRONA e
+// inmediata, sin esperar ninguna llamada de red. Así se elimina de raíz la
+// carrera que dejaba la app oculta tras un login válido (o abierta sin sesión).
+// Todo lo lento (permisos, bloqueo, historial) va DESPUÉS, sin afectar la entrada.
+auth.onAuthStateChanged(function (user) {
   document.getElementById('loading-screen').style.display = 'none';
-  if (user) {
-    // PUERTA 1 · correo sin verificar: esta es la puerta REAL (se abre sola al
-    // detectar la sesión). Antes solo se comprobaba al pulsar "Ingresar", así que
-    // al registrarse —que deja logueado— se colaba sin validar. Google no pasa por
-    // aquí (su correo ya viene verificado).
-    const _esPassword = user.providerData.some(p => p.providerId === 'password');
-    if (_esPassword && !user.emailVerified) {
-      try { await user.sendEmailVerification(); } catch(e) {}
-      await auth.signOut();
-      document.getElementById('auth-overlay').style.display = 'flex';
-      const le = document.getElementById('login-error');
-      if (le) { le.style.color=''; le.textContent = 'Tu correo aún no está confirmado. Te reenviamos el enlace a '
-        + user.email + ': ábrelo, pulsa para confirmar y vuelve a entrar. Revisa también el spam.'; le.style.display='block'; }
-      return;
-    }
-    // Claims desde el token en CACHÉ (instantáneo, SIN red). Antes se hacía
-    // getIdTokenResult(true) —force-refresh contra Google— ANTES de mostrar la
-    // app; en redes lentas eso se colgaba y dejaba la pantalla negra. Ahora
-    // ninguna llamada de red bloquea la entrada.
-    try {
-      const token = await user.getIdTokenResult();   // cacheado, no golpea la red
-      _cursosActivos = token.claims.cursos_activos || {};
-    } catch(e) { _cursosActivos = _cursosActivos || {}; }
-    // PUERTA 3 · pago: en periodo gratis siempre deja entrar; el check es local.
-    if (!_puedeEntrarPlataforma()) { mostrarBloqueoPago(user); return; }
-    // Mostrar app
-    const app = document.getElementById('app');
-    app.style.display = 'flex';
-    app.style.flexDirection = 'column';
-    document.getElementById('auth-overlay').style.display = 'none';
-    // GUARDIÁN DE SESIÓN (en 2do plano): si el token no se puede refrescar —cuenta
-    // borrada o sesión inválida— cerramos sesión para que salga el LOGIN LIMPIO en
-    // vez de la app rota (pantalla negra). Antes, una sesión rota dejaba la app
-    // medio abierta sin usuario. No bloquea la entrada de un usuario válido.
-    user.getIdToken(true).catch(() => { try { auth.signOut(); } catch(e) {} });
-    // Bloqueo del admin: se comprueba EN SEGUNDO PLANO, ya con la app visible.
-    // Antes se esperaba ESTA llamada antes de mostrar la app; con el backend frio
-    // (precarga un modelo) tardaba y dejaba la pantalla negra a muchos alumnos.
-    // Ahora entra normal y, si estuviera bloqueado, aparece el aviso un instante
-    // despues. Con timeout para no colgarse.
-    if (!(_getAdminKey && _getAdminKey())) {
-      (async () => {
-        try {
-          const _ctrl = new AbortController();
-          const _to = setTimeout(() => _ctrl.abort(), 6000);
-          const _t = await user.getIdToken();
-          const _r = await fetch(BACKEND + '/api/cursos/plataforma/mi-acceso',
-                                 { headers: { 'Authorization': 'Bearer ' + _t }, signal: _ctrl.signal });
-          clearTimeout(_to);
-          if (_r.ok && (await _r.json()).bloqueado) mostrarBloqueoAcceso(user);
-        } catch(e) { /* si el chequeo falla o tarda, se deja entrar */ }
-      })();
-    }
-    // Header
-    const name = user.displayName || user.email.split('@')[0];
-    document.getElementById('user-name-el').textContent = name;
-    const avatarEl = document.getElementById('user-avatar-el');
-    if (user.photoURL) {
-      avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-    } else {
-      avatarEl.textContent = name.charAt(0).toUpperCase();
-    }
-    // Clases — siempre mostrar el grid de cursos, el acceso por curso lo controla _cursosActivos
-    document.getElementById('clases-nopremium').style.display = 'block';
-    document.getElementById('clases-premium').style.display  = 'none';
-    // Restaurar pestaña activa e historial
-    _restaurarTab();
-    _renderHistorial(user.uid);
-    _verificarRespuestasPendientes(user.uid);
-    _renderHistNfpa(user.uid);
-    _verificarPendientesNfpa(user.uid);
-    _renderHistFm(user.uid);
-    _verificarPendientesFm(user.uid);
-    renderMiCuenta();
-    _adminRestaurarSesion();
-  } else {
+
+  // Sin sesión → login, y punto.
+  if (!user) {
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth-overlay').style.display = 'flex';
+    return;
+  }
+
+  // PUERTA 1 · correo sin verificar (solo password; Google ya viene verificado).
+  const _esPassword = user.providerData.some(p => p.providerId === 'password');
+  if (_esPassword && !user.emailVerified) {
+    user.sendEmailVerification().catch(function () {});
+    auth.signOut();   // el evento "sin sesión" que sigue mostrará el login
+    const le = document.getElementById('login-error');
+    if (le) { le.style.color = ''; le.textContent = 'Tu correo aún no está confirmado. Te reenviamos el enlace a '
+      + user.email + ': ábrelo, pulsa para confirmar y vuelve a entrar. Revisa también el spam.'; le.style.display = 'block'; }
+    return;
+  }
+
+  // MOSTRAR LA APP YA (síncrono, sin await de por medio).
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.style.flexDirection = 'column';
+  document.getElementById('auth-overlay').style.display = 'none';
+
+  // Header
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-name-el').textContent = name;
+  const avatarEl = document.getElementById('user-avatar-el');
+  if (user.photoURL) {
+    avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    avatarEl.textContent = name.charAt(0).toUpperCase();
+  }
+  document.getElementById('clases-nopremium').style.display = 'block';
+  document.getElementById('clases-premium').style.display  = 'none';
+  _restaurarTab();
+  _renderHistorial(user.uid);
+  _verificarRespuestasPendientes(user.uid);
+  _renderHistNfpa(user.uid);
+  _verificarPendientesNfpa(user.uid);
+  _renderHistFm(user.uid);
+  _verificarPendientesFm(user.uid);
+  renderMiCuenta();
+  _adminRestaurarSesion();
+
+  // ── EN SEGUNDO PLANO (nunca bloquea ni cierra la entrada de un usuario válido) ──
+  // Claims + paywall: en periodo gratis _puedeEntrarPlataforma() siempre es true.
+  user.getIdTokenResult().then(function (token) {
+    _cursosActivos = token.claims.cursos_activos || {};
+    if (!_puedeEntrarPlataforma()) mostrarBloqueoPago(user);
+  }).catch(function () {});
+  // Guardián: si el token no refresca (cuenta borrada/sesión inválida) → login limpio.
+  user.getIdToken(true).catch(function () { try { auth.signOut(); } catch (e) {} });
+  // Bloqueo del admin (con timeout de 6s; si falla o tarda, se deja entrar).
+  if (!(_getAdminKey && _getAdminKey())) {
+    (async function () {
+      try {
+        const _ctrl = new AbortController();
+        const _to = setTimeout(function () { _ctrl.abort(); }, 6000);
+        const _t = await user.getIdToken();
+        const _r = await fetch(BACKEND + '/api/cursos/plataforma/mi-acceso',
+                               { headers: { 'Authorization': 'Bearer ' + _t }, signal: _ctrl.signal });
+        clearTimeout(_to);
+        if (_r.ok && (await _r.json()).bloqueado) mostrarBloqueoAcceso(user);
+      } catch (e) {}
+    })();
   }
 });
 
