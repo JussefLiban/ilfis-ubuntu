@@ -1695,6 +1695,11 @@ auth.onAuthStateChanged(async function(user) {
     app.style.display = 'flex';
     app.style.flexDirection = 'column';
     document.getElementById('auth-overlay').style.display = 'none';
+    // GUARDIÁN DE SESIÓN (en 2do plano): si el token no se puede refrescar —cuenta
+    // borrada o sesión inválida— cerramos sesión para que salga el LOGIN LIMPIO en
+    // vez de la app rota (pantalla negra). Antes, una sesión rota dejaba la app
+    // medio abierta sin usuario. No bloquea la entrada de un usuario válido.
+    user.getIdToken(true).catch(() => { try { auth.signOut(); } catch(e) {} });
     // Bloqueo del admin: se comprueba EN SEGUNDO PLANO, ya con la app visible.
     // Antes se esperaba ESTA llamada antes de mostrar la app; con el backend frio
     // (precarga un modelo) tardaba y dejaba la pantalla negra a muchos alumnos.
