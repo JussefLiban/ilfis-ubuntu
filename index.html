@@ -1583,6 +1583,9 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+// Español: hace que los correos de Firebase Y la pantalla que abre el enlace
+// (verificar correo / restablecer contraseña) salgan en español.
+auth.languageCode = 'es';
 
 // Mantener sesión activa entre reinicios del navegador/PC
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
