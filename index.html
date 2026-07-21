@@ -1680,11 +1680,15 @@ auth.onAuthStateChanged(async function(user) {
         + user.email + ': ábrelo, pulsa para confirmar y vuelve a entrar. Revisa también el spam.'; le.style.display='block'; }
       return;
     }
-    // Verificar premium via custom claims
-    const token = await user.getIdTokenResult(true);
-    const isPremium = token.claims.premium === true;
-    _cursosActivos = token.claims.cursos_activos || {};
-    // PUERTA 3 · si la plataforma ya es de pago y no tiene acceso vigente, se bloquea aquí.
+    // Claims desde el token en CACHÉ (instantáneo, SIN red). Antes se hacía
+    // getIdTokenResult(true) —force-refresh contra Google— ANTES de mostrar la
+    // app; en redes lentas eso se colgaba y dejaba la pantalla negra. Ahora
+    // ninguna llamada de red bloquea la entrada.
+    try {
+      const token = await user.getIdTokenResult();   // cacheado, no golpea la red
+      _cursosActivos = token.claims.cursos_activos || {};
+    } catch(e) { _cursosActivos = _cursosActivos || {}; }
+    // PUERTA 3 · pago: en periodo gratis siempre deja entrar; el check es local.
     if (!_puedeEntrarPlataforma()) { mostrarBloqueoPago(user); return; }
     // Mostrar app
     const app = document.getElementById('app');
