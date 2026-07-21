@@ -1680,15 +1680,6 @@ auth.onAuthStateChanged(async function(user) {
         + user.email + ': ábrelo, pulsa para confirmar y vuelve a entrar. Revisa también el spam.'; le.style.display='block'; }
       return;
     }
-    // PUERTA 2 · acceso a la plataforma quitado por el admin (bloqueo). El superadmin
-    // con clave nunca se consulta (no se bloquea a sí mismo).
-    if (!(_getAdminKey && _getAdminKey())) {
-      try {
-        const _t = await user.getIdToken();
-        const _r = await fetch(BACKEND + '/api/cursos/plataforma/mi-acceso', { headers: { 'Authorization': 'Bearer ' + _t } });
-        if (_r.ok && (await _r.json()).bloqueado) { mostrarBloqueoAcceso(user); return; }
-      } catch(e) { /* si el chequeo falla, no bloqueamos: mejor dejar entrar que trancar por un error de red */ }
-    }
     // Verificar premium via custom claims
     const token = await user.getIdTokenResult(true);
     const isPremium = token.claims.premium === true;
@@ -1700,6 +1691,24 @@ auth.onAuthStateChanged(async function(user) {
     app.style.display = 'flex';
     app.style.flexDirection = 'column';
     document.getElementById('auth-overlay').style.display = 'none';
+    // Bloqueo del admin: se comprueba EN SEGUNDO PLANO, ya con la app visible.
+    // Antes se esperaba ESTA llamada antes de mostrar la app; con el backend frio
+    // (precarga un modelo) tardaba y dejaba la pantalla negra a muchos alumnos.
+    // Ahora entra normal y, si estuviera bloqueado, aparece el aviso un instante
+    // despues. Con timeout para no colgarse.
+    if (!(_getAdminKey && _getAdminKey())) {
+      (async () => {
+        try {
+          const _ctrl = new AbortController();
+          const _to = setTimeout(() => _ctrl.abort(), 6000);
+          const _t = await user.getIdToken();
+          const _r = await fetch(BACKEND + '/api/cursos/plataforma/mi-acceso',
+                                 { headers: { 'Authorization': 'Bearer ' + _t }, signal: _ctrl.signal });
+          clearTimeout(_to);
+          if (_r.ok && (await _r.json()).bloqueado) mostrarBloqueoAcceso(user);
+        } catch(e) { /* si el chequeo falla o tarda, se deja entrar */ }
+      })();
+    }
     // Header
     const name = user.displayName || user.email.split('@')[0];
     document.getElementById('user-name-el').textContent = name;
