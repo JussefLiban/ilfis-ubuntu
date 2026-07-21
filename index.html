@@ -4417,12 +4417,15 @@ function adminRenderSuscriptores() {
     const estado = bloqueado
       ? `<span class="cbadge cb-exp">Sin acceso</span> `
       : `<span class="cbadge cb-ok">Con acceso</span> `;
-    const acciones = bloqueado
+    const accAcceso = bloqueado
       ? `<button class="btn-a btn-dar" onclick="adminDarAcceso('${u.uid}','${_em}')">Dar acceso</button>`
       : `<button class="btn-a btn-rev" onclick="adminQuitarAcceso('${u.uid}','${_em}')">Quitar acceso</button>`;
+    // "Borrar" elimina la cuenta por completo y libera el correo (distinto de suspender).
+    const nom = (u.nombre||u.email||'').replace(/'/g,"\\'");
+    const accBorrar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${_em}','${nom}')">Borrar</button>`;
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
-      <td style="white-space:nowrap;min-width:200px;">${estado}${acciones}</td>
+      <td style="white-space:nowrap;min-width:200px;">${estado}${accAcceso} ${accBorrar}</td>
     </tr>`;
   }).join('');
   box.innerHTML = filas
@@ -4455,6 +4458,28 @@ async function adminQuitarAcceso(uid, email) {
 async function adminDarAcceso(uid, email) {
   if (!confirm(`¿Dar acceso a la plataforma a ${email}?`)) return;
   await _plataformaAcceso(uid, email, false);
+}
+
+// Borrar la cuenta POR COMPLETO (no solo suspender). Libera el correo para que
+// la persona pueda registrarse de nuevo desde cero. Irreversible → doble aviso.
+async function adminBorrarCuenta(uid, email, nombre) {
+  if (!confirm('¿BORRAR por completo la cuenta de ' + (nombre||email) + '?\n\n'
+    + 'Se elimina su acceso y todos sus datos, y el correo ' + email + ' queda libre '
+    + 'para registrarse de nuevo. ESTA ACCIÓN NO SE PUEDE DESHACER.')) return;
+  if (!confirm('Confirma otra vez: se borrará DEFINITIVAMENTE ' + email + '.')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/admin/plataforma/eliminar-cuenta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, email })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ('Error ' + r.status));
+    _bloqueados.delete(uid);
+    _adminAlumnos = _adminAlumnos.filter(u => u.uid !== uid);   // sacarla de la lista al instante
+    adminRenderSuscriptores();
+    alert('Cuenta eliminada. El correo ' + email + ' queda libre.');
+  } catch(e) { alert('Error: ' + e.message); }
 }
 
 async function adminDarPlataforma(uid, email) {
