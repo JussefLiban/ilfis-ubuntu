@@ -3664,6 +3664,7 @@ const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k
 let _adminAlumnos    = [];
 let _adminDatos      = {};   // uid -> datos del certificado (nombre, país, teléfono, fecha nac.)
 let _bloqueados      = new Set();   // uids con el acceso a la plataforma quitado
+let _pausados        = new Set();   // "uid__llave" de matrículas PAUSADAS (suspendidas, reversibles)
 let _adminModalUid   = null;
 let _adminModalEmail = null;
 let _adminModalArea  = null;   // área desde la que se abrió el modal (para saber si es diplomado)
@@ -4202,6 +4203,12 @@ async function adminCargar() {
       _adminDatos = {};
       if (rd.ok) { ((await rd.json()).alumnos || []).forEach(a => { if (a.uid) _adminDatos[a.uid] = a; }); }
     } catch(e) { _adminDatos = {}; }
+    // Matrículas PAUSADAS (suspendidas por falta de pago). Para pintar "Pausado" y "Reanudar".
+    try {
+      const rp = await fetch(BACKEND + '/api/cursos/admin/matriculas/pausadas', { headers: { 'x-admin-key': _getAdminKey() } });
+      _pausados = new Set();
+      if (rp.ok) { ((await rp.json()).pausadas || []).forEach(p => { if (p.uid && p.llave) _pausados.add(p.uid + '__' + p.llave); }); }
+    } catch(e) { _pausados = new Set(); }
     adminRenderRecaud();
     adminRenderAlumnos();
     adminRenderAplicativos();
@@ -4304,35 +4311,67 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     : _adminAlumnos;
   // Plataforma Educativa: por defecto SOLO los matriculados del curso elegido; el modo
   // "Matricular alumno" abre el buscador para dar de alta a alguien de toda la base.
+  let eduKey = null;
   if (area === 'educativa') {
     const selC = document.getElementById('admin-edualumnos-curso');
-    const cursoKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
-    if (cursoKey) perteneceProducto = (k => k === cursoKey);
+    eduKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
+    if (eduKey) perteneceProducto = (k => k === eduKey);
     if (_eduVerTodas) {
       // TODAS las cuentas (matriculadas o no) — para ver datos y borrar cuentas de prueba.
       // _fuente ya viene filtrado por el texto de búsqueda.
     } else if (_eduModoMatricular) {
       _fuente = _filtro ? _fuente : [];
     } else {
-      _fuente = _adminAlumnos.filter(u => Object.keys(u.cursos_activos || {}).some(perteneceProducto));
+      // Matriculados del curso + los que están PAUSADOS en él (su matrícula se
+      // suspendió, ya no tienen el claim, pero deben verse para poder reanudar).
+      _fuente = _adminAlumnos.filter(u =>
+        Object.keys(u.cursos_activos || {}).some(perteneceProducto)
+        || (eduKey && _pausados.has(u.uid + '__' + eduKey)));
     }
     const cnt = document.getElementById('admin-edualumnos-count');
     if (cnt) cnt.textContent = _eduVerTodas
       ? (_fuente.length + ' cuenta(s) — TODAS (matriculadas y de prueba)')
-      : (_eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' matriculado' : ' matriculados')));
+      : (_eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' alumno' : ' alumnos')));
   }
   const filas = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
+    const _nomJs  = (u.nombre||'').replace(/'/g,"\\'");
+
+    // ── Plataforma Educativa: 3 estados por curso (Matriculado / Pausado / Sin matrícula) ──
+    if (area === 'educativa') {
+      const raw     = eduKey ? cursos[eduKey] : null;
+      const activo  = raw && (new Date(raw) > ahora);
+      const vencido = raw && !activo;
+      const pausado = eduKey && _pausados.has(u.uid + '__' + eduKey);
+      let badge, botones;
+      if (pausado) {
+        badge   = `<span class="cbadge cb-warn">⏸ Pausado (suspendido)</span>`;
+        botones = `<button class="btn-a btn-dar" onclick="adminReanudar('${u.uid}','${eduKey}','${u.email}')">▶ Reanudar</button>`;
+      } else if (activo) {
+        badge   = `<span class="cbadge cb-ok">✓ Matriculado</span>`;
+        botones = `<button class="btn-a btn-rev" onclick="adminPausar('${u.uid}','${eduKey}','${u.email}')">⏸ Pausar</button>`;
+      } else if (vencido) {
+        badge   = `<span class="cbadge cb-exp">Matrícula vencida</span>`;
+        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Rematricular</button>`;
+      } else {
+        badge   = `<span class="cbadge cb-none">Sin matrícula</span>`;
+        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Matricular</button>`;
+      }
+      const eliminar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" title="Elimina la cuenta y sus datos por completo (irreversible)" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`;
+      return `<tr>
+        <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+        <td>${badge}</td>
+        <td style="white-space:nowrap;min-width:220px;">${botones} ${eliminar}</td>
+      </tr>`;
+    }
+
+    // ── Clases Premium / Aplicativos / General (suscripción mensual) ──
     const keys    = Object.keys(cursos).filter(perteneceProducto);
     const badgesHtml = keys.length === 0
-      ? `<span class="cbadge cb-none">${area === 'educativa' ? 'Sin matrícula' : 'Sin suscripción'}</span>`
+      ? `<span class="cbadge cb-none">Sin suscripción</span>`
       : keys.map(k => {
           const exp  = new Date(cursos[k]);
           const dias = Math.ceil((exp - ahora) / 86400000);
-          // Diplomado = matrícula manual (sin vencimiento): se muestra "Matriculado", no un contador de días.
-          if (area === 'educativa') {
-            return `<span class="cbadge ${dias <= 0 ? 'cb-exp' : 'cb-ok'}">${ADMIN_NAMES[k]||k}: ${dias <= 0 ? 'Matrícula vencida' : 'Matriculado'}</span>`;
-          }
           const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
           const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
           return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
@@ -4340,29 +4379,15 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     const acciones = keys.map(k => {
       const exp  = new Date(cursos[k]);
       const dias = Math.ceil((exp - ahora) / 86400000);
-      // Diplomado: matrícula manual → solo "Quitar matrícula" (no "+30d", no es mensual).
-      // El botón de quitar se muestra SIEMPRE, también si ya venció: si no, un
-      // suscriptor vencido se queda en la lista y no hay forma de sacarlo.
-      if (area === 'educativa') {
-        return `<button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Quitar matrícula</button>`;
-      }
       return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
               <button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">${dias > 0 ? 'Revocar' : 'Quitar'} ${ADMIN_NAMES[k]||k}</button>`;
     }).join(' ');
-    // En la Plataforma Educativa: "Datos" (ficha completa del certificado) y
-    // "Eliminar" (borra la cuenta de prueba por completo). Así se ven los datos
-    // administrativos y se limpian los alumnos de prueba desde el mismo panel.
-    const _nomJs = (u.nombre||'').replace(/'/g,"\\'");
-    const extraEdu = (area === 'educativa')
-      ? `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`
-      : '';
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
-        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">${area === 'educativa' ? 'Matricular' : 'Dar acceso'}</button>
-        ${extraEdu}
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Dar acceso</button>
       </td>
     </tr>`;
   }).join('');
@@ -4569,7 +4594,8 @@ function _eduListaActual() {
   const cursoKey = (selC && selC.value) ? ('diplomado_' + selC.value) : null;
   let lista = _eduVerTodas
     ? _adminAlumnos.slice()
-    : _adminAlumnos.filter(u => cursoKey && Object.keys(u.cursos_activos || {}).includes(cursoKey));
+    : _adminAlumnos.filter(u => cursoKey && (Object.keys(u.cursos_activos || {}).includes(cursoKey)
+        || _pausados.has(u.uid + '__' + cursoKey)));
   const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || u.email || '';
   lista.sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
   return lista;
@@ -4662,6 +4688,35 @@ async function adminRevocar(uid, curso, email) {
       body: JSON.stringify({ uid, curso })
     });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// PAUSAR: suspende la matrícula (p. ej. falta de pago) guardando su vencimiento.
+// REANUDAR: la restaura igual. La llave es 'diplomado_<curso>'; el endpoint usa <curso>.
+async function adminPausar(uid, llave, email) {
+  const curso = String(llave).replace(/^diplomado_/, '');
+  if (!confirm(`¿PAUSAR la matrícula de ${email}?\n\nSe le suspende el acceso (por ejemplo por falta de pago). Después puedes REANUDARLA y su matrícula vuelve tal cual estaba. No se borra nada.`)) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + encodeURIComponent(curso) + '/admin/matricula/pausar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, email })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ('Error ' + r.status));
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+async function adminReanudar(uid, llave, email) {
+  const curso = String(llave).replace(/^diplomado_/, '');
+  if (!confirm(`¿REANUDAR la matrícula de ${email}?\n\nRecupera su acceso con la misma fecha de vencimiento que tenía antes de pausarla.`)) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + encodeURIComponent(curso) + '/admin/matricula/reanudar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, email })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ('Error ' + r.status));
     await adminCargar();
   } catch(e) { alert('Error: ' + e.message); }
 }
