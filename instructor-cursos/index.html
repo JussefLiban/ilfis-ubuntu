@@ -793,7 +793,10 @@ function renderPlanilla(){
   tb.querySelector("thead").innerHTML = `<tr>${th}</tr>`;
 
   const rows = (P.alumnos || []).map(a => {
-    let tds = `<td class="stick" title="${esc(a.email)}">${esc(a.nombre)}</td>`;
+    // N° del roster (mismo número que la intranet) + estado si está pausado.
+    const numTxt = (a.numero!=null) ? `<b style="color:var(--texto2);">${a.numero}.</b> ` : "";
+    const pausTxt = (a.estado_matricula==="pausado") ? ` <span style="color:var(--ambar);font-size:.62rem;">⏸ pausado</span>` : "";
+    let tds = `<td class="stick" title="${esc(a.email)}">${numTxt}${esc(a.nombre)}${pausTxt}</td>`;
     P.columnas.forEach(c => {
       const v = a.celdas ? a.celdas[c.codigo] : null;
       const est = a.estados ? a.estados[c.codigo] : null;

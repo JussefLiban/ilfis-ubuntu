@@ -833,7 +833,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
           <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
-          <select id="admin-edualumnos-curso" onchange="adminRenderEduAlumnos()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+          <select id="admin-edualumnos-curso" onchange="eduCargarRoster()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
           <span id="admin-edualumnos-count" style="font-size:0.8rem;color:#8899aa;"></span>
           <button id="admin-edualumnos-datos" class="btn-a" style="padding:8px 14px;font-size:0.85rem;margin-left:auto;" onclick="eduVerTabla()" title="Muestra todos los datos de los alumnos en una tabla (como Excel)">📋 Datos (tabla)</button>
           <button id="admin-edualumnos-todas" class="btn-a" style="padding:8px 14px;font-size:0.85rem;" onclick="adminEduAlumnosToggleTodas()" title="Muestra TODAS las cuentas, incluidas las que no están matriculadas (útil para borrar cuentas de prueba)">🧹 Ver todas / prueba</button>
@@ -4216,6 +4216,7 @@ async function adminCargar() {
     adminRenderSuscriptores();
     adminRenderEduRecaud();
     adminRenderEduAlumnos();
+    eduCargarRoster();   // trae el roster numerado y re-renderiza Educativa con N° y nombre del profesor
   } catch(e) {
     // El error se muestra en la PRIMERA pestaña de cada área; el resto se vacía (sin "Cargando..." eterno).
     const CON_ERROR = ['admin-recaud-content','admin-app-content','admin-susc-content','admin-edurecaud-content'];
@@ -4332,6 +4333,14 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     if (cnt) cnt.textContent = _eduVerTodas
       ? (_fuente.length + ' cuenta(s) — TODAS (matriculadas y de prueba)')
       : (_eduModoMatricular ? '' : (_fuente.length + (_fuente.length === 1 ? ' alumno' : ' alumnos')));
+    // Orden = número del roster (el MISMO que ve el profesor); sin número, al final por nombre.
+    _fuente = _fuente.slice().sort((a, b) => {
+      const na = (_eduRoster[a.uid] || {}).numero, nb = (_eduRoster[b.uid] || {}).numero;
+      if (na != null && nb != null) return na - nb;
+      if (na != null) return -1;
+      if (nb != null) return 1;
+      return (a.nombre || a.email || '').localeCompare(b.nombre || b.email || '', 'es');
+    });
   }
   const filas = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
@@ -4339,6 +4348,10 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
 
     // ── Plataforma Educativa: 3 estados por curso (Matriculado / Pausado / Sin matrícula) ──
     if (area === 'educativa') {
+      const ro      = _eduRoster[u.uid] || {};
+      const nom     = ro.nombre || u.nombre || '—';           // el MISMO nombre que ve el profesor
+      const nomJs   = String(nom).replace(/'/g, "\\'");
+      const numTxt  = (ro.numero != null) ? `<span style="color:#8899aa;font-weight:700;">${ro.numero}.</span> ` : '';
       const raw     = eduKey ? cursos[eduKey] : null;
       const activo  = raw && (new Date(raw) > ahora);
       const vencido = raw && !activo;
@@ -4352,14 +4365,14 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
         botones = `<button class="btn-a btn-rev" onclick="adminPausar('${u.uid}','${eduKey}','${u.email}')">⏸ Pausar</button>`;
       } else if (vencido) {
         badge   = `<span class="cbadge cb-exp">Matrícula vencida</span>`;
-        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Rematricular</button>`;
+        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${nomJs}','${area}')">Rematricular</button>`;
       } else {
         badge   = `<span class="cbadge cb-none">Sin matrícula</span>`;
-        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Matricular</button>`;
+        botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${nomJs}','${area}')">Matricular</button>`;
       }
-      const eliminar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" title="Elimina la cuenta y sus datos por completo (irreversible)" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${_nomJs}')">🗑 Eliminar</button>`;
+      const eliminar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" title="Elimina la cuenta y sus datos por completo (irreversible)" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${nomJs}')">🗑 Eliminar</button>`;
       return `<tr>
-        <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+        <td><div class="a-name">${numTxt}${_adminEsc(nom)}</div><div class="a-email">${u.email}</div></td>
         <td>${badge}</td>
         <td style="white-space:nowrap;min-width:220px;">${botones} ${eliminar}</td>
       </tr>`;
@@ -4416,10 +4429,28 @@ function adminRenderAppSuscriptores() {
 
 // Plataforma Educativa → término "Alumno". Por defecto lista SOLO matriculados del curso elegido.
 let _eduModoMatricular = false;
+// Roster OFICIAL del curso (viene del backend): uid -> {numero, nombre, estado}. Es la
+// MISMA numeración y nombre que ve el profesor en su planilla, para que las dos cuadren.
+let _eduRoster = {};
+let _eduRosterCurso = null;
 function _adminLlenarDiplomasEdu() {
   const sel = document.getElementById('admin-edualumnos-curso');
   if (!sel || sel.options.length) return;
   sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
+// Trae el roster numerado del curso elegido y luego re-renderiza (para mostrar N° y nombre iguales al profesor).
+async function eduCargarRoster() {
+  _adminLlenarDiplomasEdu();
+  const sel = document.getElementById('admin-edualumnos-curso');
+  const curso = sel && sel.value ? sel.value : null;
+  _eduRoster = {}; _eduRosterCurso = curso;
+  if (curso) {
+    try {
+      const r = await fetch(BACKEND + '/api/cursos/' + encodeURIComponent(curso) + '/admin/roster', { headers: { 'x-admin-key': _getAdminKey() } });
+      if (r.ok) { ((await r.json()).roster || []).forEach(x => { if (x.uid) _eduRoster[x.uid] = x; }); }
+    } catch(e) { /* si falla, se muestra sin número */ }
+  }
+  adminRenderEduAlumnos();
 }
 function adminRenderEduAlumnos() {
   _adminLlenarDiplomasEdu();
@@ -4596,8 +4627,13 @@ function _eduListaActual() {
     ? _adminAlumnos.slice()
     : _adminAlumnos.filter(u => cursoKey && (Object.keys(u.cursos_activos || {}).includes(cursoKey)
         || _pausados.has(u.uid + '__' + cursoKey)));
-  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || u.email || '';
-  lista.sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
+  const nom = u => (_eduRoster[u.uid] || {}).nombre || (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || u.email || '';
+  lista.sort((a, b) => {
+    const na = (_eduRoster[a.uid] || {}).numero, nb = (_eduRoster[b.uid] || {}).numero;
+    if (na != null && nb != null) return na - nb;
+    if (na != null) return -1; if (nb != null) return 1;
+    return nom(a).localeCompare(nom(b), 'es');
+  });
   return lista;
 }
 function eduVerTabla() {
@@ -4615,9 +4651,9 @@ function eduRenderTabla() {
   if (!cont || !_eduTablaVisible) return;
   const lista = _eduListaActual();
   const g = (u, k) => (_adminDatos[u.uid] || {})[k] || '';
-  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '—';
+  const nom = u => (_eduRoster[u.uid] || {}).nombre || (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '—';
   const filas = lista.map((u, i) => `<tr>
-      <td style="color:#8899aa;">${i + 1}</td>
+      <td style="color:#8899aa;">${(_eduRoster[u.uid] || {}).numero != null ? _eduRoster[u.uid].numero : (i + 1)}</td>
       <td><b>${_adminEsc(nom(u))}</b></td>
       <td>${_adminEsc(u.email || g(u, 'email'))}</td>
       <td>${_adminEsc(g(u, 'pais_nacimiento') || '—')}</td>
@@ -4641,10 +4677,10 @@ function eduRenderTabla() {
 function eduExportarDatos() {
   const lista = _eduListaActual();
   const g = (u, k) => (_adminDatos[u.uid] || {})[k] || '';
-  const nom = u => (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '';
+  const nom = u => (_eduRoster[u.uid] || {}).nombre || (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '';
   const q = s => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
   const cab = ['#', 'Nombre completo', 'Correo', 'Pais nacimiento', 'Pais residencia', 'Telefono', 'Fecha nacimiento'];
-  const filas = lista.map((u, i) => [i + 1, nom(u), u.email || g(u, 'email'),
+  const filas = lista.map((u, i) => [((_eduRoster[u.uid] || {}).numero != null ? _eduRoster[u.uid].numero : (i + 1)), nom(u), u.email || g(u, 'email'),
     g(u, 'pais_nacimiento'), g(u, 'pais_residencia'), g(u, 'telefono'), g(u, 'fecha_nacimiento')].map(q).join(';'));
   const csv = '﻿' + [cab.map(q).join(';'), ...filas].join('\r\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
