@@ -112,6 +112,19 @@ footer p { margin-bottom: 7px; }
   .intro h2 { font-size: 1.45rem; }
 }
 </style>
+<style>
+/* Cuando la pagina se muestra DENTRO de la plataforma, su cabecera sobra:
+   la barra de UBUNTU ya esta arriba. Fuera de la plataforma se ve normal. */
+html.dentro header { display: none !important; }
+html.dentro .wrap { padding-top: 22px; }
+/* Dentro de la plataforma el boton "Volver a UBUNTU" sobra: nunca saliste. */
+html.dentro .volver, html.dentro a.btn[href*="ilfislatinoamerica"] { display: none !important; }
+</style>
+<script>
+if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
+  document.documentElement.classList.add('dentro');
+}
+</script>
 </head>
 <body>
 

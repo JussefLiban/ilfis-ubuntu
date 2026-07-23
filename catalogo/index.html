@@ -73,6 +73,21 @@ header nav a:hover{background:rgba(255,255,255,.08);color:#fff;}
 
 footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-top:1px solid var(--borde);margin-top:34px;line-height:1.8;}
 </style>
+<style>
+/* Dentro de la plataforma la cabecera propia sobra: la barra de UBUNTU ya esta arriba. */
+html.dentro header { display: none !important; }
+html.dentro .hero { padding-top: 26px; }
+</style>
+<script>
+if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
+  document.documentElement.classList.add('dentro');
+  // Los enlaces que vuelven a la plataforma deben abrirse en la ventana de arriba,
+  // nunca dentro de este marco (si no, saldria UBUNTU dentro de UBUNTU).
+  addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('a[href^="../"]').forEach(function (a) { a.target = '_top'; });
+  });
+}
+</script>
 </head>
 <body>
 

@@ -75,6 +75,9 @@ nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
 /* ── PANELS ──────────────────────────────────────────────── */
 .panel { display: none; flex: 1; flex-direction: column; }
 .panel.active { display: flex; }
+/* Paneles que muestran otra pagina del sitio SIN sacar al usuario de la plataforma. */
+.panel-embebido { padding: 0; }
+.marco-embebido { width: 100%; flex: 1; min-height: calc(100vh - 130px); border: 0; display: block; background: #1a1a2e; }
 
 /* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
 .hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
@@ -498,7 +501,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
   </button>
-<button class="tab-btn" onclick="location.href='catalogo/'"><i class="ti ti-help" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">¿Cuál me conviene?</span><span class="tab-line2">Aula o Videoteca</span></span></button>
+<button class="tab-btn" onclick="showTab('catalogo', this)"><i class="ti ti-help" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">¿Cuál me conviene?</span><span class="tab-line2">Aula o Videoteca</span></span></button>
 <button class="tab-btn" onclick="location.href='plataforma-educativa/'"><i class="ti ti-certificate" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">Plataforma Educativa</span><span class="tab-line2">Clases Tutorizadas y Evaluadas</span></span></button>    <button class="tab-btn" onclick="showTab('nfpa', this)">
     <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">NFPA</span></span>
@@ -511,7 +514,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
   </button>
-  <button class="tab-btn" onclick="location.href='tarifario/'">
+  <button class="tab-btn" onclick="showTab('tarifario', this)">
     <i class="ti ti-tag" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">Planes y</span><span class="tab-line2">Precios</span></span>
   </button>
@@ -1087,6 +1090,18 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <p>Escribe un tema y llega al minuto exacto de cada clase.</p>
     </div>
   </div>
+</div>
+
+<!-- Panel Planes y Precios (la pagina vive en /tarifario/ y se muestra AQUI DENTRO) -->
+<div class="panel panel-embebido" id="panel-tarifario">
+  <iframe class="marco-embebido" id="frame-tarifario" data-src="tarifario/?dentro=1"
+          title="Planes y Precios"></iframe>
+</div>
+
+<!-- Panel ¿Cuál me conviene? (la pagina vive en /catalogo/ y se muestra AQUI DENTRO) -->
+<div class="panel panel-embebido" id="panel-catalogo">
+  <iframe class="marco-embebido" id="frame-catalogo" data-src="catalogo/?dentro=1"
+          title="¿Cuál me conviene? Aula o Videoteca"></iframe>
 </div>
 
 <!-- Panel Explorador -->
@@ -1925,7 +1940,15 @@ function showTab(name, btn) {
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'explorador' && !_expInit) initExplorador();
+  _cargarEmbebido(name);
   localStorage.setItem('ilfis_tab_activa', name);
+}
+
+// Paneles embebidos (Planes y Precios, ¿Cuál me conviene?): la pagina interna se carga
+// la PRIMERA vez que se abre su pestaña, no al arrancar la plataforma.
+function _cargarEmbebido(name) {
+  const f = document.getElementById('frame-' + name);
+  if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
 }
 
 function _restaurarTab() {
