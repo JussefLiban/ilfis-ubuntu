@@ -1071,7 +1071,11 @@ function renderProrrogas(){
   }
   const alumnos = (P.alumnos || []).slice().sort((a,b) => (a.numero||9999) - (b.numero||9999));
   const optAl = alumnos.map(a => `<option value="${esc(a.uid)}">${a.numero!=null?a.numero+". ":""}${esc(a.nombre)}</option>`).join("");
-  const semanas = [...new Set((P.columnas || []).map(c => c.semana).filter(s => s != null))].sort((a,b) => a - b);
+  // Solo semanas con TAREA: se excluyen los exámenes (semana 13, cuestionario) y las
+  // columnas calculadas (PROM SEM). Quedan las semanas 0 (Crítica) a 12.
+  const semanas = [...new Set((P.columnas || [])
+      .filter(c => c.tipo !== "examen" && c.grupo !== "prom_sem")
+      .map(c => c.semana).filter(s => s != null))].sort((a,b) => a - b);
   const optSem = semanas.map(s => `<option value="${s}">Semana ${s}</option>`).join("");
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;"><div class="pruebaWrap">
     <div style="background:var(--campo);border:1px solid var(--borde);border-radius:10px;padding:14px 16px;">
