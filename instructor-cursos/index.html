@@ -188,6 +188,7 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <span class="tab" id="tabE" onclick="verTab('e')">Entregas de tareas</span>
     <span class="tab" id="tabP" onclick="verTab('planilla')">📋 Planilla (Libro de notas)</span>
     <span class="tab" id="tabT" onclick="verTab('prueba')">🧪 Alumno de prueba</span>
+    <span class="tab" id="tabPr" onclick="verTab('prorroga')">⏱ Prórrogas</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
     <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" id="btnExport" onclick="exportarNotas()" style="display:none;">⬇ Exportar notas (Excel)</button>
@@ -330,12 +331,13 @@ function verTab(t){
   $("tabE").classList.toggle("sel", t === "e");
   $("tabP").classList.toggle("sel", t === "planilla");
   $("tabT").classList.toggle("sel", t === "prueba");
+  $("tabPr").classList.toggle("sel", t === "prorroga");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
   // El botón exportar sirve en "Por alumno" (resumen) y en la Planilla (libro completo)
   $("btnExport").style.display = (t === "a" || t === "planilla") ? "inline-block" : "none";
   $("btnExport").textContent = (t === "planilla") ? "⬇ Exportar planilla (Excel)" : "⬇ Exportar notas (Excel)";
-  $("kpis").style.display = (t === "planilla" || t === "prueba") ? "none" : "grid";
-  $("panel").classList.toggle("wide", t === "planilla" || t === "prueba");   // ancho completo
+  $("kpis").style.display = (t === "planilla" || t === "prueba" || t === "prorroga") ? "none" : "grid";
+  $("panel").classList.toggle("wide", t === "planilla" || t === "prueba" || t === "prorroga");   // ancho completo
   // Instructivo corto de cada pestaña (para que cualquiera entienda qué hace)
   const AYUDAS = {
     q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
@@ -343,7 +345,8 @@ function verTab(t){
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
     e: "📤 <b>Entregas de tareas:</b> aquí <b>descargas</b> los archivos (uno por uno, todo del alumno, o todo en un ZIP) y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
-    prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel."
+    prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel.",
+    prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
   if(t === "q") renderQuiz();
@@ -352,6 +355,7 @@ function verTab(t){
   else if(t === "e") renderEntregas();
   else if(t === "planilla") renderPlanilla();
   else if(t === "prueba") renderPrueba();
+  else if(t === "prorroga") renderProrrogas();
 }
 
 // ── Cálculo compartido (KPIs, tabla de alumnos y export usan lo mismo) ──
@@ -1030,6 +1034,85 @@ function exportarPlanilla(){
 }
 
 // ═══════════════ ALUMNO DE PRUEBA (verificar el cálculo vs el Excel) ═══════════════
+// ── ⏱ PRÓRROGAS (solo tareas): dar unas horas extra a un alumno en una semana ──
+let PR = { prorrogas: [] };
+function _fmtHoras(h){ h = Number(h) || 0; return (h % 1 === 0) ? (h + " h") : (h.toFixed(1) + " h"); }
+
+async function cargarProrrogas(){
+  try{ PR = await api(`/api/cursos/${CURSO}/admin/prorrogas`); }
+  catch(e){ PR = { prorrogas: [], _err: e.message }; }
+  pintarListaProrrogas();
+}
+function pintarListaProrrogas(){
+  const cont = document.getElementById("prLista");
+  if(!cont) return;
+  if(PR && PR._err){ cont.innerHTML = `<div class="aviso err" style="color:var(--rojoTxt);">No pude cargar las prórrogas: ${esc(PR._err)}</div>`; return; }
+  const rows = (PR && PR.prorrogas) ? PR.prorrogas : [];
+  if(!rows.length){ cont.innerHTML = `<div style="color:var(--texto2);font-size:.85rem;padding:10px 2px;">No hay prórrogas activas: todos con el plazo normal.</div>`; return; }
+  cont.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px;">
+    <thead><tr style="text-align:left;color:var(--texto2);border-bottom:1px solid var(--borde);">
+      <th style="padding:8px 10px;">Alumno</th><th style="padding:8px 10px;">Semana</th><th style="padding:8px 10px;">Extra</th>
+      <th style="padding:8px 10px;">Cierre normal</th><th style="padding:8px 10px;">Nueva hora de cierre</th><th></th></tr></thead>
+    <tbody>${rows.map(p => `<tr style="border-bottom:1px solid #222836;">
+      <td style="padding:9px 10px;"><b>${esc(nomDe(p.uid, ""))}</b></td>
+      <td style="padding:9px 10px;white-space:nowrap;">Sem ${p.sem}</td>
+      <td style="padding:9px 10px;color:var(--ambar);white-space:nowrap;">+${_fmtHoras(p.horas)}</td>
+      <td style="padding:9px 10px;color:var(--texto2);white-space:nowrap;">${fmtLima(p.cierre_normal)}</td>
+      <td style="padding:9px 10px;color:var(--verde);white-space:nowrap;">${fmtLima(p.hasta)}</td>
+      <td style="padding:9px 10px;"><button class="btn mini rojo" onclick="quitarProrroga('${esc(p.uid)}',${p.sem})">Quitar</button></td>
+    </tr>`).join("")}</tbody></table></div>`;
+}
+function renderProrrogas(){
+  const tb = $("tabla");
+  tb.querySelector("thead").innerHTML = "";
+  if(!P || !P.alumnos || !P.columnas){
+    tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">Necesito el Libro de notas para listar a tus alumnos. Recarga en unos minutos.</td></tr>`;
+    return;
+  }
+  const alumnos = (P.alumnos || []).slice().sort((a,b) => (a.numero||9999) - (b.numero||9999));
+  const optAl = alumnos.map(a => `<option value="${esc(a.uid)}">${a.numero!=null?a.numero+". ":""}${esc(a.nombre)}</option>`).join("");
+  const semanas = [...new Set((P.columnas || []).map(c => c.semana).filter(s => s != null))].sort((a,b) => a - b);
+  const optSem = semanas.map(s => `<option value="${s}">Semana ${s}</option>`).join("");
+  tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;"><div class="pruebaWrap">
+    <div style="background:var(--campo);border:1px solid var(--borde);border-radius:10px;padding:14px 16px;">
+      <div style="font-weight:600;color:var(--texto);margin-bottom:11px;">Dar prórroga <span style="color:var(--texto2);font-weight:400;font-size:.8rem;">(solo tareas)</span></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+        <label style="font-size:.74rem;color:var(--texto2);">Alumno<br><select id="prAlumno" style="min-width:220px;">${optAl}</select></label>
+        <label style="font-size:.74rem;color:var(--texto2);">Semana<br><select id="prSemana" style="min-width:130px;">${optSem}</select></label>
+        <label style="font-size:.74rem;color:var(--texto2);">Horas extra<br><input id="prHoras" type="number" min="1" max="240" step="1" value="6" style="width:92px;"></label>
+        <button class="btn rojo" onclick="darProrroga()">Dar prórroga</button>
+        <span class="ent-save" id="prOut"></span>
+      </div>
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:9px;line-height:1.5;">Le da a ese alumno esas horas extra para subir su <b>tarea</b> de esa semana. Solo extiende el plazo; los cuestionarios no se tocan.</div>
+    </div>
+    <div style="font-weight:600;color:var(--texto);margin:18px 2px 7px;">Prórrogas activas</div>
+    <div id="prLista"><div style="color:var(--texto2);font-size:.85rem;padding:10px 2px;">Cargando…</div></div>
+  </div></td></tr>`;
+  cargarProrrogas();
+}
+async function darProrroga(){
+  const out = $("prOut");
+  const uid = $("prAlumno").value;
+  const sem = parseInt($("prSemana").value, 10);
+  const horas = parseFloat($("prHoras").value);
+  if(!uid){ if(out){ out.textContent = "Elige un alumno."; out.className = "ent-save err"; } return; }
+  if(!(horas > 0)){ if(out){ out.textContent = "Pon las horas (mayor que 0)."; out.className = "ent-save err"; } return; }
+  if(out){ out.textContent = "…"; out.className = "ent-save"; }
+  try{
+    await postJSON(`/api/cursos/${CURSO}/admin/prorroga`, { uid, sem, horas });
+    if(out){ out.textContent = "✓ prórroga guardada"; out.className = "ent-save ok"; }
+    cargarProrrogas();
+  }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
+}
+async function quitarProrroga(uid, sem){
+  if(!confirm(`¿Quitar la prórroga de ${nomDe(uid, "")} en la Semana ${sem}? Volverá al plazo normal.`)) return;
+  try{
+    const r = await fetch(`${API}/api/cursos/${CURSO}/admin/prorroga/${encodeURIComponent(uid)}/${sem}`, { method:"DELETE", headers: await authHeaders() });
+    if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || ("Error " + r.status)); }
+    cargarProrrogas();
+  }catch(e){ alert("No pude quitar la prórroga: " + e.message); }
+}
+
 function renderPrueba(){
   const tb = $("tabla");
   tb.querySelector("thead").innerHTML = "";
