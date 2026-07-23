@@ -18,6 +18,8 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 14px 30
 .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71; flex-shrink: 0; animation: pulso-dot 1.4s ease-in-out infinite; }
 @keyframes pulso-dot { 0%,100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #2ecc71; } 50% { transform: scale(1.5); opacity: .55; box-shadow: 0 0 14px #2ecc71; } }
 .banner-txt { font-size: 0.72rem; color: #2ecc71; font-weight: 600; letter-spacing: .3px; }
+.volver { color: #fff; text-decoration: none; font-size: .8rem; border: 1px solid rgba(255,255,255,.3); padding: 7px 13px; border-radius: 6px; background: rgba(255,255,255,.05); white-space: nowrap; transition: background .15s; }
+.volver:hover { background: rgba(255,255,255,.15); }
 
 /* ── LAYOUT ─────────────────────────────────────────────── */
 .wrap { max-width: 1320px; margin: 0 auto; padding: 34px 26px 60px; }
@@ -123,6 +125,7 @@ footer p { margin-bottom: 7px; }
     <span class="banner-dot"></span>
     <span class="banner-txt">Gratis hasta el 31 de diciembre de 2026</span>
   </div>
+  <a class="volver" href="https://ilfis-ubuntu.ilfislatinoamerica.com/">← Volver a UBUNTU</a>
 </header>
 
 <div class="wrap">
@@ -397,7 +400,6 @@ footer p { margin-bottom: 7px; }
   </section>
 
   <footer>
-    <p>Precios en dólares estadounidenses (USD), impuestos incluidos.</p>
     <p>La membresía de la plataforma es requisito para contratar el Calculador Hidráulico y las Clases Premium.</p>
     <p>Los diplomados tutorados con profesor no forman parte de este tarifario; tienen su propio proceso de inscripción.</p>
     <p>Durante el periodo de lanzamiento, hasta el 31 de diciembre de 2026, el acceso a la plataforma no tiene costo.</p>
