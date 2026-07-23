@@ -1036,6 +1036,7 @@ function exportarPlanilla(){
 // ═══════════════ ALUMNO DE PRUEBA (verificar el cálculo vs el Excel) ═══════════════
 // ── ⏱ PRÓRROGAS (solo tareas): dar unas horas extra a un alumno en una semana ──
 let PR = { prorrogas: [] };
+let PR_SEMLBL = {};   // semana -> rótulo ("Semana 3", "Examen Final"…)
 function _fmtHoras(h){ h = Number(h) || 0; return (h % 1 === 0) ? (h + " h") : (h.toFixed(1) + " h"); }
 
 async function cargarProrrogas(){
@@ -1055,7 +1056,7 @@ function pintarListaProrrogas(){
       <th style="padding:8px 10px;">Cierre normal</th><th style="padding:8px 10px;">Nueva hora de cierre</th><th></th></tr></thead>
     <tbody>${rows.map(p => `<tr style="border-bottom:1px solid #222836;">
       <td style="padding:9px 10px;"><b>${esc(nomDe(p.uid, ""))}</b></td>
-      <td style="padding:9px 10px;white-space:nowrap;">Sem ${p.sem}</td>
+      <td style="padding:9px 10px;white-space:nowrap;">${esc(PR_SEMLBL[p.sem] || ("Semana " + p.sem))}</td>
       <td style="padding:9px 10px;color:var(--ambar);white-space:nowrap;">+${_fmtHoras(p.horas)}</td>
       <td style="padding:9px 10px;color:var(--texto2);white-space:nowrap;">${fmtLima(p.cierre_normal)}</td>
       <td style="padding:9px 10px;color:var(--verde);white-space:nowrap;">${fmtLima(p.hasta)}</td>
@@ -1071,12 +1072,18 @@ function renderProrrogas(){
   }
   const alumnos = (P.alumnos || []).slice().sort((a,b) => (a.numero||9999) - (b.numero||9999));
   const optAl = alumnos.map(a => `<option value="${esc(a.uid)}">${a.numero!=null?a.numero+". ":""}${esc(a.nombre)}</option>`).join("");
-  // Solo semanas con TAREA: se excluyen los exámenes (semana 13, cuestionario) y las
-  // columnas calculadas (PROM SEM). Quedan las semanas 0 (Crítica) a 12.
-  const semanas = [...new Set((P.columnas || [])
-      .filter(c => c.tipo !== "examen" && c.grupo !== "prom_sem")
-      .map(c => c.semana).filter(s => s != null))].sort((a,b) => a - b);
-  const optSem = semanas.map(s => `<option value="${s}">Semana ${s}</option>`).join("");
+  // Puntos de entrega prorrogables: las semanas de tarea (0..12) + los trabajos de
+  // examen que se SUBEN (ej. "Examen Final", semana 13, en Rociadores). Se excluyen
+  // las columnas calculadas (PROM SEM). El examen-trabajo se muestra con su nombre,
+  // no como "Semana 13". Una semana normal siempre gana el rótulo "Semana N".
+  PR_SEMLBL = {};
+  (P.columnas || []).forEach(c => {
+    if (c.grupo === "prom_sem" || c.semana == null) return;
+    if (c.tipo === "examen") { if (PR_SEMLBL[c.semana] == null) PR_SEMLBL[c.semana] = c.nombre || ("Examen (sem " + c.semana + ")"); }
+    else { PR_SEMLBL[c.semana] = "Semana " + c.semana; }
+  });
+  const semanas = Object.keys(PR_SEMLBL).map(Number).sort((a,b) => a - b);
+  const optSem = semanas.map(s => `<option value="${s}">${esc(PR_SEMLBL[s])}</option>`).join("");
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;"><div class="pruebaWrap">
     <div style="background:var(--campo);border:1px solid var(--borde);border-radius:10px;padding:14px 16px;">
       <div style="font-weight:600;color:var(--texto);margin-bottom:11px;">Dar prórroga <span style="color:var(--texto2);font-weight:400;font-size:.8rem;">(solo tareas)</span></div>
