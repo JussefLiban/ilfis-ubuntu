@@ -1112,9 +1112,10 @@ function buildReport(res,o){
 
 function procesarDXFTexto(txt, _restaurando){
   LAST_DXF=txt;
-  // Plano cargado por el usuario = proyecto NUEVO. Pero al RESTAURAR una sesion
-  // guardada no: ese proyecto ya trae su identidad y no debe volver a cobrarse.
-  if(!_restaurando) _nuevoProyId();
+  // OJO: aqui NO se crea identidad de proyecto. Este metodo se llama tambien al
+  // cambiar la tolerancia, aplicar el panel, cambiar de sistema o editar el
+  // dibujo, y en todos esos casos SIGUE SIENDO EL MISMO PROYECTO. La identidad
+  // solo nace cuando el usuario IMPORTA UN PLANO NUEVO (ver el input de archivo).
     const tol=parseFloat(document.getElementById('tol').value)||0;
     NET=construir(txt,tol);
     PANZOOM={k:1,tx:0,ty:0};   // DXF nuevo: centrar con el auto-encuadre, no heredar el paneo/zoom anterior (si no, el plano cae fuera de la pantalla). En restaurarSnap la vista propia del sistema se reaplica DESPUES.
@@ -1172,7 +1173,7 @@ function procesarDXFTexto(txt, _restaurando){
 }
 function procesarPlano(){
   const f=document.getElementById('file').files[0];if(!f){alert('Elige un .dxf');return;}
-  const r=new FileReader();r.onload=()=>{ var _txt=r.result; var _go=function(){procesarDXFTexto(_txt);}; if(window.conCrono)window.conCrono(_go,'Leyendo plano…'); else _go(); var _fi=document.getElementById('file'); if(_fi)_fi.value=''; };r.readAsText(f);   // limpiar el input tras importar: permite volver a importar el MISMO dxf en otro sistema (el navegador no dispara 'change' si el archivo no cambia)
+  const r=new FileReader();r.onload=()=>{ var _txt=r.result; var _go=function(){ _nuevoProyId(); procesarDXFTexto(_txt); }; if(window.conCrono)window.conCrono(_go,'Leyendo plano…'); else _go(); var _fi=document.getElementById('file'); if(_fi)_fi.value=''; };r.readAsText(f);   // limpiar el input tras importar: permite volver a importar el MISMO dxf en otro sistema (el navegador no dispara 'change' si el archivo no cambia)
 }
 document.getElementById('extract').onclick=procesarPlano;
 document.getElementById('extract').style.display='none';   // ya no hace falta: el plano se procesa al elegir el archivo
