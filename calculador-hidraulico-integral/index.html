@@ -1110,8 +1110,11 @@ function buildReport(res,o){
     `</div>`;
 }
 
-function procesarDXFTexto(txt){
-  LAST_DXF=txt; _nuevoProyId();   // plano nuevo = proyecto nuevo (se cobrara 1 al generar su expediente)
+function procesarDXFTexto(txt, _restaurando){
+  LAST_DXF=txt;
+  // Plano cargado por el usuario = proyecto NUEVO. Pero al RESTAURAR una sesion
+  // guardada no: ese proyecto ya trae su identidad y no debe volver a cobrarse.
+  if(!_restaurando) _nuevoProyId();
     const tol=parseFloat(document.getElementById('tol').value)||0;
     NET=construir(txt,tol);
     PANZOOM={k:1,tx:0,ty:0};   // DXF nuevo: centrar con el auto-encuadre, no heredar el paneo/zoom anterior (si no, el plano cae fuera de la pantalla). En restaurarSnap la vista propia del sistema se reaplica DESPUES.
@@ -1375,7 +1378,7 @@ function recolectarSesion(){
 }
 function aplicarSesion(s){
   if(!s||!s.fields){alert('Archivo de sesión no válido.');return;}
-  window.PROY_ID = s.pid || null; window._proyectoYaCobrado = false;   // el proyecto conserva su identidad al abrirlo
+  var _pidGuardado = s.pid || null; window._proyectoYaCobrado = false;   // se fija al final, tras reconstruir
   if(s.proy&&window.PROY){ for(var _pk in s.proy){ if(_pk in window.PROY)window.PROY[_pk]=s.proy[_pk]; } }   // Datos del proyecto (Reportería)
   for(const id in s.fields){const el=document.getElementById(id);if(!el)continue;if(el.type==='checkbox')el.checked=s.fields[id];else el.value=s.fields[id];}
   if(s.fields.ppDiaMain!=null&&s.fields.ppDiaMainDer==null){const _dd=document.getElementById('ppDiaMainDer');if(_dd)_dd.value=s.fields.ppDiaMain;}   // OBS-006 compat: sesión vieja con UN solo Ø de main → el derecho copia al izquierdo (no hereda el valor de otro sistema)
@@ -1390,7 +1393,7 @@ function aplicarSesion(s){
   if(typeof aplicarAplicacion==='function')aplicarAplicacion();
   if(typeof toggleMangUI==='function')toggleMangUI();
   if(s.dxf){
-    procesarDXFTexto(s.dxf);
+    procesarDXFTexto(s.dxf, true);   // true = restaurando: conserva la identidad del proyecto
     (s.pipes||[]).forEach(function(p,i){const t=NET.tubos[i];if(!t)return;if(p.matOverride)t.matOverride=p.matOverride;if(p.cedManual){t.cedManual=true;t.ced=p.ced;}if(p.lenManual&&p.lenOverrideFt!=null){t.lenManual=true;t.lenOverrideFt=p.lenOverrideFt;}if(isFinite(p.cOverride))t.cOverride=p.cOverride;if(isFinite(p.idOverride))t.idOverride=p.idOverride;if(p.manual&&isFinite(p.nom)){t.nom=p.nom;t.manual=true;}});
     (s.nodes||[]).forEach(function(o){const n=NET.nodos.find(function(nn){return nn.id===o.id;});if(n){n.elevManual=true;n.elevOverridePsi=o.elevOverridePsi;}});
     HOSE_NODES=(s.hose||[]).slice(); if(typeof actualizarMangCount==='function')actualizarMangCount();
@@ -1400,6 +1403,9 @@ function aplicarSesion(s){
     var _vv=document.getElementById('ovVisor'); if(_vv&&typeof toggleVisor==='function')toggleVisor(_vv.checked);   // sincroniza el VISOR al cargar sesión (el checkbox por código no dispara onchange)
     if(typeof window.refrescarKdisp==='function')window.refrescarKdisp();   // refresca la pista del K deducido
   }
+  // AL FINAL: la identidad del proyecto guardado manda. Se fija aqui porque la
+  // reconstruccion del plano genera una nueva y la pisaria.
+  window.PROY_ID = _pidGuardado || window.PROY_ID || null;
 }
 // (Autoguardado en el navegador ELIMINADO 2026-06-14: serializaba el DXF entero en cada tecla y alimentaba la auto-apertura del último caso. El guardado ahora es explícito: "Guardar", "Guardar como" y "Recientes".)
 let _fileHandle=null;   // archivo de sesión "abierto" (para que Guardar sobrescriba sin preguntar)
