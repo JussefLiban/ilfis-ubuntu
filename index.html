@@ -1467,45 +1467,14 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
   <div class="paywall-card">
     <button class="paywall-close-x" onclick="cerrarPaywall()">✕</button>
     <div class="paywall-lock">🔒</div>
-    <div class="paywall-label">Contenido Premium</div>
+    <div class="paywall-label">Contenido de pago</div>
     <div class="paywall-titulo" id="paywall-titulo"></div>
-    <div class="paywall-precio">$000 <span>/ mes</span></div>
     <div class="paywall-incluye" id="paywall-incluye"></div>
-    <button class="btn-paypal" onclick="iniciarPagoPayPal()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="#003087"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.23 0 .23 0 0 0 .25-1.57-.01-2.64-.35-3.3z"/></svg>
-      🔓 Sí, quiero acceder por $000/mes
+    <button class="btn-paypal" onclick="irAPlanesYPrecios()">
+      Ver planes y cómo contratarlo
     </button>
-    <div class="paywall-seguro">Pago 100% seguro vía PayPal · Sin compromisos</div>
-    <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver al curso</button>
-
-    <!-- Vista 2: formulario de tarjeta -->
-    <div id="paywall-form">
-      <div class="pf-header">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#009cde"><path d="M20.07 5.27C19.67 2.86 17.6 2 14.93 2H7.47a.9.9 0 0 0-.89.76L4 18.76a.54.54 0 0 0 .53.62h3.86l.97-6.14-.03.2a.9.9 0 0 1 .89-.76h1.85c3.63 0 6.47-1.47 7.3-5.73.02-.13.04-.26.05-.38.25-1.57-.01-2.64-.35-3.3z"/></svg>
-        Pagar con PayPal — ingresa los datos de tu tarjeta
-      </div>
-      <div class="pf-group">
-        <label class="pf-label">Número de tarjeta</label>
-        <input class="pf-input" id="pf-numero" maxlength="19" placeholder="9999 9999 9999 9999" oninput="_fmtCard(this)" autocomplete="cc-number" inputmode="numeric">
-      </div>
-      <div class="pf-group">
-        <label class="pf-label">Nombre en la tarjeta</label>
-        <input class="pf-input" id="pf-nombre" placeholder="NOMBRE APELLIDO">
-      </div>
-      <div class="pf-row">
-        <div class="pf-group">
-          <label class="pf-label">Vencimiento</label>
-          <input class="pf-input" id="pf-vence" maxlength="5" placeholder="MM/AA" oninput="this.value=this.value.replace(/[^0-9\/]/g,'')">
-        </div>
-        <div class="pf-group">
-          <label class="pf-label">CVV</label>
-          <input class="pf-input" id="pf-cvv" maxlength="4" placeholder="999" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-        </div>
-      </div>
-      <div class="pf-error" id="pf-error"></div>
-      <button class="btn-pagar" id="btn-pagar" onclick="_submitPago()">Pagar $000</button>
-      <button class="pf-back" onclick="_volverPaywall()">← Volver</button>
-    </div>
+    <div class="paywall-seguro">Elige tu plan en «Planes y Precios». La contratación se coordina con el equipo ILFIS.</div>
+    <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver</button>
   </div>
 </div>
 
@@ -3550,11 +3519,18 @@ function _tieneAcceso(curso) {
   return new Date(_cursosActivos[curso]) > new Date();
 }
 
+// Lleva al usuario a "Planes y Precios" (contratación manual con el equipo ILFIS).
+function irAPlanesYPrecios() {
+  cerrarPaywall();
+  const b = [...document.querySelectorAll('.lateral .tab-btn')].find(x => (x.getAttribute('onclick')||'').includes("'tarifario'"));
+  if (b) b.click();
+}
+
 function abrirCalculadorPremium() {
   if (_tieneAcceso('calculador')) { window.location.href = 'calculador-hidraulico-integral/'; return; }
   _paywallCursoActual = 'calculador';
   document.getElementById('paywall-titulo').textContent = 'Calculador Hidráulico Integral';
-  document.getElementById('paywall-incluye').innerHTML = '<div class="paywall-tagline">Herramienta premium de diseño hidráulico — acceso reservado a testers ILFIS.</div><ul class="paywall-checks"><li>Diseño de sistemas hidráulicos completos</li><li>Ingresa tu código de acceso para entrar</li></ul>';
+  document.getElementById('paywall-incluye').innerHTML = '<div class="paywall-tagline">El Calculador Hidráulico Integral es un producto de pago. Incluye 30 días gratis; el cobro empieza el día 31.</div>';
   document.getElementById('paywall-overlay').classList.add('visible');
 }
 
@@ -3563,14 +3539,7 @@ function mostrarPaywall(curso) {
   const info = CURSOS_INFO[curso] || { nombre: curso, clases: 0 };
   document.getElementById('paywall-titulo').textContent = info.nombre;
   document.getElementById('paywall-incluye').innerHTML = `
-    <div class="paywall-tagline">¿Listo para llevar tu carrera al siguiente nivel?</div>
-    <ul class="paywall-checks">
-      <li>${info.clases} clases grabadas en alta calidad por expertos ILFIS</li>
-      <li>PDF completo del material de estudio incluido</li>
-      <li>Acceso ilimitado durante 30 días</li>
-      <li>Tutoría permanente con un experto ILFIS — todas tus preguntas respondidas en menos de 12 h con un 90% de confianza (fines de semana puede demorar un poco más)</li>
-      <li>Renovación simple — cancela cuando quieras</li>
-    </ul>`;
+    <div class="paywall-tagline">${info.clases} clases grabadas por expertos ILFIS, con material en PDF. Suscripción mensual por curso.</div>`;
   document.getElementById('paywall-overlay').classList.add('visible');
 }
 
@@ -3589,116 +3558,6 @@ function cerrarAyuda() {
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') cerrarAyuda(); });
 
 const BACKEND = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
-
-function _fmtCard(input) {
-  // Conserva solo dígitos, máximo 16
-  var digits = input.value.replace(/\D/g, '').slice(0, 16);
-  // Inserta espacio cada 4 dígitos
-  var out = '';
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && i % 4 === 0) out += ' ';
-    out += digits[i];
-  }
-  input.value = out;
-}
-
-function iniciarPagoPayPal() {
-  // Oculta la vista comercial, muestra el formulario de tarjeta
-  document.querySelector('.paywall-lock').style.display    = 'none';
-  document.querySelector('.paywall-label').style.display   = 'none';
-  document.querySelector('.paywall-titulo').style.display  = 'none';
-  document.querySelector('.paywall-precio').style.display  = 'none';
-  document.querySelector('.paywall-incluye').style.display = 'none';
-  document.querySelector('.btn-paypal').style.display      = 'none';
-  document.querySelector('.paywall-seguro').style.display  = 'none';
-  document.querySelector('.btn-paywall-cerrar').style.display = 'none';
-  document.getElementById('paywall-form').style.display   = 'block';
-  // Limpiar campos y errores
-  ['pf-numero','pf-nombre','pf-vence','pf-cvv'].forEach(id => document.getElementById(id).value = '');
-  const errEl = document.getElementById('pf-error');
-  errEl.style.display = 'none'; errEl.textContent = '';
-  document.getElementById('btn-pagar').disabled = false;
-  document.getElementById('btn-pagar').textContent = 'Pagar $000';
-}
-
-function _volverPaywall() {
-  // Restaura la vista comercial
-  document.querySelector('.paywall-lock').style.display    = '';
-  document.querySelector('.paywall-label').style.display   = '';
-  document.querySelector('.paywall-titulo').style.display  = '';
-  document.querySelector('.paywall-precio').style.display  = '';
-  document.querySelector('.paywall-incluye').style.display = '';
-  document.querySelector('.btn-paypal').style.display      = '';
-  document.querySelector('.paywall-seguro').style.display  = '';
-  document.querySelector('.btn-paywall-cerrar').style.display = '';
-  document.getElementById('paywall-form').style.display   = 'none';
-}
-
-async function _submitPago() {
-  const numero = document.getElementById('pf-numero').value.replace(/\s/g, '');
-  const nombre = document.getElementById('pf-nombre').value.trim();
-  const vence  = document.getElementById('pf-vence').value.trim();
-  const cvv    = document.getElementById('pf-cvv').value.trim();
-  const errEl  = document.getElementById('pf-error');
-  const btnEl  = document.getElementById('btn-pagar');
-
-  // Solo el número de tarjeta es obligatorio (los demás son decorativos hasta integrar PayPal real)
-  if (!numero) {
-    errEl.textContent = 'Ingresa el número de tarjeta para continuar.';
-    errEl.style.display = 'block'; return;
-  }
-
-  errEl.style.display = 'none';
-  btnEl.disabled = true;
-  btnEl.textContent = 'Procesando…';
-
-  try {
-    // Obtener ID token fresco del usuario actual
-    const user = firebase.auth().currentUser;
-    if (!user) throw new Error('Sesión expirada. Recarga la página.');
-    const idToken = await user.getIdToken(false);
-
-    // Llamar al backend — en modo test el backend valida si el número es el código de prueba
-    const resp = await fetch(`${BACKEND}/api/pagos/activar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_token: idToken,
-        curso:    _paywallCursoActual,
-        codigo:   numero   // en producción: order_id de PayPal
-      })
-    });
-
-    if (!resp.ok) {
-      const data = await resp.json().catch(() => ({}));
-      throw new Error(data.detail || `Error ${resp.status}`);
-    }
-
-    // ¡Pago aceptado! Forzar refresh del token para que el navegador vea los nuevos claims
-    btnEl.textContent = '✓ Activando acceso…';
-    await user.getIdToken(true);   // fuerza al SDK a buscar el token nuevo con los claims actualizados
-    const tokenResult = await user.getIdTokenResult();
-    _cursosActivos = tokenResult.claims.cursos_activos || {};
-    renderMiCuenta();
-
-    // Cerrar paywall y mostrar mensaje de éxito breve
-    const _cursoActivado = _paywallCursoActual;
-    cerrarPaywall();
-    _volverPaywall();   // reinicia la vista para la próxima vez
-    if (_cursoActivado === 'calculador') {
-      alert('✅ ¡Acceso activado! Ya puedes usar el Calculador Hidráulico Integral durante 30 días.');
-      window.location.href = 'calculador-hidraulico-integral/';
-    } else {
-      alert('✅ ¡Acceso activado! Ya puedes ver todas las clases de este diplomado durante 30 días.');
-    }
-
-  } catch(err) {
-    errEl.textContent = err.message || 'Error procesando el pago. Intenta de nuevo.';
-    errEl.style.display = 'block';
-    btnEl.disabled = false;
-    btnEl.textContent = 'Pagar $000';
-  }
-}
 
 function categorizar(t) {
   const u = t.toUpperCase();
