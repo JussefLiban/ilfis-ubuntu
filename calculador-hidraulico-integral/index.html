@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+(function(){
+  try { firebase.initializeApp({apiKey:"AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",authDomain:"ilfis-ubuntu.firebaseapp.com",projectId:"ilfis-ubuntu",storageBucket:"ilfis-ubuntu.firebasestorage.app",messagingSenderId:"986363919942",appId:"1:986363919942:web:438195736e93511eafd447"}); } catch(e){}
+  window._ilfisToken = null;
+  function refrescar(u){ if(u){ u.getIdToken().then(function(t){ window._ilfisToken=t; }).catch(function(){}); } else { window._ilfisToken=null; } }
+  try { firebase.auth().onAuthStateChanged(refrescar); setInterval(function(){ var u=firebase.auth().currentUser; if(u) refrescar(u); }, 1800000); } catch(e){}
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Motor de Proyecto — ILFIS UBUNTU</title>
@@ -5615,8 +5625,7 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
    Reversible: borra este bloque <script> y el calculador vuelve a calcular local.
    PRUEBA: usa una licencia demo; el pago real (Firebase) se ata después. ===== */
 (function(){
-  var MOTOR_URL = 'https://ilfis-motor-385039307479.southamerica-west1.run.app';
-  var LICENCIA  = 'DEMO-PAGADA-123';
+  var PUENTE = 'https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculador/solve';
   function empaquetar(net,o){
     var idToIdx={}; net.nodos.forEach(function(n,i){ idToIdx[n.id]=i; });
     var nodos=net.nodos.map(function(n){ return {id:n.id,x:n.x,y:n.y,open:!!n.open,head:!!n.head,elevManual:!!n.elevManual,elevOverridePsi:n.elevOverridePsi}; });
@@ -5626,12 +5635,11 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
   }
   window.solve = function(net,o){
     var xhr = new XMLHttpRequest();
-    try { xhr.open('POST', MOTOR_URL + '/calcular', false); } catch(e){ return {error:true, servidor:true}; }
+    try { xhr.open('POST', PUENTE, false); } catch(e){ return {error:true, servidor:true}; }
     xhr.setRequestHeader('Content-Type','application/json');
-    xhr.setRequestHeader('x-licencia', LICENCIA);
-    try { xhr.send(JSON.stringify(empaquetar(net,o))); }
+    try { xhr.send(JSON.stringify({ id_token: window._ilfisToken || '', payload: empaquetar(net,o) })); }
     catch(e){ alert('No pude contactar el servidor de cálculo. Revisa tu conexión a internet.'); return {error:true, red:true}; }
-    if(xhr.status===402){ alert('Necesitas una licencia activa (pago) para calcular.'); return {error:true, pago:true}; }
+    if(xhr.status===401 || xhr.status===402){ alert('Tu acceso al Calculador no esta activo. Contrata un plan o revisa tu saldo de calculos.'); return {error:true, pago:true}; }
     if(xhr.status!==200){ return {error:true, servidor:true, code:xhr.status}; }
     var r; try { r = JSON.parse(xhr.responseText); } catch(e){ return {error:true, servidor:true}; }
     if(r.error) return r;
@@ -5640,7 +5648,7 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
     if(r.nodos){ var byId={}; net.nodos.forEach(function(n){ byId[n.id]=n; }); r.nodos.forEach(function(rn){ var n=byId[rn.id]; if(n){ n.P=rn.P; n.q=rn.q; n.elevPsi=rn.elevPsi; } }); }
     return r;
   };
-  try{ console.log('[ILFIS] Cálculo enrutado al servidor: ' + MOTOR_URL); }catch(e){}
+  try{ console.log('[ILFIS] Calculo por puente autenticado.'); }catch(e){}
 })();
 </script>
 </body>
