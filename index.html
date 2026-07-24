@@ -113,7 +113,10 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 .panel.active { display: flex; }
 /* Paneles que muestran otra pagina del sitio SIN sacar al usuario de la plataforma. */
 .panel-embebido { padding: 0; }
-.marco-embebido { width: 100%; flex: 1; min-height: calc(100vh - 130px); border: 0; display: block; background: #1a1a2e; }
+/* El marco calza EXACTO en su hueco: asi solo se desplaza la pagina de dentro
+   y no aparecen dos barras de desplazamiento, una dentro de la otra. */
+.marco-embebido { width: 100%; flex: 1; min-height: 0; border: 0; display: block; background: #1a1a2e; }
+.panel-embebido.active { overflow: hidden; }
 
 /* ─── HISTORIAL EXPERTO ──────────────────────────────────── */
 .hist-titulo { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin:28px 0 12px; }
