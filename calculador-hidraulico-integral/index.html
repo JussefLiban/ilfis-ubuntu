@@ -1173,7 +1173,7 @@ function procesarDXFTexto(txt, _restaurando){
 }
 function procesarPlano(){
   const f=document.getElementById('file').files[0];if(!f){alert('Elige un .dxf');return;}
-  const r=new FileReader();r.onload=()=>{ var _txt=r.result; var _go=function(){ _nuevoProyId(); procesarDXFTexto(_txt); }; if(window.conCrono)window.conCrono(_go,'Leyendo plano…'); else _go(); var _fi=document.getElementById('file'); if(_fi)_fi.value=''; };r.readAsText(f);   // limpiar el input tras importar: permite volver a importar el MISMO dxf en otro sistema (el navegador no dispara 'change' si el archivo no cambia)
+  const r=new FileReader();r.onload=()=>{ var _txt=r.result; var _go=function(){ _nuevoProyId(); procesarDXFTexto(_txt); try{ setTimeout(function(){ if(window._pintarSaldo) window._pintarSaldo(); },400); }catch(e){} }; if(window.conCrono)window.conCrono(_go,'Leyendo plano…'); else _go(); var _fi=document.getElementById('file'); if(_fi)_fi.value=''; };r.readAsText(f);   // limpiar el input tras importar: permite volver a importar el MISMO dxf en otro sistema (el navegador no dispara 'change' si el archivo no cambia)
 }
 document.getElementById('extract').onclick=procesarPlano;
 document.getElementById('extract').style.display='none';   // ya no hace falta: el plano se procesa al elegir el archivo
@@ -2679,7 +2679,7 @@ function lanzarParrilla(){
   if(p.nRamales<2||p.nRoc<1){ alert('Revisa nº de ramales (≥2) y rociadores por ramal (≥1).'); return; }
   p.feedRamal=Math.max(1,Math.min(p.nRamales,p.feedRamal||Math.round(p.nRamales/2)));   // BUGFIX: acota el ramal de alimentación al rango válido del nº de ramales y refleja el valor corregido en el campo (UI honesta)
   var _fr=document.getElementById('ppFeedRamal'); if(_fr) _fr.value=p.feedRamal;
-  NET=generarParrilla(p); LAST_DXF=null; _nuevoProyId();
+  NET=generarParrilla(p); LAST_DXF=null; _nuevoProyId(); try{ setTimeout(function(){ if(window._pintarSaldo) window._pintarSaldo(); },400); }catch(e){}
   // fuente = BOMBA (única punta suelta, al final de la troncal)
   const sel=document.getElementById('src'); sel.innerHTML='';
   NET.sueltas.forEach(n=>{const o=document.createElement('option');o.value=n.id;o.textContent='BOMBA / acometida ('+n.x.toFixed(0)+','+n.y.toFixed(0)+')';sel.appendChild(o);});
@@ -5671,30 +5671,47 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
 </script>
 <script>
 window._consumirCalculo = function(){
+  var API = 'https://ilfis-ubuntu-27378911758.us-central1.run.app';
+  var pid = (typeof _proyId==='function' ? _proyId() : '');
   try {
-    // Aviso claro SOLO la primera vez que se cobra este proyecto.
+    // 1) PREGUNTAR al servidor como esta este proyecto (no adivinar mirando la pantalla).
+    var est = null;
+    try {
+      var q = new XMLHttpRequest();
+      q.open('POST', API + '/api/calculos/saldo', false);
+      q.setRequestHeader('Content-Type','application/json');
+      q.send(JSON.stringify({ id_token: window._ilfisToken || '', proyecto_id: pid }));
+      if (q.status === 200) est = JSON.parse(q.responseText || '{}');
+    } catch(e) {}
+
     var el = document.getElementById('ilfis-saldo');
     var ilimitado = el && /ilimitados/i.test(el.textContent || '');
-    if (!ilimitado && !window._proyectoYaCobrado) {
-      var m = el ? (el.textContent || '').match(/[0-9]+/) : null;
-      var quedan = m ? m[0] : '?';
-      var aviso = 'Vas a generar el expediente de este proyecto.' + String.fromCharCode(10,10)
-        + 'Se descontara 1 calculo de tu paquete (te quedan ' + quedan + ').' + String.fromCharCode(10)
-        + 'Regenerar el expediente de ESTE MISMO proyecto las veces que quieras NO vuelve a cobrar.' + String.fromCharCode(10,10)
+
+    // 2) Avisar segun el caso REAL.
+    if (est && est.proyecto_pagado) {
+      window._proyectoYaCobrado = true;
+      alert('Este proyecto YA esta pagado.' + String.fromCharCode(10,10)
+        + 'Generar su expediente NO descuenta nada.' + String.fromCharCode(10)
+        + 'Te quedan ' + (est.saldo || 0) + ' calculos para otros proyectos.');
+    } else if (!ilimitado) {
+      var quedan = est ? (est.saldo || 0) : '?';
+      var aviso = 'Vas a generar el expediente de este proyecto por PRIMERA vez.' + String.fromCharCode(10,10)
+        + 'Se descontara 1 calculo (te quedan ' + quedan + ').' + String.fromCharCode(10)
+        + 'A partir de ahora, regenerar el expediente de ESTE MISMO proyecto sera GRATIS,'
+        + ' aunque lo edites, lo guardes y lo abras otro dia.' + String.fromCharCode(10,10)
         + 'Continuar?';
       if (!confirm(aviso)) return false;
     }
+
+    // 3) Registrar en el servidor (el decide si cobra o no).
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculos/consumir', false);
+    xhr.open('POST', API + '/api/calculos/consumir', false);
     xhr.setRequestHeader('Content-Type','application/json');
-    xhr.send(JSON.stringify({ id_token: window._ilfisToken || '', proyecto_id: (typeof _proyId==='function'? _proyId() : '') }));
+    xhr.send(JSON.stringify({ id_token: window._ilfisToken || '', proyecto_id: pid }));
     if (xhr.status === 402) { alert('Te quedaste sin calculos disponibles. Contrata un paquete o un plan para generar el expediente.'); return false; }
     if (xhr.status !== 200) { alert('No pude verificar tu saldo de calculos. Revisa tu conexion e intenta de nuevo.'); return false; }
-    try {
-      var res = JSON.parse(xhr.responseText || '{}');
-      if (res.ok) window._proyectoYaCobrado = true;   // no volver a avisar por este proyecto
-    } catch(e) { window._proyectoYaCobrado = true; }
-    try { setTimeout(function(){ window._pintarSaldo(); }, 300); } catch(e){}
+    window._proyectoYaCobrado = true;
+    try { setTimeout(function(){ if(window._pintarSaldo) window._pintarSaldo(); }, 300); } catch(e){}
     return true;
   } catch(e) { alert('No pude conectar para verificar tu saldo. Revisa tu conexion.'); return false; }
 };
