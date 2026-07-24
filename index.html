@@ -71,6 +71,18 @@ nav.tabs .tab-btn { padding: 10px 20px; font-size: 0.88rem; color: #8899aa; curs
 .tab-line2 { font-size: 0.71rem; line-height: 1.3; opacity: 0.7; letter-spacing: 0.2px; }
 nav.tabs .tab-btn:hover { color: #cdd; }
 nav.tabs .tab-btn.active { color: #fff; border-bottom-color: #c0392b; }
+/* ── Grupos de la barra (menus desplegables) ─────────────── */
+nav.tabs .grupo { position: relative; }
+nav.tabs .grupo .flechita { font-size: .9rem; opacity: .6; margin-left: 2px; }
+nav.tabs .grupo.abierto .grupo-btn, nav.tabs .grupo-btn.tiene-activo { color: #fff; }
+nav.tabs .grupo-btn.tiene-activo { border-bottom-color: #c0392b; }
+nav.tabs .grupo-menu { display: none; position: absolute; top: 100%; left: 0; z-index: 60;
+  background: #16213e; border: 1px solid #2a2a5a; border-top: 2px solid #c0392b; border-radius: 0 0 10px 10px;
+  min-width: 265px; box-shadow: 0 12px 28px rgba(0,0,0,.5); padding: 4px 0; }
+nav.tabs .grupo.abierto .grupo-menu { display: block; }
+nav.tabs .grupo-menu .tab-btn { width: 100%; border-bottom: 3px solid transparent; margin-bottom: 0; padding: 10px 18px; }
+nav.tabs .grupo-menu .tab-btn:hover { background: rgba(255,255,255,.05); }
+nav.tabs .grupo-menu .tab-btn.active { background: rgba(192,57,43,.14); border-bottom-color: transparent; }
 
 /* ── PANELS ──────────────────────────────────────────────── */
 .panel { display: none; flex: 1; flex-direction: column; }
@@ -481,51 +493,85 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 </header>
 
 <nav class="tabs">
-  <button class="tab-btn active" onclick="showTab('consultar', this)">
-    <i class="ti ti-message-question" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Consultas a</span><span class="tab-line2">Expertos ILFIS</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('videos', this)">
-    <i class="ti ti-brand-youtube" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Búsqueda Interactiva</span><span class="tab-line2">de Videos Youtube</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('explorador', this)">
-    <i class="ti ti-layout-grid" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Explorador Interactivo</span><span class="tab-line2">de Videos Youtube</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('clases', this)">
-    <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Clases Premium</span><span class="tab-line2">Acceso Total</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('experto', this)">
-    <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
-  </button>
-<button class="tab-btn" onclick="showTab('catalogo', this)"><i class="ti ti-help" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">¿Cuál me conviene?</span><span class="tab-line2">Aula o Videoteca</span></span></button>
-<button class="tab-btn" onclick="showTab('educativa', this)"><i class="ti ti-certificate" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">Plataforma Educativa</span><span class="tab-line2">Clases Tutorizadas y Evaluadas</span></span></button>    <button class="tab-btn" onclick="showTab('nfpa', this)">
-    <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">NFPA</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('fm', this)">
-    <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">FM</span></span>
-  </button>
+  <div class="grupo" data-grupo="consultar">
+    <button class="tab-btn grupo-btn" onclick="_abrirGrupo(this, event)">
+      <i class="ti ti-message-question" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Consultar a</span><span class="tab-line2">Expertos ILFIS</span></span>
+      <i class="ti ti-chevron-down flechita"></i>
+    </button>
+    <div class="grupo-menu">
+    <button class="tab-btn" onclick="showTab('consultar', this)">
+      <i class="ti ti-message-question" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Consultas a</span><span class="tab-line2">Expertos ILFIS</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('experto', this)">
+      <i class="ti ti-headset" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('nfpa', this)">
+      <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">NFPA</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('fm', this)">
+      <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">FM</span></span>
+    </button>
+    </div>
+  </div>
+  <div class="grupo" data-grupo="videoteca">
+    <button class="tab-btn grupo-btn" onclick="_abrirGrupo(this, event)">
+      <i class="ti ti-brand-youtube" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Videoteca</span><span class="tab-line2">Videos ILFIS</span></span>
+      <i class="ti ti-chevron-down flechita"></i>
+    </button>
+    <div class="grupo-menu">
+    <button class="tab-btn" onclick="showTab('videos', this)">
+      <i class="ti ti-brand-youtube" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Búsqueda Interactiva</span><span class="tab-line2">de Videos Youtube</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('explorador', this)">
+      <i class="ti ti-layout-grid" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Explorador Interactivo</span><span class="tab-line2">de Videos Youtube</span></span>
+    </button>
+    </div>
+  </div>
+  <div class="grupo" data-grupo="estudiar">
+    <button class="tab-btn grupo-btn" onclick="_abrirGrupo(this, event)">
+      <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Estudiar</span><span class="tab-line2">Cursos y diplomados</span></span>
+      <i class="ti ti-chevron-down flechita"></i>
+    </button>
+    <div class="grupo-menu">
+    <button class="tab-btn" onclick="showTab('clases', this)">
+      <i class="ti ti-school" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Clases Premium</span><span class="tab-line2">Acceso Total</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('educativa', this)">
+      <i class="ti ti-certificate" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Plataforma Educativa</span><span class="tab-line2">Clases Tutorizadas y Evaluadas</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('catalogo', this)">
+      <i class="ti ti-help" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">¿Cuál me conviene?</span><span class="tab-line2">Aula o Videoteca</span></span>
+    </button>
+    </div>
+  </div>
     <button class="tab-btn" onclick="showTab('calcula', this)">
-    <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('tarifario', this)">
-    <i class="ti ti-tag" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Planes y</span><span class="tab-line2">Precios</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('cuenta', this)">
-    <i class="ti ti-user-circle" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Mi Cuenta</span><span class="tab-line2">Mis suscripciones</span></span>
-  </button>
-  <button class="tab-btn" onclick="showTab('admin', this)">
-    <i class="ti ti-shield-lock" style="font-size:1.2rem;flex-shrink:0;"></i>
-    <span class="tab-label"><span class="tab-line1">Intranet</span><span class="tab-line2">Panel Admin</span></span>
-  </button>
+      <i class="ti ti-calculator" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Calcula con</span><span class="tab-line2">Ubuntu</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('tarifario', this)">
+      <i class="ti ti-tag" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Planes y</span><span class="tab-line2">Precios</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('cuenta', this)">
+      <i class="ti ti-user-circle" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Mi Cuenta</span><span class="tab-line2">Mis suscripciones</span></span>
+    </button>
+    <button class="tab-btn" onclick="showTab('admin', this)">
+      <i class="ti ti-shield-lock" style="font-size:1.2rem;flex-shrink:0;"></i>
+      <span class="tab-label"><span class="tab-line1">Intranet</span><span class="tab-line2">Panel Admin</span></span>
+    </button>
 </nav>
 
 <!-- Panel Consultas -->
@@ -1948,8 +1994,36 @@ function showTab(name, btn) {
   btn.classList.add('active');
   if (name === 'explorador' && !_expInit) initExplorador();
   _cargarEmbebido(name);
+  _cerrarGrupos();
+  _marcarGrupoActivo();
   localStorage.setItem('ilfis_tab_activa', name);
 }
+
+// ── Grupos de la barra superior ───────────────────────────
+// La barra tenia 13 botones. Ahora hay 7: cuatro sueltos y tres grupos que
+// despliegan sus opciones. Los botones de dentro son los MISMOS de siempre
+// (mismo showTab), asi que nada del resto de la plataforma cambia.
+function _cerrarGrupos() {
+  document.querySelectorAll('nav.tabs .grupo.abierto').forEach(g => g.classList.remove('abierto'));
+}
+function _abrirGrupo(btn, ev) {
+  if (ev) ev.stopPropagation();
+  const g = btn.closest('.grupo');
+  const estaba = g.classList.contains('abierto');
+  _cerrarGrupos();
+  if (!estaba) g.classList.add('abierto');
+}
+// Si la pestaña activa esta dentro de un grupo, el grupo se marca como activo.
+function _marcarGrupoActivo() {
+  document.querySelectorAll('nav.tabs .grupo').forEach(g => {
+    const btn = g.querySelector('.grupo-btn');
+    if (btn) btn.classList.toggle('tiene-activo', !!g.querySelector('.tab-btn.active'));
+  });
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest || !e.target.closest('nav.tabs .grupo')) _cerrarGrupos();
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') _cerrarGrupos(); });
 
 // Paneles embebidos (Planes y Precios, ¿Cuál me conviene?): la pagina interna se carga
 // la PRIMERA vez que se abre su pestaña, no al arrancar la plataforma.
