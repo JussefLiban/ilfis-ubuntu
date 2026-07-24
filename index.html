@@ -3771,6 +3771,7 @@ function _adminLlenarDiplomasDocentes() {
 // "todo lo que no es de otra área": así una llave legada/desconocida sigue visible y revocable.
 const PREMIUM_KEYS = Object.keys(ADMIN_NAMES).filter(k => !NO_PREMIUM.includes(k));
 let _adminAlumnos    = [];
+let _adminSaldos     = {};   // uid -> {saldo, total_cargado, total_usado} (paquetes de cálculos)
 let _adminDatos      = {};   // uid -> datos del certificado (nombre, país, teléfono, fecha nac.)
 let _bloqueados      = new Set();   // uids con el acceso a la plataforma quitado
 let _pausados        = new Set();   // "uid__llave" de matrículas PAUSADAS (suspendidas, reversibles)
@@ -4299,6 +4300,11 @@ async function adminCargar() {
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) { throw new Error('Error ' + r.status); }
     const data = await r.json();
     _adminAlumnos = data.alumnos || [];
+    // Saldos de paquetes de cálculos. Si el servidor aún no tiene esta ruta, se sigue sin ellos.
+    fetch(BACKEND + '/admin/calculos', { headers: { 'x-admin-key': _getAdminKey() } })
+      .then(x => x.ok ? x.json() : null)
+      .then(j => { if (j && j.saldos) { _adminSaldos = j.saldos; adminRenderAppSuscriptores(); } })
+      .catch(() => {});
     // Quiénes tienen el acceso a la plataforma QUITADO (bloqueados). Para pintar
     // "Dar acceso" en ellos y "Quitar acceso" en el resto.
     try {
@@ -4489,7 +4495,11 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
 
     // ── Clases Premium / Aplicativos / General (suscripción mensual) ──
     const keys    = Object.keys(cursos).filter(perteneceProducto);
-    const badgesHtml = keys.length === 0
+    const sal = (area === 'aplicativos' && _adminSaldos[u.uid]) ? _adminSaldos[u.uid] : null;
+    const salBadge = sal
+      ? `<span class="cbadge ${sal.saldo > 0 ? 'cb-ok' : 'cb-exp'}" title="Paquetes: ${sal.total_usado} usados de ${sal.total_cargado} comprados">🧮 ${sal.saldo} cálculo${sal.saldo === 1 ? '' : 's'}</span>`
+      : '';
+    const badgesHtml = (keys.length === 0 && !salBadge)
       ? `<span class="cbadge cb-none">Sin suscripción</span>`
       : keys.map(k => {
           const exp  = new Date(cursos[k]);
@@ -4497,7 +4507,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
           const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
           const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
           return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
-        }).join('');
+        }).join('') + salBadge;
     const acciones = keys.map(k => {
       const exp  = new Date(cursos[k]);
       const dias = Math.ceil((exp - ahora) / 86400000);
@@ -4893,6 +4903,10 @@ const PLANES_POR_AREA = {
     { txt: 'Individual — 1 año ($400)',                    dias: 365 },
     { txt: 'Estudio — 1 año, este ingeniero',              dias: 365 },
     { txt: '30 días gratis (prueba del Calculador)',       dias: 30  },
+    // Los paquetes no son tiempo, son CANTIDAD: cargan saldo de cálculos.
+    { txt: 'Paquete de 5 cálculos ($150)',                 calculos: 5,  dias: 365 },
+    { txt: 'Paquete de 10 cálculos ($250)',                calculos: 10, dias: 365 },
+    { txt: 'Paquete de 20 cálculos ($400)',                calculos: 20, dias: 365 },
   ],
 };
 
@@ -4934,8 +4948,13 @@ function _adminPintarBotonDar() {
   if (_adminModalArea === 'educativa') { btn.textContent = 'Matricular (acceso manual)'; return; }
   const p = _adminPlanElegido();
   const ayuda = document.getElementById('admin-modal-dar-ayuda');
-  if (ayuda) ayuda.textContent = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
-  btn.textContent = p ? ('Dar ' + p.dias + ' días de acceso') : 'Dar acceso';
+  if (p && p.calculos) {
+    if (ayuda) ayuda.textContent = 'Se cargan ' + p.calculos + ' cálculos a su saldo (no vencen) y se le habilita el Calculador por ' + p.dias + ' días. Si ya tenía saldo, se le suma.';
+    btn.textContent = 'Cargar ' + p.calculos + ' cálculos';
+  } else {
+    if (ayuda) ayuda.textContent = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
+    btn.textContent = p ? ('Dar ' + p.dias + ' días de acceso') : 'Dar acceso';
+  }
 }
 function _adminPlanElegido() {
   const lista = PLANES_POR_AREA[_adminModalArea] || PLANES_POR_AREA.premium;
@@ -4963,6 +4982,16 @@ async function adminConfirmarDar() {
       body: JSON.stringify(body)
     });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+    // Paquete de cálculos: además del acceso, se le carga el saldo.
+    const plan = esDiploma ? null : _adminPlanElegido();
+    if (plan && plan.calculos) {
+      const rc = await fetch(BACKEND + '/admin/calculos/cargar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+        body: JSON.stringify({ uid: _adminModalUid, cantidad: plan.calculos })
+      });
+      if (!rc.ok) throw new Error('Acceso dado, pero no se pudo cargar el saldo: ' + ((await rc.json().catch(()=>({}))).detail || rc.status));
+    }
     adminCerrarModal();
     await adminCargar();
   } catch(e) { alert('Error: ' + e.message); }
