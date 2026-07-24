@@ -70,6 +70,9 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 /* La pagina no se desplaza entera: el menu y el contenido tienen cada uno
    su propio desplazamiento, asi el menu queda siempre a la vista. */
 .cuerpo { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.lateral .lat-inactivo { color: #59657a; cursor: default; }
+.lateral .lat-inactivo:hover { background: none; color: #59657a; }
+.lateral .lat-inactivo .lat-l2 { color: #7a6a3a; }
 .lat-separador { height: 1px; background: #2a2a5a; margin: 14px 12px 2px; }
 /* El hueco de abajo deja libres los botones flotantes ("¿Cómo funciona?" y el tutorial). */
 /* min-width:0 es imprescindible: sin el, el navegador impide que la columna
@@ -560,6 +563,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </button>
       <div class="lat-separador"></div>
       <div class="lat-titulo">Equipo ILFIS</div>
+      <button class="tab-btn lat-inactivo" disabled title="Sala de Profesores — próximamente">
+        <i class="ti ti-users" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Sala de Profesores</span><span class="lat-l2">Próximamente</span></span>
+      </button>
       <button class="tab-btn" onclick="showTab('admin', this)" title="Intranet Panel Admin">
         <i class="ti ti-shield-lock" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Intranet</span><span class="lat-l2">Panel Admin</span></span>
       </button>
