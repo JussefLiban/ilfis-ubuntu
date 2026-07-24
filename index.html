@@ -1067,10 +1067,23 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <!-- Las opciones se llenan por JS según el área (Premium = cursos; Aplicativos = calculadoras) -->
     <select id="admin-modal-dar-curso"></select>
     <!-- Lo que el cliente CONTRATÓ. Se llena por JS con el tarifario del área. -->
+    <div id="admin-modal-dar-estado" style="display:none;font-size:0.8rem;color:#cfe0f7;background:#0f3460;border:1px solid #2a5a9a;border-radius:8px;padding:9px 12px;margin-top:10px;"></div>
     <div id="admin-modal-dar-planbox" style="margin-top:12px;">
       <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">Qué contrató</label>
       <select id="admin-modal-dar-plan"></select>
       <p id="admin-modal-dar-ayuda" style="font-size:0.76rem;color:#7a8a9a;margin-top:7px;"></p>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;font-size:0.76rem;color:#7a8a9a;">Corregir a mano (si te equivocaste)</summary>
+        <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input id="admin-modal-dar-dias" type="number" placeholder="días" style="width:110px;" title="Días a sumar. Usa un número negativo para quitar días.">
+          <span style="font-size:0.74rem;color:#7a8a9a;">días (negativo = quitar)</span>
+        </div>
+        <div id="admin-modal-dar-calcbox" style="margin-top:9px;display:none;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input id="admin-modal-dar-calc" type="number" placeholder="cálculos" style="width:110px;" title="Cálculos a sumar al saldo. Negativo para restar.">
+          <span style="font-size:0.74rem;color:#7a8a9a;">cálculos al saldo (negativo = restar)</span>
+        </div>
+        <p style="font-size:0.72rem;color:#7a8a9a;margin-top:8px;">Si escribes algo aquí, manda esto en vez del plan de arriba.</p>
+      </details>
     </div>
     <div class="admin-modal-btns">
       <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
@@ -4508,18 +4521,18 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
           const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
           return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
         }).join('') + salBadge;
-    const acciones = keys.map(k => {
-      const exp  = new Date(cursos[k]);
-      const dias = Math.ceil((exp - ahora) / 86400000);
-      return `<button class="btn-a btn-ext" onclick="adminExtender('${u.uid}','${k}')">+30d ${ADMIN_NAMES[k]||k}</button>
-              <button class="btn-a btn-rev" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">${dias > 0 ? 'Revocar' : 'Quitar'} ${ADMIN_NAMES[k]||k}</button>`;
-    }).join(' ');
+    // Cada acceso que ya tiene: Modificar (abre el modal con su estado) y Quitar.
+    // Botones cortos: el producto ya se lee en la etiqueta de al lado.
+    const acciones = keys.map(k =>
+      `<button class="btn-a btn-ext" title="Modificar ${ADMIN_NAMES[k]||k}" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}','${k}')">Modificar</button>
+       <button class="btn-a btn-rev" title="Quitar ${ADMIN_NAMES[k]||k}" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Quitar</button>`
+    ).join(' ');
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
-        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">Dar acceso</button>
+        <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">+ Dar acceso</button>
       </td>
     </tr>`;
   }).join('');
@@ -4664,27 +4677,32 @@ function adminRenderSuscriptores() {
     const bloqueado = _bloqueados.has(u.uid);
     const _em = (u.email||'').replace(/'/g,"\\'");
     const estado = bloqueado
-      ? `<span class="cbadge cb-exp">Sin acceso</span> `
-      : `<span class="cbadge cb-ok">Con acceso</span> `;
+      ? `<span class="cbadge cb-exp" title="Cuenta bloqueada: no puede entrar aunque tenga membresía">🚫 Bloqueada</span> `
+      : '';
     // Membresía de pago ($120/año). Hoy la plataforma es gratis, así que esto es
     // el control para cuando empiece a cobrarse: quién la tiene y hasta cuándo.
     const memRaw = (u.cursos_activos || {})[PLATAFORMA_KEY];
     const memDias = memRaw ? Math.ceil((new Date(memRaw) - ahora) / 86400000) : null;
-    const memBadge = (memDias == null)
+    const tieneMem = (memDias != null);
+    const memBadge = !tieneMem
       ? `<span class="cbadge cb-none">Sin membresía</span> `
       : `<span class="cbadge ${memDias > 0 ? 'cb-ok' : 'cb-exp'}">Membresía ${memDias > 0 ? memDias + 'd' : 'vencida'}</span> `;
     const nomMem = (u.nombre || u.email || '').replace(/'/g, "\'");
-    const accMem = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${_em}','${nomMem}','general')">Dar membresía</button>`;
+    // Igual que en los otros módulos: si ya tiene → Modificar/Quitar; si no → + Dar membresía.
+    const accMem = tieneMem
+      ? `<button class="btn-a btn-ext" title="Modificar membresía" onclick="adminAbrirDar('${u.uid}','${_em}','${nomMem}','general','${PLATAFORMA_KEY}')">Modificar</button>
+         <button class="btn-a btn-rev" title="Quitar membresía" onclick="adminRevocar('${u.uid}','${PLATAFORMA_KEY}','${_em}')">Quitar</button>`
+      : `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${_em}','${nomMem}','general')">+ Dar membresía</button>`;
     const accAcceso = bloqueado
-      ? `<button class="btn-a btn-dar" onclick="adminDarAcceso('${u.uid}','${_em}')">Dar acceso</button>`
-      : `<button class="btn-a btn-rev" onclick="adminQuitarAcceso('${u.uid}','${_em}')">Quitar acceso</button>`;
+      ? `<button class="btn-a btn-dar" title="Reactivar: deja entrar de nuevo" onclick="adminDarAcceso('${u.uid}','${_em}')">Desbloquear</button>`
+      : `<button class="btn-a" style="border-color:#7a5a20;color:#e0a94a;" title="Bloquear: impide entrar aunque tenga membresía vigente" onclick="adminQuitarAcceso('${u.uid}','${_em}')">Bloquear</button>`;
     // "Borrar" elimina la cuenta por completo y libera el correo (distinto de suspender).
     const nom = (u.nombre||u.email||'').replace(/'/g,"\\'");
     const accBorrar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${_em}','${nom}')">Borrar</button>`;
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
-      <td>${memBadge}</td>
-      <td style="white-space:nowrap;min-width:320px;">${accMem} ${estado}${accAcceso} ${accBorrar}</td>
+      <td>${memBadge}${estado}</td>
+      <td style="white-space:nowrap;min-width:320px;">${accMem} <span style="display:inline-block;width:10px;"></span> ${accAcceso} ${accBorrar}</td>
     </tr>`;
   }).join('');
   box.innerHTML = filas
@@ -4941,7 +4959,12 @@ function _adminPintarPlanes(area) {
   sel.innerHTML = html;
 }
 
-function adminAbrirDar(uid, email, nombre, area) {
+// Abre el modal para MODIFICAR una suscripción que ya existe (o el saldo de cálculos).
+function adminAbrirEditar(uid, email, nombre, area, curso) {
+  adminAbrirDar(uid, email, nombre, area, curso);
+}
+
+function adminAbrirDar(uid, email, nombre, area, cursoPre) {
   _adminModalUid   = uid;
   _adminModalEmail = email;
   _adminModalArea  = area;
@@ -4968,6 +4991,17 @@ function adminAbrirDar(uid, email, nombre, area) {
   _adminPintarBotonDar();
   document.getElementById('admin-modal-dar-curso').innerHTML =
     keys.map(k => `<option value="${k}">${ADMIN_NAMES[k]||k}</option>`).join('');
+  if (cursoPre) document.getElementById('admin-modal-dar-curso').value = cursoPre;
+  // Limpiar los campos de corrección y mostrar cómo está hoy ese usuario.
+  const cDias = document.getElementById('admin-modal-dar-dias');
+  const cCalc = document.getElementById('admin-modal-dar-calc');
+  if (cDias) cDias.value = '';
+  if (cCalc) cCalc.value = '';
+  const calcBox = document.getElementById('admin-modal-dar-calcbox');
+  if (calcBox) calcBox.style.display = (area === 'aplicativos') ? 'flex' : 'none';
+  _adminPintarEstado(uid, cursoPre || (keys[0] || ''), area);
+  const selCurso = document.getElementById('admin-modal-dar-curso');
+  if (selCurso) selCurso.onchange = () => _adminPintarEstado(uid, selCurso.value, area);
   document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
   document.getElementById('admin-modal-dar').classList.add('visible');
 }
@@ -5000,6 +5034,30 @@ function _adminPlanElegido() {
   return lista[sel ? (parseInt(sel.value, 10) || 0) : 0];
 }
 
+// Muestra cómo está HOY: hasta cuándo tiene acceso y cuántos cálculos le quedan.
+function _adminPintarEstado(uid, curso, area) {
+  const box = document.getElementById('admin-modal-dar-estado');
+  if (!box) return;
+  const u = _adminAlumnos.find(x => x.uid === uid);
+  const raw = u && (u.cursos_activos || {})[curso];
+  const partes = [];
+  if (raw) {
+    const dias = Math.ceil((new Date(raw) - new Date()) / 86400000);
+    partes.push(dias > 0
+      ? `Hoy tiene <b>${dias} días</b> de acceso (vence el ${new Date(raw).toLocaleDateString('es-PE')})`
+      : `Su acceso <b>venció</b> el ${new Date(raw).toLocaleDateString('es-PE')}`);
+  } else {
+    partes.push('Hoy <b>no tiene</b> este acceso');
+  }
+  if (area === 'aplicativos') {
+    const s = _adminSaldos[uid];
+    partes.push(s ? `Saldo: <b>${s.saldo} cálculos</b> (usó ${s.total_usado} de ${s.total_cargado})`
+                  : 'Saldo: <b>0 cálculos</b>');
+  }
+  box.innerHTML = partes.join(' · ');
+  box.style.display = 'block';
+}
+
 function adminCerrarModal() {
   document.getElementById('admin-modal-dar').classList.remove('visible');
   _adminModalUid = null;
@@ -5008,27 +5066,36 @@ function adminCerrarModal() {
 async function adminConfirmarDar() {
   const curso = document.getElementById('admin-modal-dar-curso').value;
   const esDiploma = (_adminModalArea === 'educativa');
-  // Diplomado = matrícula MANUAL sin vencimiento (se da y se quita a mano; pago externo por Odoo).
-  // Se usa /admin/extender con un plazo muy largo (≈10 años) para que no caduque solo.
-  const endpoint = '/admin/extender';
-  const dias = esDiploma ? 3650 : (_adminPlanElegido() || { dias: 30 }).dias;
-  const body = { uid: _adminModalUid, curso, dias };
+  const key = _getAdminKey();
+  const post = (ruta, cuerpo) => fetch(BACKEND + ruta, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+    body: JSON.stringify(cuerpo)
+  });
+  // ¿El área usó la corrección a mano? (días y/o cálculos escritos abajo)
+  const dManual = esDiploma ? '' : (document.getElementById('admin-modal-dar-dias')||{}).value;
+  const cManual = esDiploma ? '' : (document.getElementById('admin-modal-dar-calc')||{}).value;
+  const usaManual = (dManual !== '' && dManual != null) || (cManual !== '' && cManual != null);
   try {
-    const r = await fetch(BACKEND + endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
-      body: JSON.stringify(body)
-    });
-    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
-    // Paquete de cálculos: además del acceso, se le carga el saldo.
-    const plan = esDiploma ? null : _adminPlanElegido();
-    if (plan && plan.calculos) {
-      const rc = await fetch(BACKEND + '/admin/calculos/cargar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
-        body: JSON.stringify({ uid: _adminModalUid, cantidad: plan.calculos })
-      });
-      if (!rc.ok) throw new Error('Acceso dado, pero no se pudo cargar el saldo: ' + ((await rc.json().catch(()=>({}))).detail || rc.status));
+    if (usaManual) {
+      // Ajuste fino: suma/resta exactamente lo que se escribió.
+      if (dManual !== '' && dManual != null) {
+        const r = await post('/admin/extender', { uid: _adminModalUid, curso, dias: parseInt(dManual, 10) || 0 });
+        if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+      }
+      if (cManual !== '' && cManual != null) {
+        const rc = await post('/admin/calculos/cargar', { uid: _adminModalUid, cantidad: parseInt(cManual, 10) || 0 });
+        if (!rc.ok) throw new Error('No se pudo ajustar el saldo: ' + ((await rc.json().catch(()=>({}))).detail || rc.status));
+      }
+    } else {
+      // Alta normal por plan contratado.
+      const dias = esDiploma ? 3650 : (_adminPlanElegido() || { dias: 30 }).dias;
+      const r = await post('/admin/extender', { uid: _adminModalUid, curso, dias });
+      if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+      const plan = esDiploma ? null : _adminPlanElegido();
+      if (plan && plan.calculos) {
+        const rc = await post('/admin/calculos/cargar', { uid: _adminModalUid, cantidad: plan.calculos });
+        if (!rc.ok) throw new Error('Acceso dado, pero no se pudo cargar el saldo: ' + ((await rc.json().catch(()=>({}))).detail || rc.status));
+      }
     }
     adminCerrarModal();
     await adminCargar();
