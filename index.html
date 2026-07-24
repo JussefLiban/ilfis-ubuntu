@@ -4666,6 +4666,15 @@ function adminRenderSuscriptores() {
     const estado = bloqueado
       ? `<span class="cbadge cb-exp">Sin acceso</span> `
       : `<span class="cbadge cb-ok">Con acceso</span> `;
+    // Membresía de pago ($120/año). Hoy la plataforma es gratis, así que esto es
+    // el control para cuando empiece a cobrarse: quién la tiene y hasta cuándo.
+    const memRaw = (u.cursos_activos || {})[PLATAFORMA_KEY];
+    const memDias = memRaw ? Math.ceil((new Date(memRaw) - ahora) / 86400000) : null;
+    const memBadge = (memDias == null)
+      ? `<span class="cbadge cb-none">Sin membresía</span> `
+      : `<span class="cbadge ${memDias > 0 ? 'cb-ok' : 'cb-exp'}">Membresía ${memDias > 0 ? memDias + 'd' : 'vencida'}</span> `;
+    const nomMem = (u.nombre || u.email || '').replace(/'/g, "\'");
+    const accMem = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${_em}','${nomMem}','general')">Dar membresía</button>`;
     const accAcceso = bloqueado
       ? `<button class="btn-a btn-dar" onclick="adminDarAcceso('${u.uid}','${_em}')">Dar acceso</button>`
       : `<button class="btn-a btn-rev" onclick="adminQuitarAcceso('${u.uid}','${_em}')">Quitar acceso</button>`;
@@ -4674,12 +4683,13 @@ function adminRenderSuscriptores() {
     const accBorrar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${_em}','${nom}')">Borrar</button>`;
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
-      <td style="white-space:nowrap;min-width:200px;">${estado}${accAcceso} ${accBorrar}</td>
+      <td>${memBadge}</td>
+      <td style="white-space:nowrap;min-width:320px;">${accMem} ${estado}${accAcceso} ${accBorrar}</td>
     </tr>`;
   }).join('');
   box.innerHTML = filas
     ? `<table class="admin-table">
-      <thead><tr><th>Suscriptor</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Suscriptor</th><th>Membresía</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`
     : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminSuscFiltro || '')}" —</div>`;
@@ -4886,29 +4896,50 @@ async function adminReanudar(uid, llave, email) {
 
 
 // ── Qué contrató el cliente (tarifario de Planes y Precios) ───────────────
-// Cada opción dice cuantos DIAS de acceso conceder. El backend ya acepta
-// cualquier plazo (/admin/extender con "dias"), asi que esto es solo el panel.
+// Las opciones van AGRUPADAS y en el mismo orden del tarifario público.
+// "dias" = plazo de acceso a conceder. "calculos" = saldo a cargar (paquetes).
+// "porPuesto" = hay que repetir la operación con cada ingeniero del estudio.
 const PLANES_POR_AREA = {
   general: [
-    { txt: 'Membresía Plataforma — 1 año ($120)', dias: 365 },
-    { txt: 'Prueba / cortesía — 30 días',          dias: 30  },
+    { g: 'Membresía',  txt: 'Membresía anual — $120',            dias: 365 },
+    { g: 'Cortesía',   txt: 'Prueba / cortesía — 30 días',       dias: 30  },
   ],
   premium: [
-    { txt: '1 mes ($150)',                 dias: 30 },
-    { txt: '2 meses prepago ($250)',       dias: 60 },
-    { txt: '3 meses prepago ($300)',       dias: 90 },
-    { txt: 'Prueba / cortesía — 15 días',  dias: 15 },
+    { g: 'Suscripción por curso', txt: '1 mes — $150',                  dias: 30 },
+    { g: 'Suscripción por curso', txt: '2 meses prepago — $250',        dias: 60 },
+    { g: 'Suscripción por curso', txt: '3 meses prepago — $300',        dias: 90 },
+    { g: 'Cortesía',              txt: 'Prueba / cortesía — 15 días',   dias: 15 },
   ],
   aplicativos: [
-    { txt: 'Individual — 1 año ($400)',                    dias: 365 },
-    { txt: 'Estudio — 1 año, este ingeniero',              dias: 365 },
-    { txt: '30 días gratis (prueba del Calculador)',       dias: 30  },
-    // Los paquetes no son tiempo, son CANTIDAD: cargan saldo de cálculos.
-    { txt: 'Paquete de 5 cálculos ($150)',                 calculos: 5,  dias: 365 },
-    { txt: 'Paquete de 10 cálculos ($250)',                calculos: 10, dias: 365 },
-    { txt: 'Paquete de 20 cálculos ($400)',                calculos: 20, dias: 365 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '5 cálculos — $150',   calculos: 5,  dias: 365 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '10 cálculos — $250',  calculos: 10, dias: 365 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '20 cálculos — $400',  calculos: 20, dias: 365 },
+    { g: 'Planes anuales (cálculos ilimitados)', txt: 'Individual — $400 al año',                       dias: 365 },
+    { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 5 puestos — $260 c/u ($1.300 total)',    dias: 365, porPuesto: 5  },
+    { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 10 puestos — $240 c/u ($2.400 total)',   dias: 365, porPuesto: 10 },
+    { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 15 puestos — $220 c/u ($3.300 total)',   dias: 365, porPuesto: 15 },
+    { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 20 puestos — $200 c/u ($4.000 total)',   dias: 365, porPuesto: 20 },
+    { g: 'Cortesía', txt: '30 días gratis — prueba del Calculador', dias: 30 },
   ],
 };
+
+// Dibuja el desplegable agrupado, respetando el orden del tarifario.
+function _adminPintarPlanes(area) {
+  const sel = document.getElementById('admin-modal-dar-plan');
+  if (!sel) return;
+  const lista = PLANES_POR_AREA[area] || PLANES_POR_AREA.premium;
+  let html = '', grupoActual = null;
+  lista.forEach((p, i) => {
+    if (p.g !== grupoActual) {
+      if (grupoActual !== null) html += '</optgroup>';
+      html += `<optgroup label="${p.g}">`;
+      grupoActual = p.g;
+    }
+    html += `<option value="${i}">${p.txt}</option>`;
+  });
+  if (grupoActual !== null) html += '</optgroup>';
+  sel.innerHTML = html;
+}
 
 function adminAbrirDar(uid, email, nombre, area) {
   _adminModalUid   = uid;
@@ -4917,11 +4948,13 @@ function adminAbrirDar(uid, email, nombre, area) {
   // El modal solo ofrece los productos del área desde donde se abrió (cada área su producto).
   const keys = (area === 'aplicativos') ? APP_KEYS
              : (area === 'educativa')   ? DIPLOMA_KEYS
+             : (area === 'general')     ? [PLATAFORMA_KEY]
              : PREMIUM_KEYS;
   const esDiploma = (area === 'educativa');
   const tit  = document.getElementById('admin-modal-dar-titulo');
   if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo'
                            : esDiploma                ? 'Matricular en el diplomado'
+                           : (area === 'general')     ? 'Dar membresía de la plataforma'
                            : 'Dar acceso a curso';
   // El diplomado es MATRÍCULA MANUAL sin vencimiento (pago externo por Odoo).
   const planBox = document.getElementById('admin-modal-dar-planbox');
@@ -4929,7 +4962,7 @@ function adminAbrirDar(uid, email, nombre, area) {
   const lista   = esDiploma ? [] : (PLANES_POR_AREA[area] || PLANES_POR_AREA.premium);
   if (planBox) planBox.style.display = esDiploma ? 'none' : 'block';
   if (planSel && !esDiploma) {
-    planSel.innerHTML = lista.map((p, i) => `<option value="${i}">${p.txt}</option>`).join('');
+    _adminPintarPlanes(area);
     planSel.onchange = _adminPintarBotonDar;
   }
   _adminPintarBotonDar();
@@ -4952,7 +4985,12 @@ function _adminPintarBotonDar() {
     if (ayuda) ayuda.textContent = 'Se cargan ' + p.calculos + ' cálculos a su saldo (no vencen) y se le habilita el Calculador por ' + p.dias + ' días. Si ya tenía saldo, se le suma.';
     btn.textContent = 'Cargar ' + p.calculos + ' cálculos';
   } else {
-    if (ayuda) ayuda.textContent = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
+    let txt = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
+    if (p && p.porPuesto) {
+      txt += ' OJO: el plan Estudio es por ingeniero — repite esta operación con cada uno de los '
+           + p.porPuesto + ' puestos contratados.';
+    }
+    if (ayuda) ayuda.textContent = txt;
     btn.textContent = p ? ('Dar ' + p.dias + ' días de acceso') : 'Dar acceso';
   }
 }
