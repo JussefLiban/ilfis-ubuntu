@@ -1066,6 +1066,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <p style="font-size:0.8rem;color:#7a8a9a;margin-bottom:14px;" id="admin-modal-dar-nombre"></p>
     <!-- Las opciones se llenan por JS según el área (Premium = cursos; Aplicativos = calculadoras) -->
     <select id="admin-modal-dar-curso"></select>
+    <!-- Lo que el cliente CONTRATÓ. Se llena por JS con el tarifario del área. -->
+    <div id="admin-modal-dar-planbox" style="margin-top:12px;">
+      <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">Qué contrató</label>
+      <select id="admin-modal-dar-plan"></select>
+      <p id="admin-modal-dar-ayuda" style="font-size:0.76rem;color:#7a8a9a;margin-top:7px;"></p>
+    </div>
     <div class="admin-modal-btns">
       <button class="btn-cancel" onclick="adminCerrarModal()">Cancelar</button>
       <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarDar()">Dar 30 días de acceso</button>
@@ -4793,12 +4799,20 @@ function eduExportarDatos() {
 }
 
 async function adminDarPlataforma(uid, email) {
-  if (!confirm(`¿Dar 30 días de acceso de pago a la plataforma a ${email}?\n(Hoy la plataforma es gratis: esta llave es el control para cuando sea de pago.)`)) return;
+  // La membresía del tarifario es ANUAL ($120). Se ofrece también un mes suelto por si
+  // se vende una prueba o una cortesía.
+  const resp = prompt(`Membresía de la plataforma para ${email}\n\n`
+    + `Escribe 1 para dar 1 AÑO (membresía $120)\n`
+    + `Escribe 2 para dar 30 días (prueba o cortesía)\n\n`
+    + `(Hoy la plataforma es gratis: esta llave es el control para cuando sea de pago.)`, '1');
+  if (resp === null) return;
+  const dias = (String(resp).trim() === '2') ? 30 : 365;
+  if (!confirm(`¿Confirmas dar ${dias} días de membresía a ${email}?`)) return;
   try {
-    const r = await fetch(BACKEND + '/admin/dar-acceso', {
+    const r = await fetch(BACKEND + '/admin/extender', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
-      body: JSON.stringify({ uid, curso: PLATAFORMA_KEY })
+      body: JSON.stringify({ uid, curso: PLATAFORMA_KEY, dias })
     });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     await adminCargar();
@@ -4860,6 +4874,28 @@ async function adminReanudar(uid, llave, email) {
   } catch(e) { alert('Error: ' + e.message); }
 }
 
+
+// ── Qué contrató el cliente (tarifario de Planes y Precios) ───────────────
+// Cada opción dice cuantos DIAS de acceso conceder. El backend ya acepta
+// cualquier plazo (/admin/extender con "dias"), asi que esto es solo el panel.
+const PLANES_POR_AREA = {
+  general: [
+    { txt: 'Membresía Plataforma — 1 año ($120)', dias: 365 },
+    { txt: 'Prueba / cortesía — 30 días',          dias: 30  },
+  ],
+  premium: [
+    { txt: '1 mes ($150)',                 dias: 30 },
+    { txt: '2 meses prepago ($250)',       dias: 60 },
+    { txt: '3 meses prepago ($300)',       dias: 90 },
+    { txt: 'Prueba / cortesía — 15 días',  dias: 15 },
+  ],
+  aplicativos: [
+    { txt: 'Individual — 1 año ($400)',                    dias: 365 },
+    { txt: 'Estudio — 1 año, este ingeniero',              dias: 365 },
+    { txt: '30 días gratis (prueba del Calculador)',       dias: 30  },
+  ],
+};
+
 function adminAbrirDar(uid, email, nombre, area) {
   _adminModalUid   = uid;
   _adminModalEmail = email;
@@ -4873,13 +4909,38 @@ function adminAbrirDar(uid, email, nombre, area) {
   if (tit) tit.textContent = (area === 'aplicativos') ? 'Dar acceso a aplicativo'
                            : esDiploma                ? 'Matricular en el diplomado'
                            : 'Dar acceso a curso';
-  // El diplomado es MATRÍCULA MANUAL sin vencimiento (pago externo por Odoo); los demás, 30 días.
-  const btn = document.querySelector('#admin-modal-dar .btn-dar');
-  if (btn) btn.textContent = esDiploma ? 'Matricular (acceso manual)' : 'Dar 30 días de acceso';
+  // El diplomado es MATRÍCULA MANUAL sin vencimiento (pago externo por Odoo).
+  const planBox = document.getElementById('admin-modal-dar-planbox');
+  const planSel = document.getElementById('admin-modal-dar-plan');
+  const lista   = esDiploma ? [] : (PLANES_POR_AREA[area] || PLANES_POR_AREA.premium);
+  if (planBox) planBox.style.display = esDiploma ? 'none' : 'block';
+  if (planSel && !esDiploma) {
+    planSel.innerHTML = lista.map((p, i) => `<option value="${i}">${p.txt}</option>`).join('');
+    planSel.onchange = _adminPintarBotonDar;
+  }
+  _adminPintarBotonDar();
   document.getElementById('admin-modal-dar-curso').innerHTML =
     keys.map(k => `<option value="${k}">${ADMIN_NAMES[k]||k}</option>`).join('');
   document.getElementById('admin-modal-dar-nombre').textContent = nombre || email;
   document.getElementById('admin-modal-dar').classList.add('visible');
+}
+
+
+// El boton del modal dice exactamente lo que va a conceder, para que el area
+// administrativa no se equivoque de plazo.
+function _adminPintarBotonDar() {
+  const btn = document.querySelector('#admin-modal-dar .btn-dar');
+  if (!btn) return;
+  if (_adminModalArea === 'educativa') { btn.textContent = 'Matricular (acceso manual)'; return; }
+  const p = _adminPlanElegido();
+  const ayuda = document.getElementById('admin-modal-dar-ayuda');
+  if (ayuda) ayuda.textContent = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
+  btn.textContent = p ? ('Dar ' + p.dias + ' días de acceso') : 'Dar acceso';
+}
+function _adminPlanElegido() {
+  const lista = PLANES_POR_AREA[_adminModalArea] || PLANES_POR_AREA.premium;
+  const sel = document.getElementById('admin-modal-dar-plan');
+  return lista[sel ? (parseInt(sel.value, 10) || 0) : 0];
 }
 
 function adminCerrarModal() {
@@ -4892,9 +4953,9 @@ async function adminConfirmarDar() {
   const esDiploma = (_adminModalArea === 'educativa');
   // Diplomado = matrícula MANUAL sin vencimiento (se da y se quita a mano; pago externo por Odoo).
   // Se usa /admin/extender con un plazo muy largo (≈10 años) para que no caduque solo.
-  const endpoint = esDiploma ? '/admin/extender' : '/admin/dar-acceso';
-  const body = esDiploma ? { uid: _adminModalUid, curso, dias: 3650 }
-                         : { uid: _adminModalUid, curso };
+  const endpoint = '/admin/extender';
+  const dias = esDiploma ? 3650 : (_adminPlanElegido() || { dias: 30 }).dias;
+  const body = { uid: _adminModalUid, curso, dias };
   try {
     const r = await fetch(BACKEND + endpoint, {
       method: 'POST',
