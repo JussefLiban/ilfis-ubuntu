@@ -4524,7 +4524,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
           const exp  = new Date(cursos[k]);
           const dias = Math.ceil((exp - ahora) / 86400000);
           const cls  = !dias || dias <= 0 ? 'cb-exp' : dias <= 30 ? 'cb-warn' : 'cb-ok';
-          const lbl  = dias <= 0 ? 'Vencido' : `${dias}d`;
+          const lbl  = dias <= 0 ? 'Vencido' : `vence en ${dias}d`;
           return `<span class="cbadge ${cls}">${ADMIN_NAMES[k]||k} ${lbl}</span>`;
         }).join('') + salBadge;
     // Cada acceso que ya tiene: Modificar (abre el modal con su estado) y Quitar.
@@ -4692,7 +4692,7 @@ function adminRenderSuscriptores() {
     const tieneMem = (memDias != null);
     const memBadge = !tieneMem
       ? `<span class="cbadge cb-none">Sin membresía</span> `
-      : `<span class="cbadge ${memDias > 0 ? 'cb-ok' : 'cb-exp'}">Membresía ${memDias > 0 ? memDias + 'd' : 'vencida'}</span> `;
+      : `<span class="cbadge ${memDias > 0 ? 'cb-ok' : 'cb-exp'}">Membresía ${memDias > 0 ? 'vence en ' + memDias + 'd' : 'vencida'}</span> `;
     const nomMem = (u.nombre || u.email || '').replace(/'/g, "\'");
     // Igual que en los otros módulos: si ya tiene → Modificar/Quitar; si no → + Dar membresía.
     const accMem = tieneMem
