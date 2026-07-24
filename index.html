@@ -4273,7 +4273,8 @@ function adminRenderRecaud() {
       if (new Date(exp) > ahora) conteo[curso] = (conteo[curso] || 0) + 1;
     }
   }
-  const PRECIO = 000;
+  // Sin importes: el precio depende de cuantos meses prepago cada alumno (150/125/100),
+  // asi que un numero unico seria falso. Se muestra el CONTEO, que si es exacto.
   const cursos = Object.entries(conteo).filter(([k]) => !NO_PREMIUM.includes(k)).sort((a,b) => b[1] - a[1]);
   const total  = cursos.reduce((s, [,n]) => s + n, 0);
   const html   = cursos.map(([k, n]) => `
@@ -4281,13 +4282,11 @@ function adminRenderRecaud() {
       <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
       <div class="rc-num">${n}</div>
       <div class="rc-sub">alumnos activos</div>
-      <div class="rc-monto">$${n * PRECIO}</div>
     </div>`).join('') + `
     <div class="rc-card" style="border-color:#2a7a4a;">
       <div class="rc-nombre" style="color:#5dcc85;font-weight:700;">TOTAL</div>
       <div class="rc-num">${total}</div>
       <div class="rc-sub">alumnos activos</div>
-      <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
     </div>`;
   document.getElementById('admin-recaud-content').innerHTML = `<div class="recaud-grid">${html}</div>`;
 }
@@ -4304,21 +4303,30 @@ function adminRenderAplicativos() {
       if (APP_KEYS.includes(curso) && new Date(exp) > ahora) conteo[curso] = (conteo[curso] || 0) + 1;
     }
   }
-  const PRECIO = 000;
+  // Los de PAQUETE no tienen suscripcion por tiempo: se cuentan por su saldo.
+  // Sin ellos, quien compro un paquete era invisible aqui.
+  let conPaquete = 0, calculosVivos = 0;
+  for (const uid in _adminSaldos) {
+    const s = _adminSaldos[uid] || {};
+    if ((s.saldo || 0) > 0) { conPaquete++; calculosVivos += s.saldo; }
+  }
   const items = Object.entries(conteo).sort((a,b) => b[1] - a[1]);
-  const total = items.reduce((s, [,n]) => s + n, 0);
+  const porTiempo = items.reduce((s, [,n]) => s + n, 0);
   const html  = items.map(([k, n]) => `
     <div class="rc-card">
       <div class="rc-nombre">${ADMIN_NAMES[k] || k}</div>
       <div class="rc-num">${n}</div>
-      <div class="rc-sub">usuarios activos</div>
-      <div class="rc-monto">$${n * PRECIO}</div>
+      <div class="rc-sub">con plan por tiempo</div>
     </div>`).join('') + `
+    <div class="rc-card">
+      <div class="rc-nombre">Paquetes de cálculos</div>
+      <div class="rc-num">${conPaquete}</div>
+      <div class="rc-sub">con saldo · ${calculosVivos} cálculo${calculosVivos === 1 ? '' : 's'} sin usar</div>
+    </div>
     <div class="rc-card" style="border-color:#2a7a4a;">
       <div class="rc-nombre" style="color:#5dcc85;font-weight:700;">TOTAL</div>
-      <div class="rc-num">${total}</div>
+      <div class="rc-num">${porTiempo + conPaquete}</div>
       <div class="rc-sub">usuarios activos</div>
-      <div class="rc-monto" style="font-size:1rem;">$${total * PRECIO}</div>
     </div>`;
   box.innerHTML = `<div class="recaud-grid">${html}</div>`;
 }
