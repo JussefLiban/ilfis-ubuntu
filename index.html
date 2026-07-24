@@ -4437,7 +4437,13 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
   const _filtro = (_adminAccesosFiltro[boxId] || '').toLowerCase();
   let _fuente = _filtro
     ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_filtro) || (u.email || '').toLowerCase().includes(_filtro))
-    : _adminAlumnos;
+    : _adminAlumnos.slice();
+  // Orden alfabético por nombre (o correo si no hay nombre). La Educativa se
+  // reordena luego por número de roster para cuadrar con el profesor.
+  if (area !== 'educativa') {
+    _fuente = _fuente.slice().sort((a, b) =>
+      (a.nombre || a.email || '').toLowerCase().localeCompare((b.nombre || b.email || '').toLowerCase(), 'es'));
+  }
   // Plataforma Educativa: por defecto SOLO los matriculados del curso elegido; el modo
   // "Matricular alumno" abre el buscador para dar de alta a alguien de toda la base.
   let eduKey = null;
