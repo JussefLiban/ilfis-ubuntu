@@ -85,7 +85,48 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 14px 30
 .it-item p { font-size: .85rem; color: #b8c6dd; }
 .it-item p b { color: #cfe0f7; }
 
+.elige { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.elige-fila { display: flex; align-items: flex-start; gap: 14px; }
+.elige-n { flex-shrink: 0; min-width: 96px; text-align: center; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; padding: 8px 10px; font-size: .85rem; font-weight: 700; color: #fff; }
+.elige-t { font-size: .87rem; color: #b8c6dd; padding-top: 6px; }
+.elige-t b { color: #cfe0f7; }
+@media (max-width: 520px) { .elige-fila { flex-direction: column; gap: 6px; } .elige-n { min-width: 0; align-self: flex-start; } }
+
 .cursos-disp { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; padding: 18px 22px; margin-bottom: 22px; }
+
+/* ── GUÍA "¿cuál me conviene?" (integrada en esta pagina) ── */
+.paso { background: #16213e; border: 1px solid #2a2a5a; border-radius: 12px; padding: 20px 22px; margin-bottom: 14px; }
+.paso.inactivo { opacity: .45; }
+.paso-num { font-size: .7rem; text-transform: uppercase; letter-spacing: 1.2px; color: #7a8a9a; margin-bottom: 6px; }
+.paso h3 { font-size: 1.05rem; color: #fff; margin-bottom: 4px; }
+.paso .ayuda { font-size: .82rem; color: #7a8a9a; margin-bottom: 14px; }
+.ops { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+.op { background: #0f3460; border: 1px solid #2a5a9a; border-radius: 9px; padding: 12px 14px; cursor: pointer; text-align: left; color: #e0e0e0; font-family: inherit; font-size: .9rem; transition: all .15s; }
+.op:hover { border-color: #5daaff; background: #14406f; }
+.op.sel { border-color: #c0392b; background: rgba(192,57,43,.16); }
+.op b { display: block; color: #fff; font-weight: 600; }
+.op span { display: block; font-size: .76rem; color: #8fa6c4; margin-top: 3px; }
+#resultado { display: none; margin-top: 22px; }
+.rec { background: #16213e; border: 1px solid #c0392b; border-radius: 12px; padding: 24px 26px 20px; }
+.rec-tag { font-size: .7rem; text-transform: uppercase; letter-spacing: 1.2px; color: #e87272; margin-bottom: 8px; }
+.rec h3 { font-size: 1.45rem; color: #fff; margin-bottom: 4px; }
+.rec-precio { font-size: 2.3rem; color: #fff; font-weight: 700; margin: 10px 0 2px; }
+.rec-precio small { font-size: .9rem; color: #7a8a9a; font-weight: 400; }
+.rec-sub { font-size: .85rem; color: #5daaff; margin-bottom: 16px; }
+.rec-por { font-size: .9rem; color: #b8c6dd; border-top: 1px solid #22284a; padding-top: 16px; }
+.rec-por b { color: #cfe0f7; }
+.comp { margin-top: 18px; }
+.comp-t { font-size: .72rem; text-transform: uppercase; letter-spacing: 1.2px; color: #7a8a9a; margin-bottom: 10px; }
+.comp table { min-width: 0; }
+tr.gana td { background: rgba(46,204,113,.08); color: #fff; }
+tr.gana td:first-child::before { content: '¹3 '; color: #5dcc85; font-weight: 700; }
+.extras { background: rgba(46,204,113,.06); border: 1px solid rgba(46,204,113,.3); border-radius: 10px; padding: 14px 18px; margin-top: 18px; font-size: .85rem; color: #b8c6dd; }
+.extras b { color: #5dcc85; }
+.acciones { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.btn { border: none; border-radius: 9px; padding: 12px 20px; font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-block; }
+.btn-rojo { background: #c0392b; color: #fff; }
+.btn-rojo:hover { background: #a93226; }
+.btn-gris { background: transparent; color: #9fb0d0; border: 1px solid #2a2a5a; }
 
 /* ── TABLA ESTUDIO ──────────────────────────────────────── */
 .tabla-wrap { overflow-x: auto; border: 1px solid #2a2a5a; border-radius: 12px; background: #16213e; }
@@ -145,7 +186,7 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
 
   <div class="intro">
     <h2>Planes y precios</h2>
-    <p>Todos los precios están en dólares estadounidenses (USD) e incluyen impuestos.
+    <p>Todos los precios están en dólares estadounidenses (USD).
        Durante el periodo de lanzamiento el acceso a la plataforma es gratuito: no se cobra nada hasta el 31 de diciembre de 2026.</p>
   </div>
 
@@ -313,12 +354,21 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
       </div>
       <div class="card" style="justify-content:center;background:transparent;border-style:dashed;">
         <p style="font-size:.88rem;color:#9fb0d0;">
-          <b style="color:#cfe0f7;">La pregunta no es cuánto cuesta, es cada cuánto calculas.</b>
-          Pasando los 10 cálculos al año, el paquete más grande cuesta lo mismo que el Individual
-          ($400), pero con el Individual <b style="color:#cfe0f7;">no tienes tope ni llevas la cuenta</b>.
-          Si calculas de vez en cuando —unos pocos proyectos al año— el paquete gana,
-          porque lo pagas una sola vez y no vence: no vuelves a pagar hasta agotarlo.
+          <b style="color:#cfe0f7;">Hazte una sola pregunta: ¿cuántos proyectos calculas al año?</b>
         </p>
+        <div class="elige">
+          <div class="elige-fila">
+            <span class="elige-n">10 o menos</span>
+            <span class="elige-t"><b>Compra un paquete.</b> Pagas una vez y ya. Los cálculos
+              no se vencen: te esperan ahí hasta que los uses.</span>
+          </div>
+          <div class="elige-fila">
+            <span class="elige-n">11 o más</span>
+            <span class="elige-t"><b>Toma el Individual.</b> Cuesta $400 al año, lo mismo que el
+              paquete de 20 cálculos, pero <b>no tiene límite</b>: calcula todo lo que quieras
+              y olvídate de llevar la cuenta.</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -349,7 +399,57 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
       nunca por proyecto. Cada puesto permite una sesión activa a la vez.
     </div>
 
-    <a class="cta" href="guia-calculador.html">¿Cuál opción me conviene? — Respóndelo en 3 preguntas</a>
+    <a class="cta" href="#guia">¿Cuál opción me conviene? — Respóndelo en 3 preguntas</a>
+  </section>
+
+
+  <!-- ── GUÍA: ¿cuál opción me conviene? (vive DENTRO de esta misma página) ── -->
+  <section class="seccion" id="guia">
+    <div class="sec-head">
+      <h3>¿Cuál opción del Calculador me conviene?</h3>
+      <span class="sec-sub">Responde tres preguntas y te decimos cuál, con la cuenta hecha</span>
+    </div>
+<div class="paso" id="paso1">
+    <div class="paso-num">Pregunta 1 de 3</div>
+    <h3>¿Cuántos ingenieros van a usar el Calculador?</h3>
+    <p class="ayuda">Cuenta solo a quienes realmente lo van a abrir para calcular.</p>
+    <div class="ops">
+      <button class="op" data-p="ing" data-v="1"><b>Solo yo</b><span>1 ingeniero</span></button>
+      <button class="op" data-p="ing" data-v="2"><b>2 ingenieros</b><span>Somos dos</span></button>
+      <button class="op" data-p="ing" data-v="3"><b>3 ingenieros</b><span>Equipo chico</span></button>
+      <button class="op" data-p="ing" data-v="4"><b>4 ingenieros</b><span>Equipo chico</span></button>
+      <button class="op" data-p="ing" data-v="5"><b>5 a 9</b><span>Oficina</span></button>
+      <button class="op" data-p="ing" data-v="10"><b>10 a 14</b><span>Oficina mediana</span></button>
+      <button class="op" data-p="ing" data-v="15"><b>15 a 19</b><span>Oficina grande</span></button>
+      <button class="op" data-p="ing" data-v="20"><b>20 o más</b><span>Empresa</span></button>
+    </div>
+  </div>
+
+  <div class="paso inactivo" id="paso2">
+    <div class="paso-num">Pregunta 2 de 3</div>
+    <h3>¿Cuántos expedientes de cálculo generas al año?</h3>
+    <p class="ayuda">Cuenta expedientes finales entregados, no las veces que le das a calcular.
+       Probar y recalcular no consume nada.</p>
+    <div class="ops">
+      <button class="op" data-p="proy" data-v="5"><b>Hasta 5</b><span>Algún proyecto suelto</span></button>
+      <button class="op" data-p="proy" data-v="10"><b>Entre 6 y 10</b><span>Uno cada mes o dos</span></button>
+      <button class="op" data-p="proy" data-v="20"><b>Entre 11 y 20</b><span>Es parte de mi trabajo</span></button>
+      <button class="op" data-p="proy" data-v="99"><b>Más de 20</b><span>Calculo todo el tiempo</span></button>
+    </div>
+  </div>
+
+  <div class="paso inactivo" id="paso3">
+    <div class="paso-num">Pregunta 3 de 3</div>
+    <h3>¿Cómo prefieres pagar?</h3>
+    <p class="ayuda">Los paquetes de cálculos se pagan una sola vez y no caducan.
+       Los planes por ingeniero se renuevan cada año.</p>
+    <div class="ops">
+      <button class="op" data-p="pago" data-v="anual"><b>Cada año está bien</b><span>Prefiero no tener tope de cálculos</span></button>
+      <button class="op" data-p="pago" data-v="unico"><b>Pagar una sola vez</b><span>No quiero un gasto que se repite</span></button>
+    </div>
+  </div>
+
+  <div id="resultado"></div>
   </section>
 
   <!-- ── 3. CLASES PREMIUM ─────────────────────────────── -->
@@ -419,6 +519,166 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
   </footer>
 
 </div>
+
+<script>
+var R = { ing: null, proy: null, pago: null };
+
+var PAQ = { 5: 150, 10: 250, 20: 400 };
+var INDIV = 400;
+var ESTUDIO = { 5: 260, 10: 240, 15: 220, 20: 200 };
+
+document.querySelectorAll('.op').forEach(function (b) {
+  b.onclick = function () {
+    var p = b.dataset.p;
+    document.querySelectorAll('.op[data-p="' + p + '"]').forEach(function (o) { o.classList.remove('sel'); });
+    b.classList.add('sel');
+    R[p] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v;
+    // Con 5 o más ingenieros la cantidad de proyectos no cambia la respuesta: es por puesto.
+    if (p === 'ing' && R.ing >= 5) { R.proy = null; R.pago = null; }
+    refrescar();
+  };
+});
+
+function refrescar() {
+  var necesitaMas = R.ing !== null && R.ing < 5;
+  document.getElementById('paso2').classList.toggle('inactivo', !necesitaMas);
+  document.getElementById('paso3').classList.toggle('inactivo', !(necesitaMas && R.proy !== null));
+  var listo = R.ing !== null && (R.ing >= 5 || (R.proy !== null && R.pago !== null));
+  if (listo) { mostrar(calcular()); }
+}
+
+function money(n) { return '$' + n.toLocaleString('en-US'); }
+
+function calcular() {
+  var ing = R.ing;
+
+  // ── 5 o más ingenieros: plan Estudio, tramo que cubre al equipo ──
+  if (ing >= 5) {
+    var tramo = ing <= 5 ? 5 : ing <= 10 ? 10 : ing <= 15 ? 15 : 20;
+    var pu = ESTUDIO[tramo], total = pu * tramo;
+    return {
+      titulo: 'Plan Estudio — ' + tramo + ' puestos',
+      precio: money(pu), unidad: '/ ingeniero al año',
+      sub: money(total) + ' al año por los ' + tramo + ' puestos · cálculos ilimitados',
+      por: 'Con <b>' + (ing >= 20 ? '20 o más' : ing) + ' ingenieros</b> el plan Estudio es el único que baja el precio por cabeza. '
+         + 'A ' + money(pu) + ' cada uno pagas ' + Math.round((1 - pu / INDIV) * 100) + '% menos que comprando planes Individuales sueltos '
+         + '(' + money(INDIV) + ' cada uno). Los cálculos son ilimitados: se cobra por ingeniero y por año, nunca por proyecto.',
+      tabla: [
+        ['Plan Estudio de ' + tramo + ' puestos', money(total) + ' al año', true],
+        [tramo + ' planes Individuales', money(INDIV * tramo) + ' al año', false]
+      ]
+    };
+  }
+
+  // ── 2 a 4 ingenieros: comparar individuales sueltos contra el Estudio de 5 ──
+  if (ing >= 2) {
+    var sueltos = INDIV * ing, est5 = ESTUDIO[5] * 5;
+    if (sueltos <= est5) {
+      return {
+        titulo: ing + ' planes Individuales',
+        precio: money(INDIV), unidad: '/ ingeniero al año',
+        sub: money(sueltos) + ' al año en total · cálculos ilimitados para cada uno',
+        por: 'Siendo <b>' + ing + '</b>, sale más barato un plan Individual por cabeza que el Estudio más chico, '
+           + 'que es de 5 puestos y cuesta ' + money(est5) + '. Cada uno tiene cálculos ilimitados y su propia sesión.',
+        tabla: [
+          [ing + ' planes Individuales', money(sueltos) + ' al año', true],
+          ['Plan Estudio de 5 puestos', money(est5) + ' al año', false]
+        ]
+      };
+    }
+    return {
+      titulo: 'Plan Estudio — 5 puestos',
+      precio: money(ESTUDIO[5]), unidad: '/ ingeniero al año',
+      sub: money(est5) + ' al año · cálculos ilimitados · te sobra un puesto',
+      por: 'Siendo <b>4</b>, el Estudio de 5 puestos (' + money(est5) + ') cuesta menos que cuatro planes Individuales ('
+         + money(sueltos) + '), y encima te queda un puesto libre para quien entre después.',
+      tabla: [
+        ['Plan Estudio de 5 puestos', money(est5) + ' al año', true],
+        ['4 planes Individuales', money(sueltos) + ' al año', false]
+      ]
+    };
+  }
+
+  // ── 1 ingeniero ──
+  var p = R.proy;
+
+  if (R.pago === 'unico') {
+    var paq = p <= 5 ? 5 : p <= 10 ? 10 : 20;
+    var dura = paq >= p ? Math.floor(paq / Math.max(p, 1)) : 0;
+    return {
+      titulo: 'Paquete de ' + paq + ' cálculos',
+      precio: money(PAQ[paq]), unidad: 'pago único',
+      sub: money(PAQ[paq] / paq) + ' por cálculo · sin vencimiento',
+      por: 'Prefieres no tener un gasto que se repita, y los paquetes no caducan: pagas una vez y los usas '
+         + 'hasta agotarlos' + (dura >= 2 ? ', que a tu ritmo te durarían cerca de ' + dura + ' años' : '') + '. '
+         + 'Solo necesitas mantener tu membresía al día, como para todo lo demás en la plataforma.',
+      tabla: [
+        ['Paquete de ' + paq + ' cálculos', money(PAQ[paq]) + ' una sola vez', true],
+        ['Plan Individual', money(INDIV) + ' cada año', false]
+      ]
+    };
+  }
+
+  if (p <= 10) {
+    var paq2 = p <= 5 ? 5 : 10;
+    return {
+      titulo: 'Paquete de ' + paq2 + ' cálculos',
+      precio: money(PAQ[paq2]), unidad: 'pago único',
+      sub: money(PAQ[paq2] / paq2) + ' por cálculo · sin vencimiento',
+      por: 'Con <b>' + (p <= 5 ? 'hasta 5' : 'entre 6 y 10') + ' expedientes al año</b> el paquete te sale más barato que el plan Individual, '
+         + 'que cuesta ' + money(INDIV) + '. Y si un año calculas menos, no pierdes nada: los cálculos que no uses quedan guardados.',
+      tabla: [
+        ['Paquete de ' + paq2 + ' cálculos', money(PAQ[paq2]) + ' una sola vez', true],
+        ['Plan Individual', money(INDIV) + ' cada año', false]
+      ]
+    };
+  }
+
+  return {
+    titulo: 'Plan Individual',
+    precio: money(INDIV), unidad: '/ año',
+    sub: 'Cálculos ilimitados · 1 ingeniero · 1 sesión a la vez',
+    por: 'Pasando los 10 expedientes al año ya no hay paquete que te alcance: el más grande es de 20 cálculos y cuesta '
+       + money(PAQ[20]) + ', lo mismo que el Individual. <b>Por el mismo dinero, el Individual no tiene tope</b> '
+       + 'y no tienes que ir contando cuántos te quedan.',
+    tabla: [
+      ['Plan Individual', money(INDIV) + ' al año, sin tope', true],
+      ['Paquete de 20 cálculos', money(PAQ[20]) + ', se acaba a los 20', false]
+    ]
+  };
+}
+
+function mostrar(r) {
+  var filas = r.tabla.map(function (f) {
+    return '<tr class="' + (f[2] ? 'gana' : '') + '"><td>' + f[0] + '</td><td>' + f[1] + '</td></tr>';
+  }).join('');
+  document.getElementById('resultado').innerHTML =
+    '<div class="rec">'
+    + '<div class="rec-tag">Lo que te conviene</div>'
+    + '<h3>' + r.titulo + '</h3>'
+    + '<div class="rec-precio">' + r.precio + ' <small>' + r.unidad + '</small></div>'
+    + '<div class="rec-sub">' + r.sub + '</div>'
+    + '<div class="rec-por">' + r.por + '</div>'
+    + '<div class="comp"><div class="comp-t">La cuenta, para que la compruebes</div>'
+    + '<table><thead><tr><th>Opción</th><th>Lo que pagas</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
+    + '<div class="extras">Sea cual sea el plan, incluye <b>el primer mes ilimitado de regalo</b> '
+    + '(calculas sin límite y no se descuenta nada de tu paquete) y <b>una clase en vivo al mes</b> '
+    + 'con un especialista de ILFIS para resolver dudas de tus proyectos.</div>'
+    + '<div class="acciones">'
+    + '<button class="btn btn-rojo" onclick="reiniciar()">Empezar de nuevo</button>'
+    + '</div></div>';
+  document.getElementById('resultado').style.display = 'block';
+}
+
+function reiniciar() {
+  R = { ing: null, proy: null, pago: null };
+  document.querySelectorAll('.op').forEach(function (o) { o.classList.remove('sel'); });
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('paso2').classList.add('inactivo');
+  document.getElementById('paso3').classList.add('inactivo');
+  document.getElementById('guia').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
 
 </body>
 </html>
