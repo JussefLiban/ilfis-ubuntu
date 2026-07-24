@@ -1084,7 +1084,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <input id="admin-modal-dar-calc" type="number" placeholder="cálculos" style="width:110px;" title="Cálculos a sumar al saldo. Negativo para restar.">
           <span style="font-size:0.74rem;color:#7a8a9a;">cálculos al saldo (negativo = restar)</span>
         </div>
-        <p style="font-size:0.72rem;color:#7a8a9a;margin-top:8px;">Si escribes algo aquí, manda esto en vez del plan de arriba.</p>
+        <p style="font-size:0.72rem;color:#7a8a9a;margin-top:8px;">Suma lo que escribas (o resta si es negativo). Si escribes algo aquí, se manda esto en vez del plan de arriba.<br>Ejemplo: tiene 55 cálculos y quieres dejarle 5 &rarr; escribe <b style="color:#cfe0f7;">-50</b>.</p>
       </details>
     </div>
     <div class="admin-modal-btns">
@@ -4971,10 +4971,14 @@ function _adminPintarBotonDar() {
   const p = _adminPlanElegido();
   const ayuda = document.getElementById('admin-modal-dar-ayuda');
   if (p && p.calculos) {
-    if (ayuda) ayuda.textContent = 'Se cargan ' + p.calculos + ' cálculos a su saldo (no vencen). Con saldo ya puede entrar al Calculador; no se le da acceso por tiempo, porque eso seria ilimitado. Si ya tenia saldo, se le suma.';
-    btn.textContent = 'Cargar ' + p.calculos + ' cálculos';
+    {
+      const s0 = (_adminSaldos[_adminModalUid] || {}).saldo || 0;
+      if (ayuda) ayuda.textContent = 'SUMA ' + p.calculos + ' cálculos a los ' + s0 + ' que ya tiene: quedará con '
+        + (s0 + p.calculos) + '. No vencen. Para CAMBIAR de plan, primero pulsa Quitar y luego da el nuevo.';
+    }
+    btn.textContent = 'Sumar ' + p.calculos + ' cálculos';
   } else {
-    let txt = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
+    let txt = p ? ('SUMA ' + p.dias + ' días. Si ya tiene acceso vigente, se le añaden al final; si no, cuentan desde hoy. Para CAMBIAR de plan, primero pulsa Quitar y luego da el nuevo.') : '';
     if (p && p.porPuesto) {
       txt += ' OJO: el plan Estudio es por ingeniero — repite esta operación con cada uno de los '
            + p.porPuesto + ' puestos contratados.';
