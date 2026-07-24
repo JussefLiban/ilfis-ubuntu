@@ -1406,6 +1406,7 @@ function aplicarSesion(s){
   // AL FINAL: la identidad del proyecto guardado manda. Se fija aqui porque la
   // reconstruccion del plano genera una nueva y la pisaria.
   window.PROY_ID = _pidGuardado || window.PROY_ID || null;
+  try { setTimeout(function(){ if(window._pintarSaldo) window._pintarSaldo(); }, 400); } catch(e){}
 }
 // (Autoguardado en el navegador ELIMINADO 2026-06-14: serializaba el DXF entero en cada tecla y alimentaba la auto-apertura del último caso. El guardado ahora es explícito: "Guardar", "Guardar como" y "Recientes".)
 let _fileHandle=null;   // archivo de sesión "abierto" (para que Guardar sobrescriba sin preguntar)
@@ -5722,12 +5723,25 @@ window._pintarSaldo = function(){
 function _pedirSaldo(el){
   fetch('https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculos/saldo', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ id_token: window._ilfisToken || '' })
+    body: JSON.stringify({ id_token: window._ilfisToken || '',
+                           proyecto_id: (typeof _proyId==='function' ? _proyId() : '') })
   }).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(j){
       if (!j) return;
       var n = j.saldo || 0;
+      // Si ESTE proyecto ya se pago, se dice claro: generar su expediente no cuesta.
+      if (j.proyecto_pagado) {
+        window._proyectoYaCobrado = true;
+        el.textContent = 'Proyecto ya pagado · te quedan ' + n;
+        el.style.background = 'rgba(46,204,113,.15)';
+        el.style.color      = '#5dcc85';
+        el.style.border     = '1px solid rgba(46,204,113,.45)';
+        el.style.display    = 'inline-block';
+        el.title = 'Este proyecto ya consumio su calculo. Puedes regenerar su expediente las veces que quieras sin pagar de nuevo.';
+        return;
+      }
       el.textContent = n === 1 ? 'Te queda 1 calculo' : ('Te quedan ' + n + ' calculos');
+      el.title = 'Al generar el expediente de este proyecto se descontara 1. Despues, regenerarlo es gratis.';
       var ok = n > 0;
       el.style.background = ok ? 'rgba(93,170,255,.15)' : 'rgba(192,57,43,.18)';
       el.style.color      = ok ? '#7fb0f9' : '#e87272';
