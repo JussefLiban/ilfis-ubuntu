@@ -64,7 +64,9 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 .btn-logout:hover { border-color: #c0392b; color: #e87272; }
 
 /* ── TABS NAV ────────────────────────────────────────────── */
-nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; padding: 0 30px; overflow-x: auto; }
+/* OJO: nada de overflow aqui — recortaria los menus desplegables de los grupos.
+   Con 7 elementos la barra cabe; si no cabe, baja a una segunda linea. */
+nav.tabs { background: #16213e; border-bottom: 1px solid #2a2a5a; display: flex; flex-wrap: wrap; padding: 0 30px; overflow: visible; }
 nav.tabs .tab-btn { padding: 10px 20px; font-size: 0.88rem; color: #8899aa; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 9px; transition: color 0.2s; letter-spacing: 0.3px; white-space: nowrap; }
 .tab-label { display: flex; flex-direction: column; text-align: left; }
 .tab-line1 { font-size: 0.85rem; line-height: 1.35; font-weight: 600; }
