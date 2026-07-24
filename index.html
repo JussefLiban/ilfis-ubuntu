@@ -3540,7 +3540,16 @@ function irAPlanesYPrecios() {
   if (cont) cont.scrollTop = 0;
 }
 
-function abrirCalculadorPremium() {
+async function abrirCalculadorPremium() {
+  // Refrescar el permiso ANTES de decidir: si el admin acaba de dar acceso, el
+  // token guardado del navegador aún no lo trae. Con esto surte efecto al toque.
+  try {
+    const u = firebase.auth().currentUser;
+    if (u) {
+      const tk = await u.getIdTokenResult(true);   // true = forzar refresco
+      _cursosActivos = tk.claims.cursos_activos || {};
+    }
+  } catch (e) {}
   if (_tieneAcceso('calculador')) { window.location.href = 'calculador-hidraulico-integral/'; return; }
   _paywallCursoActual = 'calculador';
   document.getElementById('paywall-titulo').textContent = 'Calculador Hidráulico Integral';

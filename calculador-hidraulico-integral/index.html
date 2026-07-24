@@ -7,7 +7,7 @@
 (function(){
   try { firebase.initializeApp({apiKey:"AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",authDomain:"ilfis-ubuntu.firebaseapp.com",projectId:"ilfis-ubuntu",storageBucket:"ilfis-ubuntu.firebasestorage.app",messagingSenderId:"986363919942",appId:"1:986363919942:web:438195736e93511eafd447"}); } catch(e){}
   window._ilfisToken = null;
-  function refrescar(u){ if(u){ u.getIdToken().then(function(t){ window._ilfisToken=t; }).catch(function(){}); } else { window._ilfisToken=null; } }
+  function refrescar(u){ if(u){ u.getIdToken(true).then(function(t){ window._ilfisToken=t; }).catch(function(){ u.getIdToken().then(function(t){ window._ilfisToken=t; }).catch(function(){}); }); } else { window._ilfisToken=null; } }
   try { firebase.auth().onAuthStateChanged(refrescar); setInterval(function(){ var u=firebase.auth().currentUser; if(u) refrescar(u); }, 1800000); } catch(e){}
 })();
 </script>
