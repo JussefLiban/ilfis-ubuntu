@@ -5685,7 +5685,7 @@ window._consumirCalculo = function(){
     } catch(e) {}
 
     var el = document.getElementById('ilfis-saldo');
-    var ilimitado = el && /ilimitados/i.test(el.textContent || '');
+    var ilimitado = el && /ilimitad/i.test(el.textContent || '');
 
     // 2) Avisar segun el caso REAL.
     if (est && est.proyecto_pagado) {
@@ -5728,9 +5728,17 @@ window._pintarSaldo = function(){
       u.getIdTokenResult().then(function(tk){
         var exp = ((tk.claims.cursos_activos)||{}).calculador;
         if (exp && new Date(exp) > new Date()) {
-          el.textContent = 'Calculos ilimitados';
-          el.style.background = 'rgba(46,204,113,.15)'; el.style.color = '#5dcc85';
-          el.style.border = '1px solid rgba(46,204,113,.45)'; el.style.display = 'inline-block';
+          // Plan por tiempo: decir cuantos dias quedan y cuando vence (misma regla
+          // que en "Mi Cuenta": el usuario siempre ve que tiene y hasta cuando).
+          var dd = Math.ceil((new Date(exp) - new Date()) / 86400000);
+          var f  = new Date(exp).toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'});
+          el.textContent = 'Ilimitado · ' + dd + (dd === 1 ? ' dia' : ' dias');
+          el.title = 'Calculos ilimitados hasta el ' + f + '. Generar expedientes no descuenta nada.';
+          var alerta = dd <= 10, aviso = dd <= 30;
+          el.style.background = alerta ? 'rgba(192,57,43,.18)' : aviso ? 'rgba(208,138,42,.18)' : 'rgba(46,204,113,.15)';
+          el.style.color      = alerta ? '#e87272' : aviso ? '#e0a94a' : '#5dcc85';
+          el.style.border     = '1px solid ' + (alerta ? 'rgba(192,57,43,.5)' : aviso ? 'rgba(208,138,42,.5)' : 'rgba(46,204,113,.45)');
+          el.style.display = 'inline-block';
           return;
         }
         _pedirSaldo(el);

@@ -5107,6 +5107,24 @@ async function _pintarSaldoCuenta() {
   } catch (e) {}
 }
 
+// Planes contratados (duracion real registrada por el servidor al conceder el
+// acceso). Si no se conoce, NO se inventa: simplemente no se muestra el avance.
+let _misPlanes = {};
+async function _cargarMisPlanes() {
+  try {
+    const u = auth.currentUser; if (!u) return;
+    const tk = await u.getIdToken();
+    const r = await fetch(BACKEND + '/api/mis-planes', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: tk })
+    });
+    if (!r.ok) return;
+    const j = await r.json();
+    _misPlanes = j.planes || {};
+    renderMiCuenta();
+  } catch (e) {}
+}
+
 function renderMiCuenta() {
   const user = auth.currentUser;
   if (!user) return;
@@ -5125,13 +5143,17 @@ function renderMiCuenta() {
   // Cursos activos en "Mis suscripciones". Se ocultan las llaves que NO se auto-renuevan por el
   // paywall de Clases Premium: 'plataforma' (acceso general, gratis hasta 31/12/2026) y el/los
   // diplomado(s) (pago EXTERNO vía Odoo; el alumno gestiona su diplomado dentro del aula, no aquí).
-  const OCULTAR_EN_CUENTA = new Set([PLATAFORMA_KEY, ...DIPLOMA_KEYS]);
+  // Los diplomados se gestionan dentro del aula (pago externo), no aqui.
+  // La MEMBRESIA si se muestra: es un producto del tarifario ($120/año) y el
+  // cliente tiene derecho a ver hasta cuando la tiene.
+  const OCULTAR_EN_CUENTA = new Set([...DIPLOMA_KEYS]);
   const lista = document.getElementById('cuenta-cursos-lista');
   const keys  = Object.keys(_cursosActivos).filter(k => !OCULTAR_EN_CUENTA.has(k));
 
   // El PAQUETE de cálculos no es una suscripción (no tiene fecha): es un saldo.
   // Se muestra aparte para que el cliente vea lo que compró y cuánto le queda.
   _pintarSaldoCuenta();
+  if (!_misPlanes.__cargado) { _misPlanes.__cargado = true; _cargarMisPlanes(); }
 
   if (keys.length === 0) {
     lista.innerHTML = `<div class="cuenta-empty">
@@ -5155,12 +5177,27 @@ function renderMiCuenta() {
     else if (dias <= 30) diasClass = 'dias-warn';
 
     const expStr = expDate.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-
+    // Avance REAL: solo si el servidor registro cuanto se contrato. Si no se
+    // sabe, no se inventa nada (mejor sin dato que con un dato falso).
+    const plan      = _misPlanes[curso];
+    const totalPlan = plan && plan.dias ? plan.dias : 0;
+    const usados    = totalPlan ? Math.max(0, totalPlan - Math.max(dias, 0)) : 0;
+    const pct       = totalPlan ? Math.min(100, Math.round(usados * 100 / totalPlan)) : 0;
+    const barra = (activo && totalPlan) ? `
+      <div style="margin-top:8px;">
+        <div style="height:6px;background:#0f1a2e;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${dias<=10?'#c0392b':dias<=30?'#d08a2a':'#2a7a4a'};"></div>
+        </div>
+        <div style="font-size:0.74rem;color:#7a8a9a;margin-top:5px;">Llevas ${usados} de ${totalPlan} días · quedan ${dias}</div>
+      </div>` : '';
+    const esMembresia = (curso === PLATAFORMA_KEY);
+    const nombreMostrar = esMembresia ? 'Membresía Plataforma ILFIS Ubuntu' : info.nombre;
     return `<div class="curso-crm-card">
-      <div class="curso-crm-nombre">${info.nombre}</div>
+      <div class="curso-crm-nombre">${nombreMostrar}</div>
       <span class="curso-crm-expiry">Vence: ${expStr}</span>
       <span class="curso-crm-dias ${diasClass}">${diasLabel}</span>
-      <button class="btn-renovar" onclick="mostrarPaywall('${curso}')">Renovar</button>
+      ${barra}
+      ${esMembresia ? '' : `<button class="btn-renovar" onclick="mostrarPaywall('${curso}')">Renovar</button>`}
     </div>`;
   }).join('');
 }
@@ -5174,6 +5211,7 @@ async function actualizarCuenta() {
     await user.getIdToken(true);
     const tok = await user.getIdTokenResult();
     _cursosActivos = tok.claims.cursos_activos || {};
+    await _cargarMisPlanes();
     renderMiCuenta();
   } catch(e) { console.error('actualizarCuenta:', e); }
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Actualizar'; }
