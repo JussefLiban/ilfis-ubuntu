@@ -4476,7 +4476,7 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       return (a.nombre || a.email || '').localeCompare(b.nombre || b.email || '', 'es');
     });
   }
-  const filas = _fuente.map(u => {
+  const construida = _fuente.map(u => {
     const cursos  = u.cursos_activos || {};
     const _nomJs  = (u.nombre||'').replace(/'/g,"\\'");
 
@@ -4505,11 +4505,11 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
         botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${nomJs}','${area}')">Matricular</button>`;
       }
       const eliminar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" title="Elimina la cuenta y sus datos por completo (irreversible)" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${nomJs}')">🗑 Eliminar</button>`;
-      return `<tr>
+      return { activo: true, html: `<tr>
         <td><div class="a-name">${numTxt}${_adminEsc(nom)}</div><div class="a-email">${u.email}</div></td>
         <td>${badge}</td>
         <td style="white-space:nowrap;min-width:220px;">${botones} ${eliminar}</td>
-      </tr>`;
+      </tr>` };
     }
 
     // ── Clases Premium / Aplicativos / General (suscripción mensual) ──
@@ -4533,17 +4533,28 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
       `<button class="btn-a btn-ext" title="Modificar ${ADMIN_NAMES[k]||k}" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}','${k}')">Modificar</button>
        <button class="btn-a btn-rev" title="Quitar ${ADMIN_NAMES[k]||k}" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Quitar</button>`
     ).join(' ');
-    return `<tr>
+    const activo = keys.length > 0 || (sal && sal.saldo > 0);
+    return { activo, html: `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
       <td>${badgesHtml}</td>
       <td style="white-space:nowrap;min-width:200px;">
         ${acciones}
         <button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}')">+ Dar acceso</button>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>` };
+  });
   // En la Plataforma Educativa el término del negocio es "matrícula", no "suscripción".
   const colAccesos = (area === 'educativa') ? 'Matrículas' : 'Suscripciones';
+  let filas;
+  if (area === 'educativa') {
+    filas = construida.map(x => x.html).join('');
+  } else {
+    const acts = construida.filter(x => x.activo), inacts = construida.filter(x => !x.activo);
+    const titulo = (txt, n) => `<tr><td colspan="3" style="padding:14px 10px 6px;color:#7a8a9a;font-size:0.72rem;letter-spacing:1.2px;text-transform:uppercase;border-bottom:1px solid #2a2a5a;">${txt} <span style="color:#5a6a82;">(${n})</span></td></tr>`;
+    filas = '';
+    if (acts.length)   filas += titulo('Con producto contratado', acts.length) + acts.map(x => x.html).join('');
+    if (inacts.length) filas += titulo('Sin producto contratado', inacts.length) + inacts.map(x => x.html).join('');
+  }
   box.innerHTML = filas
     ? `<table class="admin-table">
       <thead><tr><th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th></tr></thead>
