@@ -502,7 +502,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <span class="tab-label"><span class="tab-line1">Pregúntale al</span><span class="tab-line2">Experto</span></span>
   </button>
 <button class="tab-btn" onclick="showTab('catalogo', this)"><i class="ti ti-help" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">¿Cuál me conviene?</span><span class="tab-line2">Aula o Videoteca</span></span></button>
-<button class="tab-btn" onclick="location.href='plataforma-educativa/'"><i class="ti ti-certificate" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">Plataforma Educativa</span><span class="tab-line2">Clases Tutorizadas y Evaluadas</span></span></button>    <button class="tab-btn" onclick="showTab('nfpa', this)">
+<button class="tab-btn" onclick="showTab('educativa', this)"><i class="ti ti-certificate" style="font-size:1.2rem;flex-shrink:0;"></i><span class="tab-label"><span class="tab-line1">Plataforma Educativa</span><span class="tab-line2">Clases Tutorizadas y Evaluadas</span></span></button>    <button class="tab-btn" onclick="showTab('nfpa', this)">
     <i class="ti ti-flame" style="font-size:1.2rem;flex-shrink:0;"></i>
     <span class="tab-label"><span class="tab-line1">ILFIS interpreta</span><span class="tab-line2">NFPA</span></span>
   </button>
@@ -1102,6 +1102,13 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 <div class="panel panel-embebido" id="panel-catalogo">
   <iframe class="marco-embebido" id="frame-catalogo" data-src="catalogo/?dentro=1"
           title="¿Cuál me conviene? Aula o Videoteca"></iframe>
+</div>
+
+<!-- Panel Plataforma Educativa (la pagina vive en /plataforma-educativa/ y se muestra AQUI DENTRO).
+     Entrar a un aula SI saca de UBUNTU: el aula es otro mundo y lleva su propio "Volver a UBUNTU". -->
+<div class="panel panel-embebido" id="panel-educativa">
+  <iframe class="marco-embebido" id="frame-educativa" data-src="plataforma-educativa/?dentro=1"
+          title="Plataforma Educativa"></iframe>
 </div>
 
 <!-- Panel Explorador -->

@@ -58,6 +58,21 @@ header{background:var(--navy);border-bottom:2px solid var(--rojo);padding:10px 2
 .franja{background:var(--panel);border:1px solid var(--borde);border-radius:12px;margin-top:26px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--texto2);}
 footer{text-align:center;color:var(--texto2);font-size:12px;padding:24px;border-top:1px solid var(--borde);margin-top:34px;}
 </style>
+<style>
+/* Dentro de UBUNTU esta pagina es una pestana mas: su cabecera propia sobra. */
+html.dentro header { display: none !important; }
+</style>
+<script>
+if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
+  document.documentElement.classList.add('dentro');
+  // Entrar al aula SI saca de UBUNTU (el aula es otro mundo): se abre en la
+  // ventana de arriba, no dentro de este marco.
+  addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="../"]');
+    if (a && !a.target) a.target = '_top';
+  }, true);
+}
+</script>
 </head>
 <body>
 
