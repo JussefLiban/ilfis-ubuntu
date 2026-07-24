@@ -4876,9 +4876,9 @@ const PLANES_POR_AREA = {
     { g: 'Cortesía',              txt: 'Prueba / cortesía — 15 días',   dias: 15 },
   ],
   aplicativos: [
-    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '5 cálculos — $150',   calculos: 5,  dias: 365 },
-    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '10 cálculos — $250',  calculos: 10, dias: 365 },
-    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '20 cálculos — $400',  calculos: 20, dias: 365 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '5 cálculos — $150',   calculos: 5,  dias: 0 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '10 cálculos — $250',  calculos: 10, dias: 0 },
+    { g: 'Paquetes de cálculos (pago único, no vencen)', txt: '20 cálculos — $400',  calculos: 20, dias: 0 },
     { g: 'Planes anuales (cálculos ilimitados)', txt: 'Individual — $400 al año',                       dias: 365 },
     { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 5 puestos — $260 c/u ($1.300 total)',    dias: 365, porPuesto: 5  },
     { g: 'Planes anuales (cálculos ilimitados)', txt: 'Estudio 10 puestos — $240 c/u ($2.400 total)',   dias: 365, porPuesto: 10 },
@@ -4963,7 +4963,7 @@ function _adminPintarBotonDar() {
   const p = _adminPlanElegido();
   const ayuda = document.getElementById('admin-modal-dar-ayuda');
   if (p && p.calculos) {
-    if (ayuda) ayuda.textContent = 'Se cargan ' + p.calculos + ' cálculos a su saldo (no vencen) y se le habilita el Calculador por ' + p.dias + ' días. Si ya tenía saldo, se le suma.';
+    if (ayuda) ayuda.textContent = 'Se cargan ' + p.calculos + ' cálculos a su saldo (no vencen). Con saldo ya puede entrar al Calculador; no se le da acceso por tiempo, porque eso seria ilimitado. Si ya tenia saldo, se le suma.';
     btn.textContent = 'Cargar ' + p.calculos + ' cálculos';
   } else {
     let txt = p ? ('Se concederán ' + p.dias + ' días de acceso, contados desde hoy. Si ya tiene acceso, se le suman.') : '';
@@ -5035,10 +5035,14 @@ async function adminConfirmarDar() {
       }
     } else {
       // Alta normal por plan contratado.
-      const dias = esDiploma ? 3650 : (_adminPlanElegido() || { dias: 30 }).dias;
-      const r = await post('/admin/extender', { uid: _adminModalUid, curso, dias });
-      if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
       const plan = esDiploma ? null : _adminPlanElegido();
+      const dias = esDiploma ? 3650 : ((plan || { dias: 30 }).dias);
+      // Un PAQUETE no concede tiempo (dias 0): su acceso sale del saldo. Si le
+      // diéramos tiempo, el plan seria ilimitado y el saldo nunca bajaria.
+      if (dias > 0) {
+        const r = await post('/admin/extender', { uid: _adminModalUid, curso, dias });
+        if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+      }
       if (plan && plan.calculos) {
         const rc = await post('/admin/calculos/cargar', { uid: _adminModalUid, cantidad: plan.calculos });
         if (!rc.ok) throw new Error('Acceso dado, pero no se pudo cargar el saldo: ' + ((await rc.json().catch(()=>({}))).detail || rc.status));
