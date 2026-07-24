@@ -1955,7 +1955,9 @@ function showTab(name, btn) {
 // la PRIMERA vez que se abre su pestaña, no al arrancar la plataforma.
 function _cargarEmbebido(name) {
   const f = document.getElementById('frame-' + name);
-  if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
+  // Se le agrega la hora al enlace para que el navegador NO muestre una copia
+  // vieja guardada: al publicar un cambio se ve al instante, sin Ctrl+F5.
+  if (f && !f.src && f.dataset.src) f.src = f.dataset.src + '&_=' + Date.now();
 }
 
 function _restaurarTab() {
