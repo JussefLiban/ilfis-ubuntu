@@ -1111,7 +1111,7 @@ function buildReport(res,o){
 }
 
 function procesarDXFTexto(txt){
-  LAST_DXF=txt;
+  LAST_DXF=txt; _nuevoProyId();   // plano nuevo = proyecto nuevo (se cobrara 1 al generar su expediente)
     const tol=parseFloat(document.getElementById('tol').value)||0;
     NET=construir(txt,tol);
     PANZOOM={k:1,tx:0,ty:0};   // DXF nuevo: centrar con el auto-encuadre, no heredar el paneo/zoom anterior (si no, el plano cae fuera de la pantalla). En restaurarSnap la vista propia del sistema se reaplica DESPUES.
@@ -1353,6 +1353,13 @@ buildCedTable();   // construir la tabla Diámetro -> Cédula al cargar
 buildMatSelect();  // llenar el selector de material por defecto desde el catálogo
 // ===== GUARDAR / CARGAR SESIÓN — autoguardado en el navegador + archivo portable =====
 const SES_KEY='ilfis_calc_dxf_sesion_v1';
+// ── IDENTIDAD DEL PROYECTO (para cobrar 1 calculo POR PROYECTO, no por reporte) ──
+// Nace cuando empieza un proyecto (plano nuevo o parrilla) y viaja dentro de la
+// sesion guardada. Asi, regenerar el expediente del MISMO proyecto no vuelve a
+// cobrar, aunque se corrija y se regenere mil veces.
+window.PROY_ID = null;
+function _nuevoProyId(){ window._proyectoYaCobrado = false; window.PROY_ID = 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10); return window.PROY_ID; }
+function _proyId(){ return window.PROY_ID || _nuevoProyId(); }
 function recolectarSesion(){
   const fields={};
   document.querySelectorAll('input[id], select[id]').forEach(function(el){
@@ -1361,13 +1368,14 @@ function recolectarSesion(){
   });
   const pipes=(NET&&NET.tubos)?NET.tubos.map(function(t){return {matOverride:t.matOverride||null,cedManual:!!t.cedManual,ced:t.ced||null,lenManual:!!t.lenManual,lenOverrideFt:isFinite(t.lenOverrideFt)?t.lenOverrideFt:null,cOverride:isFinite(t.cOverride)?t.cOverride:null,idOverride:isFinite(t.idOverride)?t.idOverride:null,manual:!!t.manual,nom:(isFinite(t.nom)?t.nom:null)};}):[];
   const nodes=(NET&&NET.nodos)?NET.nodos.filter(function(n){return n.elevManual;}).map(function(n){return {id:n.id,elevOverridePsi:n.elevOverridePsi};}):[];
-  return {v:1, fecha:new Date().toISOString(), dxf:LAST_DXF||null, fields:fields, pipes:pipes, nodes:nodes, hose:HOSE_NODES.slice(),
+  return {v:1, pid:_proyId(), fecha:new Date().toISOString(), dxf:LAST_DXF||null, fields:fields, pipes:pipes, nodes:nodes, hose:HOSE_NODES.slice(),
     pbExtra:(typeof PB_EXTRA!=='undefined'?PB_EXTRA.map(function(e){return {q:e.q,p:e.p};}):[]),     // Cuarto de bombas: puntos extra de la curva (array global, no inputs con id)
     pbAcc:(typeof PB_ACC!=='undefined'?PB_ACC.map(function(a){return {kind:a.kind,n:a.n};}):[]),   // Cuarto de bombas: accesorios del alimentador (array global)
     proy:(window.PROY?JSON.parse(JSON.stringify(window.PROY)):null)};   // Datos del proyecto (Reportería): se guardan con la sesión
 }
 function aplicarSesion(s){
   if(!s||!s.fields){alert('Archivo de sesión no válido.');return;}
+  window.PROY_ID = s.pid || null; window._proyectoYaCobrado = false;   // el proyecto conserva su identidad al abrirlo
   if(s.proy&&window.PROY){ for(var _pk in s.proy){ if(_pk in window.PROY)window.PROY[_pk]=s.proy[_pk]; } }   // Datos del proyecto (Reportería)
   for(const id in s.fields){const el=document.getElementById(id);if(!el)continue;if(el.type==='checkbox')el.checked=s.fields[id];else el.value=s.fields[id];}
   if(s.fields.ppDiaMain!=null&&s.fields.ppDiaMainDer==null){const _dd=document.getElementById('ppDiaMainDer');if(_dd)_dd.value=s.fields.ppDiaMain;}   // OBS-006 compat: sesión vieja con UN solo Ø de main → el derecho copia al izquierdo (no hereda el valor de otro sistema)
@@ -2663,7 +2671,7 @@ function lanzarParrilla(){
   if(p.nRamales<2||p.nRoc<1){ alert('Revisa nº de ramales (≥2) y rociadores por ramal (≥1).'); return; }
   p.feedRamal=Math.max(1,Math.min(p.nRamales,p.feedRamal||Math.round(p.nRamales/2)));   // BUGFIX: acota el ramal de alimentación al rango válido del nº de ramales y refleja el valor corregido en el campo (UI honesta)
   var _fr=document.getElementById('ppFeedRamal'); if(_fr) _fr.value=p.feedRamal;
-  NET=generarParrilla(p); LAST_DXF=null;
+  NET=generarParrilla(p); LAST_DXF=null; _nuevoProyId();
   // fuente = BOMBA (única punta suelta, al final de la troncal)
   const sel=document.getElementById('src'); sel.innerHTML='';
   NET.sueltas.forEach(n=>{const o=document.createElement('option');o.value=n.id;o.textContent='BOMBA / acometida ('+n.x.toFixed(0)+','+n.y.toFixed(0)+')';sel.appendChild(o);});
@@ -5656,12 +5664,28 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
 <script>
 window._consumirCalculo = function(){
   try {
+    // Aviso claro SOLO la primera vez que se cobra este proyecto.
+    var el = document.getElementById('ilfis-saldo');
+    var ilimitado = el && /ilimitados/i.test(el.textContent || '');
+    if (!ilimitado && !window._proyectoYaCobrado) {
+      var m = el ? (el.textContent || '').match(/[0-9]+/) : null;
+      var quedan = m ? m[0] : '?';
+      var aviso = 'Vas a generar el expediente de este proyecto.' + String.fromCharCode(10,10)
+        + 'Se descontara 1 calculo de tu paquete (te quedan ' + quedan + ').' + String.fromCharCode(10)
+        + 'Regenerar el expediente de ESTE MISMO proyecto las veces que quieras NO vuelve a cobrar.' + String.fromCharCode(10,10)
+        + 'Continuar?';
+      if (!confirm(aviso)) return false;
+    }
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculos/consumir', false);
     xhr.setRequestHeader('Content-Type','application/json');
-    xhr.send(JSON.stringify({ id_token: window._ilfisToken || '' }));
+    xhr.send(JSON.stringify({ id_token: window._ilfisToken || '', proyecto_id: (typeof _proyId==='function'? _proyId() : '') }));
     if (xhr.status === 402) { alert('Te quedaste sin calculos disponibles. Contrata un paquete o un plan para generar el expediente.'); return false; }
     if (xhr.status !== 200) { alert('No pude verificar tu saldo de calculos. Revisa tu conexion e intenta de nuevo.'); return false; }
+    try {
+      var res = JSON.parse(xhr.responseText || '{}');
+      if (res.ok) window._proyectoYaCobrado = true;   // no volver a avisar por este proyecto
+    } catch(e) { window._proyectoYaCobrado = true; }
     try { setTimeout(function(){ window._pintarSaldo(); }, 300); } catch(e){}
     return true;
   } catch(e) { alert('No pude conectar para verificar tu saldo. Revisa tu conexion.'); return false; }
