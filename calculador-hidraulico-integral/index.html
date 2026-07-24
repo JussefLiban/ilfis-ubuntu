@@ -3969,6 +3969,7 @@ body.reporteriaOpen #repBarra{display:flex}
       var idx=syss.filter(function(c){return c.checked&&!c.disabled;}).map(function(c){return +c.getAttribute('data-i');});
       if(!idx.length){ alert('Marca al menos un riesgo con cálculo.'); return; }
       var bomba=ov.querySelector('#gBomba').checked; var laminas=ov.querySelector('#gLaminas').checked; ov.remove();
+      if (!window._consumirCalculo()) return;
       window.abrirReporteria({sistemas:idx, bomba:bomba, laminas:laminas});
     };
   };
@@ -5650,6 +5651,19 @@ var _r0=document.querySelector('input[name="modo"]:checked'); modoHook(_r0?_r0.v
   };
   try{ console.log('[ILFIS] Calculo por puente autenticado.'); }catch(e){}
 })();
+</script>
+<script>
+window._consumirCalculo = function(){
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculos/consumir', false);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.send(JSON.stringify({ id_token: window._ilfisToken || '' }));
+    if (xhr.status === 402) { alert('Te quedaste sin calculos disponibles. Contrata un paquete o un plan para generar el expediente.'); return false; }
+    if (xhr.status !== 200) { alert('No pude verificar tu saldo de calculos. Revisa tu conexion e intenta de nuevo.'); return false; }
+    return true;
+  } catch(e) { alert('No pude conectar para verificar tu saldo. Revisa tu conexion.'); return false; }
+};
 </script>
 </body>
 </html>
