@@ -3551,6 +3551,22 @@ async function abrirCalculadorPremium() {
     }
   } catch (e) {}
   if (_tieneAcceso('calculador')) { window.location.href = 'calculador-hidraulico-integral/'; return; }
+  // Un PAQUETE de cálculos no es suscripción: vive como saldo, no como permiso.
+  // Sin esto, quien compró solo un paquete quedaba fuera del Calculador.
+  try {
+    const u2 = firebase.auth().currentUser;
+    if (u2) {
+      const tk2 = await u2.getIdToken();
+      const rs = await fetch(BACKEND + '/api/calculos/saldo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: tk2 })
+      });
+      if (rs.ok) {
+        const js = await rs.json();
+        if ((js.saldo || 0) > 0) { window.location.href = 'calculador-hidraulico-integral/'; return; }
+      }
+    }
+  } catch (e) {}
   _paywallCursoActual = 'calculador';
   document.getElementById('paywall-titulo').textContent = 'Calculador Hidráulico Integral';
   document.getElementById('paywall-incluye').innerHTML = '<div class="paywall-tagline">El Calculador Hidráulico Integral es un producto de pago. Incluye 30 días gratis; el cobro empieza el día 31.</div>';
@@ -5047,6 +5063,34 @@ async function _adminRestaurarSesion() {
 }
 
 // ── PANEL MI CUENTA ────────────────────────────────────────
+// Muestra el saldo de cálculos (paquete del Calculador) en Mi Cuenta.
+async function _pintarSaldoCuenta() {
+  const lista = document.getElementById('cuenta-cursos-lista');
+  if (!lista) return;
+  const viejo = document.getElementById('cuenta-saldo-calc');
+  if (viejo) viejo.remove();
+  try {
+    const u = auth.currentUser; if (!u) return;
+    const tk = await u.getIdToken();
+    const r = await fetch(BACKEND + '/api/calculos/saldo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: tk })
+    });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || (!j.saldo && !j.total_cargado)) return;   // nunca compró paquete
+    const n = j.saldo || 0;
+    const div = document.createElement('div');
+    div.id = 'cuenta-saldo-calc';
+    div.className = 'curso-crm-card';
+    div.innerHTML = `<div class="curso-crm-nombre">Calculador Hidráulico Integral — paquete de cálculos</div>
+      <span class="curso-crm-expiry">Sin vencimiento: se usan hasta agotarse</span>
+      <span class="curso-crm-dias ${n > 0 ? 'dias-ok' : 'dias-crit'}">${n === 1 ? 'Te queda 1 cálculo' : 'Te quedan ' + n + ' cálculos'}</span>
+      <div style="font-size:0.78rem;color:#7a8a9a;margin-top:6px;">Has usado ${j.total_usado || 0} de ${j.total_cargado || 0} comprados.</div>`;
+    lista.parentNode.insertBefore(div, lista);
+  } catch (e) {}
+}
+
 function renderMiCuenta() {
   const user = auth.currentUser;
   if (!user) return;
@@ -5068,6 +5112,10 @@ function renderMiCuenta() {
   const OCULTAR_EN_CUENTA = new Set([PLATAFORMA_KEY, ...DIPLOMA_KEYS]);
   const lista = document.getElementById('cuenta-cursos-lista');
   const keys  = Object.keys(_cursosActivos).filter(k => !OCULTAR_EN_CUENTA.has(k));
+
+  // El PAQUETE de cálculos no es una suscripción (no tiene fecha): es un saldo.
+  // Se muestra aparte para que el cliente vea lo que compró y cuánto le queda.
+  _pintarSaldoCuenta();
 
   if (keys.length === 0) {
     lista.innerHTML = `<div class="cuenta-empty">

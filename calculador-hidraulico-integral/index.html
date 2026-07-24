@@ -131,7 +131,8 @@
     <div><span class="ub">UBUNTU</span><span class="pl">Plataforma Interactiva Asistida por IA</span></div>
     <h1>Calculador Hidráulico Integral Para Protección Contra Incendios</h1>
   </div>
-  <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" title="Volver a UBUNTU" style="margin-left:auto;align-self:center;color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);white-space:nowrap">&larr; Volver a UBUNTU</a>
+  <span id="ilfis-saldo" style="margin-left:auto;align-self:center;display:none;font-size:.78rem;font-weight:700;padding:6px 12px;border-radius:14px;white-space:nowrap"></span>
+  <a href="https://ilfis-ubuntu.ilfislatinoamerica.com/" title="Volver a UBUNTU" style="align-self:center;color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);white-space:nowrap;margin-left:12px" data-volver="1" style="align-self:center;color:#fff;text-decoration:none;font-size:0.8rem;border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.05);white-space:nowrap">&larr; Volver a UBUNTU</a>
   <button class="chromeBtn" id="btnChrome" onclick="toggleChrome()" title="Oculta el menú para darle el máximo espacio al plano" style="margin-left:8px"><i class="ti ti-arrows-maximize"></i> Plano</button>
   <div class="statusbar2" id="statusbar2">
     <span class="seg"><i class="ti ti-engine" style="color:#ff9b8e"></i> <b id="sbBomba">— · completa la curva</b></span>
@@ -5661,9 +5662,52 @@ window._consumirCalculo = function(){
     xhr.send(JSON.stringify({ id_token: window._ilfisToken || '' }));
     if (xhr.status === 402) { alert('Te quedaste sin calculos disponibles. Contrata un paquete o un plan para generar el expediente.'); return false; }
     if (xhr.status !== 200) { alert('No pude verificar tu saldo de calculos. Revisa tu conexion e intenta de nuevo.'); return false; }
+    try { setTimeout(function(){ window._pintarSaldo(); }, 300); } catch(e){}
     return true;
   } catch(e) { alert('No pude conectar para verificar tu saldo. Revisa tu conexion.'); return false; }
 };
+</script>
+<script>
+// Muestra al usuario cuantos calculos le quedan (o si es ilimitado).
+window._pintarSaldo = function(){
+  var el = document.getElementById('ilfis-saldo');
+  if (!el || !window._ilfisToken) return;
+  // ¿Plan por tiempo vigente? -> ilimitado (se lee del propio permiso del usuario)
+  try {
+    var u = firebase.auth().currentUser;
+    if (u) {
+      u.getIdTokenResult().then(function(tk){
+        var exp = ((tk.claims.cursos_activos)||{}).calculador;
+        if (exp && new Date(exp) > new Date()) {
+          el.textContent = 'Calculos ilimitados';
+          el.style.background = 'rgba(46,204,113,.15)'; el.style.color = '#5dcc85';
+          el.style.border = '1px solid rgba(46,204,113,.45)'; el.style.display = 'inline-block';
+          return;
+        }
+        _pedirSaldo(el);
+      }).catch(function(){ _pedirSaldo(el); });
+    }
+  } catch(e) { _pedirSaldo(el); }
+};
+function _pedirSaldo(el){
+  fetch('https://ilfis-ubuntu-27378911758.us-central1.run.app/api/calculos/saldo', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id_token: window._ilfisToken || '' })
+  }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){
+      if (!j) return;
+      var n = j.saldo || 0;
+      el.textContent = n === 1 ? 'Te queda 1 calculo' : ('Te quedan ' + n + ' calculos');
+      var ok = n > 0;
+      el.style.background = ok ? 'rgba(93,170,255,.15)' : 'rgba(192,57,43,.18)';
+      el.style.color      = ok ? '#7fb0f9' : '#e87272';
+      el.style.border     = '1px solid ' + (ok ? 'rgba(93,170,255,.45)' : 'rgba(192,57,43,.5)');
+      el.style.display    = 'inline-block';
+    }).catch(function(){});
+}
+// Pintar cuando el token este listo (y refrescar cada minuto por si cambia)
+setInterval(function(){ if (window._ilfisToken) window._pintarSaldo(); }, 60000);
+setTimeout(function(){ window._pintarSaldo(); }, 2500);
 </script>
 </body>
 </html>
