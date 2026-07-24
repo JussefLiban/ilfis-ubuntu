@@ -225,6 +225,9 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 .help-tutorial-fab { background: #16213e; color: #e0e0e0; border: 1px solid #2a2a5a; border-radius: 20px; padding: 7px 13px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 3px 10px rgba(0,0,0,0.35); }
 .help-tutorial-fab:hover { background: #1d2b4d; }
 .help-tutorial-fab i { color: #ff0000; font-size: 1rem; }
+.help-asesor-fab { background: #25d366; color: #08331c; border: none; border-radius: 20px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; box-shadow: 0 3px 12px rgba(37,211,102,0.35); }
+.help-asesor-fab:hover { background: #1fbb59; }
+.help-asesor-fab i { font-size: 1.05rem; }
 #help-fab:hover { background: #a93224; }
 #help-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2500; display: none; align-items: center; justify-content: center; padding: 20px; }
 #help-modal-bg.visible { display: flex; }
@@ -376,6 +379,8 @@ textarea::placeholder { color: #5a7a9a; }
 .btn-pagar:disabled { background: #5a5a3a; color: #8a8a5a; cursor: not-allowed; }
 .pf-back { background: none; border: none; color: #5a6a7a; font-size: 0.78rem; cursor: pointer; text-decoration: underline; margin-top: 10px; display: block; width: 100%; }
 .pf-back:hover { color: #aaa; }
+.btn-asesor-paywall { width: 100%; margin-top: 10px; padding: 13px; background: #25d366; color: #08331c; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-asesor-paywall:hover { background: #1fbb59; }
 .btn-paypal { width: 100%; padding: 14px; background: #ffc439; color: #003087; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-paypal:hover { background: #f0b429; }
 .btn-paywall-cerrar { background: none; border: none; color: #5a6a7a; font-size: 0.8rem; cursor: pointer; text-decoration: underline; margin-top: 14px; display: block; width: 100%; }
@@ -1094,6 +1099,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
 
 <!-- Botón flotante e instructivo "¿Cómo funciona?" -->
 <div class="help-fab-group">
+  <a class="help-asesor-fab" href="javascript:void(0)" onclick="contactarAsesor()"><i class="ti ti-brand-whatsapp"></i> Hablar con un asesor</a>
   <a class="help-tutorial-fab" href="https://www.youtube.com/watch?v=lHKfxenb8yw" target="_blank" rel="noopener"><i class="ti ti-brand-youtube"></i> Ver tutorial en YouTube</a>
   <button id="help-fab" onclick="abrirAyuda()"><i class="ti ti-help"></i> ¿Cómo funciona?</button>
 </div>
@@ -1472,6 +1478,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="paywall-incluye" id="paywall-incluye"></div>
     <button class="btn-paypal" onclick="irAPlanesYPrecios()">
       Ver planes y cómo contratarlo
+    </button>
+    <button class="btn-asesor-paywall" onclick="contactarAsesor(document.getElementById('paywall-titulo').textContent)">
+      <i class="ti ti-brand-whatsapp"></i> ¿Quieres comprar? Habla con un asesor
     </button>
     <div class="paywall-seguro">Elige tu plan en «Planes y Precios». La contratación se coordina con el equipo ILFIS.</div>
     <button class="btn-paywall-cerrar" onclick="cerrarPaywall()">Volver</button>
@@ -3558,6 +3567,18 @@ function cerrarPaywall() {
 }
 
 // ── INSTRUCTIVO "¿CÓMO FUNCIONA?" ─────────────────────────
+// ── Contacto con un asesor por WhatsApp ───────────────────────────────────
+const WHATSAPP_ASESOR = '56939354620';   // número que recibe las consultas de compra
+// Abre WhatsApp con un mensaje ya escrito. Si se pasa un producto, lo incluye.
+function contactarAsesor(producto) {
+  const u = (typeof firebase !== 'undefined' && firebase.auth().currentUser) || null;
+  const quien = u ? (u.displayName || u.email || '') : '';
+  let msg = 'Hola ILFIS, quiero información para contratar';
+  msg += producto ? ' el producto: ' + producto + '.' : ' un producto de la plataforma.';
+  if (quien) msg += ' Mi cuenta es: ' + quien + '.';
+  window.open('https://wa.me/' + WHATSAPP_ASESOR + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
+
 function abrirAyuda() {
   document.getElementById('help-modal-bg').classList.add('visible');
 }

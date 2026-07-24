@@ -166,6 +166,22 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
   document.documentElement.classList.add('dentro');
 }
 </script>
+<style>
+.cta-asesor { display:inline-flex; align-items:center; gap:9px; background:#25d366; color:#08331c;
+  font-weight:700; font-size:.92rem; text-decoration:none; padding:13px 22px; border-radius:10px;
+  border:none; cursor:pointer; margin-top:6px; }
+.cta-asesor:hover { background:#1fbb59; }
+.cta-asesor svg { width:20px; height:20px; fill:#08331c; }
+.asesor-fila { display:flex; justify-content:center; margin:8px 0 2px; }
+</style>
+<script>
+var WHATSAPP_ASESOR = '56939354620';
+function contactarAsesor(producto) {
+  var msg = 'Hola ILFIS, quiero información para contratar'
+    + (producto ? ' el producto: ' + producto + '.' : ' un producto de la plataforma.');
+  window.open('https://wa.me/' + WHATSAPP_ASESOR + '?text=' + encodeURIComponent(msg), '_blank');
+}
+</script>
 </head>
 <body>
 
@@ -270,6 +286,7 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
       las <b>Clases Premium</b> (punto 3) y la <b>Plataforma Educativa</b> —
       las clases tutorizadas y evaluadas, que tienen su propio proceso de inscripción.
     </div>
+    <div class="asesor-fila"><button class="cta-asesor" onclick="contactarAsesor('Membresía Plataforma ($120/año)')"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 5-1.3A10 10 0 1 0 12 2zm5.8 14.1c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 .9.8 1.7 1.1 2.1 1.3.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5z"/></svg>¿Quieres contratar? Habla con un asesor</button></div>
   </section>
 
   <!-- ── 2. CALCULADOR ─────────────────────────────────── -->
@@ -399,6 +416,7 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
       nunca por proyecto. Cada puesto permite una sesión activa a la vez.
     </div>
 
+    <div class="asesor-fila"><button class="cta-asesor" onclick="contactarAsesor('Calculador Hidráulico Integral')"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 5-1.3A10 10 0 1 0 12 2zm5.8 14.1c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 .9.8 1.7 1.1 2.1 1.3.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5z"/></svg>¿Quieres contratar? Habla con un asesor</button></div>
   </section>
 
 
@@ -509,6 +527,7 @@ if (window.self !== window.top || location.search.indexOf('dentro=1') > -1) {
       Cada curso se contrata por separado: si quieres llevar dos, contratas dos suscripciones.
       Y mientras más meses prepagues, menos pagas por mes.
     </div>
+    <div class="asesor-fila"><button class="cta-asesor" onclick="contactarAsesor('Clases Premium')"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 5-1.3A10 10 0 1 0 12 2zm5.8 14.1c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 .9.8 1.7 1.1 2.1 1.3.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5z"/></svg>¿Quieres contratar? Habla con un asesor</button></div>
   </section>
 
   <footer>
