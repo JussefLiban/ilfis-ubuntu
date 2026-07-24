@@ -4414,10 +4414,16 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
         }).join('') + salBadge;
     // Cada acceso que ya tiene: Modificar (abre el modal con su estado) y Quitar.
     // Botones cortos: el producto ya se lee en la etiqueta de al lado.
-    const acciones = keys.map(k =>
+    let acciones = keys.map(k =>
       `<button class="btn-a btn-ext" title="Modificar ${ADMIN_NAMES[k]||k}" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','${area}','${k}')">Modificar</button>
        <button class="btn-a btn-rev" title="Quitar ${ADMIN_NAMES[k]||k}" onclick="adminRevocar('${u.uid}','${k}','${u.email}')">Quitar</button>`
     ).join(' ');
+    // Caso paquete: tiene saldo de cálculos pero NO el Calculador por tiempo.
+    // Sin esto quedaba solo con "+ Dar acceso" y no se podía tocar el saldo.
+    if (area === 'aplicativos' && sal && sal.saldo > 0 && !keys.includes('calculador')) {
+      acciones += ` <button class="btn-a btn-ext" title="Modificar saldo de cálculos" onclick="adminAbrirDar('${u.uid}','${u.email}','${_nomJs}','aplicativos','calculador')">Modificar</button>
+       <button class="btn-a btn-rev" title="Vaciar el saldo de cálculos" onclick="adminVaciarSaldo('${u.uid}','${u.email}',${sal.saldo})">Quitar</button>`;
+    }
     const activo = keys.length > 0 || (sal && sal.saldo > 0);
     return { activo, html: `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
@@ -4766,6 +4772,20 @@ async function adminExtender(uid, curso) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
       body: JSON.stringify({ uid, curso, dias: 30 })
+    });
+    if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
+    await adminCargar();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// Vacía el saldo de cálculos de un usuario (resta todo lo que le queda).
+async function adminVaciarSaldo(uid, email, saldoActual) {
+  if (!confirm(`¿Vaciar el saldo de cálculos de ${email}? Se quitarán ${saldoActual} cálculo(s).`)) return;
+  try {
+    const r = await fetch(BACKEND + '/admin/calculos/cargar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': _getAdminKey() },
+      body: JSON.stringify({ uid, cantidad: -Math.abs(saldoActual) })
     });
     if (r.status === 401) { _clearAdminKey(); return; } if (!r.ok) throw new Error((await r.json()).detail);
     await adminCargar();
