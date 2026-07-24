@@ -71,7 +71,10 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 .lateral { width: 215px; min-width: 0; flex-shrink: 0; background: #141a2e; border-right: 1px solid #2a2a5a; padding: 8px 0 110px; overflow-y: auto; overflow-x: hidden; transition: width .15s; }
 .lateral nav.tabs { display: block; }
 .lat-titulo { color: #6b7a92; font-size: 0.62rem; letter-spacing: 1.2px; text-transform: uppercase; padding: 13px 16px 6px; white-space: nowrap; }
-.lateral .tab-btn { width: 100%; display: flex; align-items: center; gap: 11px; padding: 9px 15px; background: none; border: none; border-left: 3px solid transparent; color: #8899aa; font-size: 0.85rem; text-align: left; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; overflow: hidden; }
+.lateral .tab-btn { width: 100%; display: flex; align-items: center; gap: 11px; padding: 9px 15px; background: none; border: none; border-left: 3px solid transparent; color: #8899aa; font-size: 0.85rem; text-align: left; cursor: pointer; transition: background .12s, color .12s; overflow: hidden; }
+.lat-txt { display: flex; flex-direction: column; min-width: 0; }
+.lat-l1 { font-size: 0.83rem; line-height: 1.3; font-weight: 600; }
+.lat-l2 { font-size: 0.69rem; line-height: 1.25; opacity: .72; }
 .lateral .tab-btn i { font-size: 1.15rem; flex-shrink: 0; width: 20px; text-align: center; }
 .lateral .tab-btn:hover { color: #cdd; background: rgba(255,255,255,.04); }
 .lateral .tab-btn.active { color: #fff; border-left-color: #c0392b; background: rgba(192,57,43,.16); }
@@ -505,48 +508,48 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <button class="lat-plegar" onclick="_plegarLateral()" title="Plegar o desplegar el menú" aria-label="Plegar o desplegar el menú"><i class="ti ti-menu-2" aria-hidden="true"></i></button>
     <nav class="tabs">
       <div class="lat-titulo">Consultar</div>
-      <button class="tab-btn" onclick="showTab('consultar', this)" title="Expertos ILFIS">
-        <i class="ti ti-message-question" aria-hidden="true"></i><span class="lat-txt">Expertos ILFIS</span>
+      <button class="tab-btn" onclick="showTab('consultar', this)" title="Consultas a Expertos ILFIS">
+        <i class="ti ti-message-question" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Consultas a</span><span class="lat-l2">Expertos ILFIS</span></span>
       </button>
       <button class="tab-btn" onclick="showTab('experto', this)" title="Pregúntale al Experto">
-        <i class="ti ti-headset" aria-hidden="true"></i><span class="lat-txt">Pregúntale al Experto</span>
+        <i class="ti ti-headset" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Pregúntale al</span><span class="lat-l2">Experto</span></span>
       </button>
       <button class="tab-btn" onclick="showTab('nfpa', this)" title="ILFIS interpreta NFPA">
-        <i class="ti ti-flame" aria-hidden="true"></i><span class="lat-txt">ILFIS interpreta NFPA</span>
+        <i class="ti ti-flame" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">ILFIS interpreta</span><span class="lat-l2">NFPA</span></span>
       </button>
       <button class="tab-btn" onclick="showTab('fm', this)" title="ILFIS interpreta FM">
-        <i class="ti ti-flame" aria-hidden="true"></i><span class="lat-txt">ILFIS interpreta FM</span>
+        <i class="ti ti-flame" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">ILFIS interpreta</span><span class="lat-l2">FM</span></span>
       </button>
       <div class="lat-titulo">Videoteca</div>
-      <button class="tab-btn" onclick="showTab('videos', this)" title="Buscar en videos">
-        <i class="ti ti-search" aria-hidden="true"></i><span class="lat-txt">Buscar en videos</span>
+      <button class="tab-btn" onclick="showTab('videos', this)" title="Búsqueda Interactiva de Videos Youtube">
+        <i class="ti ti-brand-youtube" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Búsqueda Interactiva</span><span class="lat-l2">de Videos Youtube</span></span>
       </button>
-      <button class="tab-btn" onclick="showTab('explorador', this)" title="Explorador de videos">
-        <i class="ti ti-layout-grid" aria-hidden="true"></i><span class="lat-txt">Explorador de videos</span>
+      <button class="tab-btn" onclick="showTab('explorador', this)" title="Explorador Interactivo de Videos Youtube">
+        <i class="ti ti-layout-grid" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Explorador Interactivo</span><span class="lat-l2">de Videos Youtube</span></span>
       </button>
       <div class="lat-titulo">Estudiar</div>
-      <button class="tab-btn" onclick="showTab('clases', this)" title="Clases Premium">
-        <i class="ti ti-school" aria-hidden="true"></i><span class="lat-txt">Clases Premium</span>
+      <button class="tab-btn" onclick="showTab('clases', this)" title="Clases Premium Acceso Total">
+        <i class="ti ti-school" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Clases Premium</span><span class="lat-l2">Acceso Total</span></span>
       </button>
-      <button class="tab-btn" onclick="showTab('educativa', this)" title="Plataforma Educativa">
-        <i class="ti ti-certificate" aria-hidden="true"></i><span class="lat-txt">Plataforma Educativa</span>
+      <button class="tab-btn" onclick="showTab('educativa', this)" title="Plataforma Educativa Clases Tutorizadas y Evaluadas">
+        <i class="ti ti-certificate" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Plataforma Educativa</span><span class="lat-l2">Clases Tutorizadas y Evaluadas</span></span>
       </button>
-      <button class="tab-btn" onclick="showTab('catalogo', this)" title="¿Cuál me conviene?">
-        <i class="ti ti-help" aria-hidden="true"></i><span class="lat-txt">¿Cuál me conviene?</span>
+      <button class="tab-btn" onclick="showTab('catalogo', this)" title="¿Cuál me conviene? Aula o Videoteca">
+        <i class="ti ti-help" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">¿Cuál me conviene?</span><span class="lat-l2">Aula o Videoteca</span></span>
       </button>
       <div class="lat-titulo">Calcular</div>
       <button class="tab-btn" onclick="showTab('calcula', this)" title="Calcula con Ubuntu">
-        <i class="ti ti-calculator" aria-hidden="true"></i><span class="lat-txt">Calcula con Ubuntu</span>
+        <i class="ti ti-calculator" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Calcula con</span><span class="lat-l2">Ubuntu</span></span>
       </button>
       <div class="lat-titulo">Tu cuenta</div>
       <button class="tab-btn" onclick="showTab('tarifario', this)" title="Planes y Precios">
-        <i class="ti ti-tag" aria-hidden="true"></i><span class="lat-txt">Planes y Precios</span>
+        <i class="ti ti-tag" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Planes y</span><span class="lat-l2">Precios</span></span>
       </button>
-      <button class="tab-btn" onclick="showTab('cuenta', this)" title="Mi Cuenta">
-        <i class="ti ti-user-circle" aria-hidden="true"></i><span class="lat-txt">Mi Cuenta</span>
+      <button class="tab-btn" onclick="showTab('cuenta', this)" title="Mi Cuenta Mis suscripciones">
+        <i class="ti ti-user-circle" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Mi Cuenta</span><span class="lat-l2">Mis suscripciones</span></span>
       </button>
-      <button class="tab-btn" onclick="showTab('admin', this)" title="Intranet">
-        <i class="ti ti-shield-lock" aria-hidden="true"></i><span class="lat-txt">Intranet</span>
+      <button class="tab-btn" onclick="showTab('admin', this)" title="Intranet Panel Admin">
+        <i class="ti ti-shield-lock" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Intranet</span><span class="lat-l2">Panel Admin</span></span>
       </button>
     </nav>
   </aside>
