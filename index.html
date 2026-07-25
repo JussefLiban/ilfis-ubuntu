@@ -773,18 +773,23 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="admin-group" data-area="general" style="display:none;">
           <div class="admin-group-tabs" id="admin-tabs-general">
             <button class="admin-tab" onclick="adminShowTab('suscriptores', this)">Suscriptores</button>
+            <button class="admin-tab" onclick="adminShowTab('contmemb', this)">Módulo Contable</button>
+            <button class="admin-tab" onclick="adminShowTab('contparam', this)">Parametrización</button>
+            <button class="admin-tab" onclick="adminShowTab('contresum', this)">Resumen general</button>
           </div>
         </div>
         <div class="admin-group" data-area="premium">
           <div class="admin-group-tabs">
             <button class="admin-tab active" onclick="adminShowTab('recaud', this)">Recaudación por curso</button>
             <button class="admin-tab" onclick="adminShowTab('alumnos', this)">Alumnos</button>
+            <button class="admin-tab" onclick="adminShowTab('contprem', this)">Módulo Contable</button>
           </div>
         </div>
         <div class="admin-group" data-area="aplicativos" style="display:none;">
           <div class="admin-group-tabs">
             <button class="admin-tab" onclick="adminShowTab('apprecaud', this)">Recaudación por aplicativo</button>
             <button class="admin-tab" onclick="adminShowTab('appsusc', this)">Suscriptores</button>
+            <button class="admin-tab" onclick="adminShowTab('contcalc', this)">Módulo Contable</button>
           </div>
         </div>
         <div class="admin-group" data-area="educativa" style="display:none;">
@@ -829,6 +834,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="admin-section" id="admin-sec-apprecaud">
         <div id="admin-app-content"><div class="admin-loading">Cargando...</div></div>
       </div>
+      <!-- Secciones Módulo Contable (embebidas desde /modulos-contables/) -->
+      <div class="admin-section" id="admin-sec-contmemb"><iframe id="mc-if-contmemb" data-src="modulos-contables/?modulo=membresia" title="Módulo Contable · Membresía" style="width:100%;height:820px;border:none;border-radius:10px;background:#0b1220;"></iframe></div>
+      <div class="admin-section" id="admin-sec-contparam"><iframe id="mc-if-contparam" data-src="modulos-contables/?modulo=param" title="Parametrización" style="width:100%;height:820px;border:none;border-radius:10px;background:#0b1220;"></iframe></div>
+      <div class="admin-section" id="admin-sec-contresum"><iframe id="mc-if-contresum" data-src="modulos-contables/?modulo=resumen" title="Resumen general" style="width:100%;height:820px;border:none;border-radius:10px;background:#0b1220;"></iframe></div>
+      <div class="admin-section" id="admin-sec-contprem"><iframe id="mc-if-contprem" data-src="modulos-contables/?modulo=premium" title="Módulo Contable · Premium" style="width:100%;height:820px;border:none;border-radius:10px;background:#0b1220;"></iframe></div>
+      <div class="admin-section" id="admin-sec-contcalc"><iframe id="mc-if-contcalc" data-src="modulos-contables/?modulo=calculador" title="Módulo Contable · Calculador" style="width:100%;height:820px;border:none;border-radius:10px;background:#0b1220;"></iframe></div>
       <!-- Sección Suscriptores de Aplicativos (accesos al Calculador Integral) -->
       <div class="admin-section" id="admin-sec-appsusc">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
@@ -3730,6 +3741,7 @@ function adminShowTab(name, btn) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('admin-sec-' + name).classList.add('active');
+  if (name.indexOf('cont') === 0) { var _mcf = document.getElementById('mc-if-' + name); if (_mcf && !_mcf.src) _mcf.src = _mcf.dataset.src; }
   if (name === 'docentes') adminCargarDocentes();
   if (name === 'cohorte') adminCargarCohorte();
   if (name === 'educertif') adminCargarCertificados();

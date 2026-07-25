@@ -652,6 +652,21 @@ leerParams();
   (async function(){ var k=null; try{k=localStorage.getItem('ilfis_admin_key');}catch(e){} if(await validar(k)) abrir(); })();
 })();
 </script>
-
+<script>
+/* Modo embebido: ?modulo=xxx muestra solo ese módulo (sin cabecera ni pestañas) */
+(function(){
+  try{
+    var m=new URLSearchParams(location.search).get('modulo');
+    if(!m) return;
+    var map={membresia:'sec-membresia',calculador:'sec-calculador',premium:'sec-premium',param:'sec-param',resumen:'sec-resumen'};
+    var id=map[m]; if(!id) return;
+    document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('active'); });
+    var t=document.getElementById(id); if(t) t.classList.add('active');
+    var tabs=document.getElementById('tabs'); if(tabs) tabs.style.display='none';
+    var hd=document.querySelector('header'); if(hd) hd.style.display='none';
+    var wrap=document.querySelector('.wrap'); if(wrap){ wrap.style.paddingTop='10px'; }
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
