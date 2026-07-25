@@ -5730,9 +5730,16 @@ window._pintarSaldo = function(){
         if (exp && new Date(exp) > new Date()) {
           // Plan por tiempo: decir cuantos dias quedan y cuando vence (misma regla
           // que en "Mi Cuenta": el usuario siempre ve que tiene y hasta cuando).
-          var dd = Math.ceil((new Date(exp) - new Date()) / 86400000);
-          var f  = new Date(exp).toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'});
-          el.textContent = 'Ilimitado · ' + dd + (dd === 1 ? ' dia' : ' dias');
+          // Dias que faltan contados por CALENDARIO (no por reloj): al cambiar el
+          // dia baja de a uno, aunque no hayan pasado 24h exactas desde que se dio.
+          var _hoy = new Date(), _exp = new Date(exp);
+          var _a = new Date(_hoy.getFullYear(), _hoy.getMonth(), _hoy.getDate());
+          var _b = new Date(_exp.getFullYear(), _exp.getMonth(), _exp.getDate());
+          var dd = Math.round((_b - _a) / 86400000);
+          var f  = _exp.toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'});
+          el.textContent = dd <= 0
+            ? ('Ilimitado · vence hoy (' + f + ')')
+            : ('Ilimitado · ' + dd + (dd === 1 ? ' dia' : ' dias') + ' · vence ' + f);
           el.title = 'Calculos ilimitados hasta el ' + f + '. Generar expedientes no descuenta nada.';
           var alerta = dd <= 10, aviso = dd <= 30;
           el.style.background = alerta ? 'rgba(192,57,43,.18)' : aviso ? 'rgba(208,138,42,.18)' : 'rgba(46,204,113,.15)';
