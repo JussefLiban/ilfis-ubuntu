@@ -255,7 +255,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
   <div id="contenido">
     <h2>Bienvenido al aula</h2>
     <div class="meta">Selecciona una lección en el temario para comenzar.</div>
-    <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios cierran el domingo 00:00 de su semana y las notas se publican el lunes siguiente a las 12:00.</div>
+    <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios y las tareas cierran al terminar el domingo de su semana (medianoche) y las notas se publican el lunes siguiente a las 12:00.</div>
   </div>
   <div id="lecNav" style="display:none;grid-column:1/-1;text-align:right;margin-top:6px;"></div>
 </div>
@@ -1169,7 +1169,7 @@ async function lecQuiz(w, l, c){
 
   if(!q.abierto){
     c.innerHTML = cab(w, l) + `
-      <div class="aviso err">El plazo para responder cerró el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima). Este cuestionario queda con nota 0 por no presentarse.</div>
+      <div class="aviso err">El plazo para responder cerró al terminar el domingo ${fmtLima(q.cierre)} (medianoche, hora de Lima). Este cuestionario queda con nota 0 por no presentarse.</div>
       <button class="btn btn-sec" onclick="verNotas()">📊 Ver Mis notas</button>`;
     return;
   }
@@ -1179,8 +1179,8 @@ async function lecQuiz(w, l, c){
     ? `<div class="aviso" style="white-space:pre-line;line-height:1.65;">${esc(q.instruccion)}</div>`
     : "";
   const _aviso = q.diagnostico
-    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento. Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima).</div>`
-    : `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a las 00:00 (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
+    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento. Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima).</div>`
+    : `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
   let html = cab(w, l) + _intro + _aviso + '<div id="quizTimer" class="aviso" style="display:none;font-weight:700;position:sticky;top:0;z-index:5;"></div>';
   (q.preguntas || []).forEach((p, qi) => {
     // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
