@@ -245,11 +245,14 @@ let R = null;      // resumen
 let E = null;      // entregas de tareas
 let P = null;      // planilla / libro de notas
 let NOMBRES = {};  // uid -> nombre del alumno (el alumno se llama por su NOMBRE, no por el correo)
+let NUMEROS = {};  // uid -> N° del ROSTER OFICIAL (el MISMO N° que la intranet y la planilla)
 let _fotoTok = ""; // token (login docente) para mostrar las fotos de los alumnos
 
 // Nombre del alumno para mostrar en pantalla. Orden: nombre real (de la planilla)
 // → correo → uid. Nunca dejamos el correo como "nombre" si tenemos el real.
 function nomDe(uid, email){ return NOMBRES[uid] || email || uid || "—"; }
+// N° del roster como prefijo "4. " (o "" si el uid no está matriculado, p. ej. una prueba).
+function numPref(uid){ return NUMEROS[uid] != null ? `<b style="color:var(--texto2);">${NUMEROS[uid]}.</b> ` : ""; }
 let tab = "q";
 let _autoIntentado = false;
 
@@ -314,10 +317,11 @@ async function cargar(inicial){
   // Mapa uid -> NOMBRE real del alumno. Fuente de verdad: el resumen del backend
   // (`R.nombres`, resuelto desde el certificado o el displayName). La planilla solo
   // como respaldo, y nunca metemos el correo como si fuera nombre.
-  NOMBRES = {};
+  NOMBRES = {}; NUMEROS = {};
   if(R && R.nombres){ Object.assign(NOMBRES, R.nombres); }
   if(P && P.alumnos){ P.alumnos.forEach(a => {
     if(a.uid && a.nombre && !NOMBRES[a.uid] && a.nombre !== a.email) NOMBRES[a.uid] = a.nombre;
+    if(a.uid && a.numero != null) NUMEROS[a.uid] = a.numero;   // N° del roster para todos los módulos
   }); }
   actualizarKPIs();
   verTab(tab);
@@ -391,22 +395,36 @@ function estadoDe(d){
   return { cls:"riesgo", txt:"Rezagado" };
 }
 
-// Agrega por alumno cruzando progreso + intentos + entregas
+// Agrega por alumno cruzando progreso + intentos + entregas.
+// QUIÉN aparece y con qué N° lo manda el ROSTER OFICIAL (la MISMA lista y numeración
+// de la intranet y la planilla): matriculados + pausados. Así "Por alumno" ya no
+// muestra cuentas de prueba (que tienen actividad pero no matrícula) ni oculta a un
+// matriculado sin actividad todavía (aparece en 0%). Si la planilla no cargó, caemos
+// al modo viejo (por actividad) para no dejar el panel en blanco.
 function computeAlumnos(){
   const byUid = {};
+  const roster = (P && P.alumnos && P.alumnos.length) ? P.alumnos : null;
   const ensure = (uid, email) => {
-    const r = byUid[uid] = byUid[uid] || { uid, email: email || uid, comp:0, total:(R.total_lecciones||0),
+    const r = byUid[uid] = byUid[uid] || { uid, email: email || uid, numero:null, estado_matricula:null,
+      comp:0, total:(R.total_lecciones||0),
       enviados:0, aprobados:0, calificados:0, sumaNota:0, manual:0, lastTs:null };
     if(email && (!r.email || r.email === uid)) r.email = email;
     return r;
   };
+  if(roster) roster.forEach(a => {
+    const r = ensure(a.uid, a.email);
+    r.numero = a.numero; r.estado_matricula = a.estado_matricula;
+    if(a.nombre && a.nombre !== a.email) r.nombre = a.nombre;
+  });
+  // Con roster, la actividad de un uid que NO está matriculado se ignora (no crea fila).
+  const tocar = roster ? (uid => byUid[uid] || null) : ((uid, email) => ensure(uid, email));
   (R.progreso || []).forEach(p => {
-    const r = ensure(p.uid, p.email);
+    const r = tocar(p.uid, p.email); if(!r) return;
     r.comp = p.completadas; r.total = p.total || r.total;
     r.lastTs = maxTs(r.lastTs, p.actualizado);
   });
   (R.intentos || []).forEach(x => {
-    const r = ensure(x.uid, x.email);
+    const r = tocar(x.uid, x.email); if(!r) return;
     r.enviados++;
     r.lastTs = maxTs(r.lastTs, x.enviado);
     if(x.pendiente_manual) r.manual++;
@@ -414,7 +432,7 @@ function computeAlumnos(){
     if(!x.es_encuesta && n != null){ r.calificados++; r.sumaNota += n; if(n >= APROB()) r.aprobados++; }
   });
   ((E && E.entregas) || []).forEach(en => {
-    const r = ensure(en.uid, en.email);
+    const r = tocar(en.uid, en.email); if(!r) return;
     (en.archivos || []).forEach(a => r.lastTs = maxTs(r.lastTs, a.subido));
     r.lastTs = maxTs(r.lastTs, en.actualizado);
   });
@@ -425,7 +443,13 @@ function computeAlumnos(){
     r.estado = estadoDe(r.dias);
     return r;
   });
-  arr.sort((a, b) => (a.email || "").localeCompare(b.email || ""));
+  // Orden = N° del roster (el MISMO que la intranet y la planilla). Sin N°, al final por correo.
+  arr.sort((a, b) => {
+    if(a.numero != null && b.numero != null) return a.numero - b.numero;
+    if(a.numero != null) return -1;
+    if(b.numero != null) return 1;
+    return (a.email || "").localeCompare(b.email || "");
+  });
   return arr;
 }
 
@@ -480,7 +504,8 @@ function actualizarKPIs(){
   if(!R) return;
   const alumnos = computeAlumnos();
   const cola = computeCola();
-  $("kAct").textContent = alumnos.length;
+  // "Activos" = matriculados vigentes (los pausados van aparte, no cuentan como activos).
+  $("kAct").textContent = alumnos.filter(a => a.estado_matricula !== "pausado").length;
   $("kPend").textContent = cola.length;
   const conAvance = alumnos.filter(a => a.total);
   const avg = conAvance.length ? Math.round(conAvance.reduce((s,a)=>s+a.avance,0) / conAvance.length) : 0;
@@ -498,7 +523,7 @@ function renderQuiz(){
     `<tr><th>Alumno</th><th style="text-align:right;">Nota auto</th><th>Texto manual</th><th>Enviado (Lima)</th><th></th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = rows.map(x => `
     <tr>
-      <td><div class="a-nom">${esc(nomDe(x.uid, x.email))}</div>${x.email ? `<div class="a-mail">${esc(x.email)}</div>` : ""}</td>
+      <td>${numPref(x.uid)}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(x.uid, x.email))}</span>${x.email ? `<br><span class="a-mail">${esc(x.email)}</span>` : ""}</span></td>
       <td class="num">${x.es_encuesta ? "encuesta" : (x.nota !== undefined && x.nota !== null ? `${x.nota} / 100` : `${x.puntaje} / ${x.sobre}`)}</td>
       <td>${x.pendiente_manual ? `<span class="pill manual">⚠ ${x.sobre_manual} pts por calificar</span>` : `<span class="pill ok">—</span>`}</td>
       <td>${fmtLima(x.enviado)}</td>
@@ -518,9 +543,11 @@ function renderAlumnos(){
     const foto = (_fotoTok && a.uid)
       ? `<img src="${API}/api/cursos/admin/alumno/${encodeURIComponent(a.uid)}/foto?token=${_fotoTok}" onerror="this.style.display='none'" style="width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;border:1px solid var(--borde);">`
       : "";
+    const numTxt = (a.numero != null) ? `<b style="color:var(--texto2);">${a.numero}.</b> ` : "";
+    const pausTxt = (a.estado_matricula === "pausado") ? ` <span style="color:var(--ambar);font-size:.62rem;">⏸ pausado</span>` : "";
     return `
     <tr>
-      <td>${foto}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(a.uid, a.email))}</span>${a.email ? `<br><span class="a-mail">${esc(a.email)}</span>` : ""}</span></td>
+      <td>${numTxt}${foto}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(a.uid, a.email))}</span>${pausTxt}${a.email ? `<br><span class="a-mail">${esc(a.email)}</span>` : ""}</span></td>
       <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
       <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
       <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
@@ -553,7 +580,7 @@ function renderCola(){
     }
     return `<tr>
       <td>${pill}</td>
-      <td><div class="a-nom">${esc(nomDe(c.uid, c.email))}</div>${c.email ? `<div class="a-mail">${esc(c.email)}</div>` : ""}</td>
+      <td>${numPref(c.uid)}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(c.uid, c.email))}</span>${c.email ? `<br><span class="a-mail">${esc(c.email)}</span>` : ""}</span></td>
       <td>${esc(c.actividad)}</td>
       <td style="white-space:nowrap;color:var(--texto2);">${fmtLima(c.cuando)}</td>
       <td style="white-space:nowrap;">${accion}</td>
@@ -565,11 +592,11 @@ function renderCola(){
 function exportarNotas(){
   if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
-  const cab = ["Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
+  const cab = ["N°","Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
   const q = s => `"${String(s == null ? "" : s).replace(/"/g,'""')}"`;
   const filas = alumnos.map(a => [
-    nomDe(a.uid, a.email), a.email, a.avance, a.comp, a.total, txtDias(a.dias),
+    (a.numero == null ? "" : a.numero), nomDe(a.uid, a.email), a.email, a.avance, a.comp, a.total, txtDias(a.dias),
     a.enviados, a.aprobados, (a.promedio == null ? "" : a.promedio), a.manual, a.estado.txt
   ].map(q).join(";"));
   const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
