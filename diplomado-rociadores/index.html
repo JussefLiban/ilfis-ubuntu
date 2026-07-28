@@ -583,7 +583,7 @@ function toggleVerComoAlumno(){
   } else {
     if(b) b.textContent = '👁 Ver como alumno';
     if(banner){ banner.style.background = '#0e2e1a'; banner.style.borderColor = '#22c55e'; banner.style.color = '#bbf7d0'; }
-    if(txt) txt.innerHTML = '🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar, revisar entregas y dejar mensajes: <a href="../instructor-cursos/" style="color:#86efac;font-weight:700;text-decoration:underline;">→ Abrir panel de instructor</a>.';
+    if(txt) txt.innerHTML = '🧑‍🏫 <b>Modo docente</b> — ves el curso completo, todas las semanas desbloqueadas y sin restricción de fechas. Los alumnos ven el desbloqueo semana a semana. Para calificar, revisar entregas y dejar mensajes: <a href="../instructor-cursos/?curso=' + encodeURIComponent(CURSO) + '" style="color:#86efac;font-weight:700;text-decoration:underline;">→ Abrir panel de instructor</a>.';
   }
   lecActiva = null;
   $("contenido").innerHTML = '<div class="aviso">Elige una lección del temario.</div>';
