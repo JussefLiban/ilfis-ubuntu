@@ -168,6 +168,10 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <div class="l1">UBUNTU · INSTRUCTOR</div>
     <div class="l2" id="panelTitulo">Notas e intentos — Diplomado de Rociadores Automáticos</div>
   </div>
+  <select id="selCurso" onchange="cambiarCurso(this.value)" title="Cambiar de curso" style="margin-left:16px;padding:8px 12px;border-radius:8px;border:1px solid #2a2a5a;background:#0f1729;color:#e6ecf7;font-size:.85rem;font-family:inherit;cursor:pointer;">
+    <option value="rociadores">Diplomado de Rociadores Automáticos</option>
+    <option value="calculos-hidraulicos">Diplomado de Cálculos Hidráulicos</option>
+  </select>
   <a class="volver" href="../">← Volver a UBUNTU</a>
 </header>
 
@@ -219,15 +223,29 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 // El panel sirve a CUALQUIER curso: el id llega por ?curso=… Si no viene, es Rociadores
 // (así el enlace de siempre del instructor funciona EXACTAMENTE igual que antes).
-const CURSO = new URLSearchParams(location.search).get("curso") || "rociadores";
+// Curso a mostrar: 1º el ?curso= de la URL; si no viene, el último que se eligió
+// (guardado en el navegador); si nunca se eligió, Rociadores. Así, entres por donde
+// entres (enlace del aula, marcador directo…), el panel recuerda tu curso.
+const CURSO = new URLSearchParams(location.search).get("curso")
+            || localStorage.getItem("curso_instructor")
+            || "rociadores";
+try { localStorage.setItem("curso_instructor", CURSO); } catch(e){}
 const NOMBRE_CURSO = {
   "rociadores": "Diplomado de Rociadores Automáticos",
   "calculos-hidraulicos": "Diplomado de Cálculos Hidráulicos"
 }[CURSO] || "Diplomado";
+// El selector recarga el panel apuntando al curso elegido (todo el panel cuelga de CURSO).
+function cambiarCurso(c){
+  if(!c || c === CURSO) return;
+  try { localStorage.setItem("curso_instructor", c); } catch(e){}
+  location.href = "?curso=" + encodeURIComponent(c);
+}
 document.addEventListener("DOMContentLoaded", () => {
   const t = document.getElementById("panelTitulo");
   if (t) t.textContent = "Notas e intentos — " + NOMBRE_CURSO;
   document.title = "Instructor — " + NOMBRE_CURSO + " | ILFIS Ubuntu";
+  const sel = document.getElementById("selCurso");
+  if (sel) sel.value = CURSO;
 });
 const firebaseConfig = {
   apiKey:            "AIzaSyA1ltz-NySxNX0nMOS6iFPuiZO-KvXHfYc",
