@@ -5334,6 +5334,16 @@ function _bibMarkdown(t) {
   return html;
 }
 
+// Título -> id de Drive, cruzando contra el catálogo ya cargado. El backend
+// manda "Titulo (ES)" y el catálogo guarda "Titulo": se quita la etiqueta
+// antes de comparar. Si el catálogo aún no se cargó, no hay botón y ya está.
+function _bibIdDe(titulo) {
+  if (!_bibCat) return '';
+  const limpio = String(titulo || '').replace(/\s*\((ES|EN)\)\s*$/i, '').trim();
+  const l = _bibCat.libros.find(function (x) { return x[0] === limpio; });
+  return (l && l[5]) ? l[5] : '';
+}
+
 async function bibBuscar() {
   const texto  = (document.getElementById('bib-pregunta').value || '').trim();
   const idioma = document.getElementById('bib-idioma').value;
@@ -5384,10 +5394,20 @@ async function bibBuscar() {
         return '<div class="bib-frag"><span class="bib-pag">pág. '
              + _bibEsc(f.pagina) + '</span><br>' + _bibEsc(f.texto) + '</div>';
       }).join('');
+      // El backend manda el título con la etiqueta de idioma pegada
+      // ("... (ES)") y el catálogo la trae quitada. Se normaliza para poder
+      // cruzarlos y ofrecer el botón de abrir el libro.
+      const id = _bibIdDe(l.titulo);
+      const abrir = id
+        ? '<a class="btn" target="_blank" rel="noopener" style="text-decoration:none;'
+          + 'display:inline-block;margin-top:12px;" '
+          + 'href="https://drive.google.com/file/d/' + _bibEsc(id)
+          + '/view">Abrir libro</a>'
+        : '';
       return '<div class="bib-libro">'
            + '<div class="bib-libro-tit">' + _bibEsc(l.titulo) + '</div>'
            + '<div class="bib-libro-meta">' + _bibEsc(l.temas) + ' · '
-           + _bibEsc(l.idioma) + '</div>' + frags + '</div>';
+           + _bibEsc(l.idioma) + '</div>' + frags + abrir + '</div>';
     }).join('');
 
   } catch (e) {
@@ -5470,11 +5490,19 @@ function bibCatPintar() {
              + '<div class="bib-libro-tit">' + _bibEsc(l[0]) + '</div>'
              + '<div style="font-size:.83rem;color:#9db0d0;line-height:1.4;flex:1;">'
              + _bibEsc(l[4] || '') + '</div>'
-             + '<div class="card-pie" style="display:flex;gap:10px;font-size:.75rem;'
-             + 'color:#7a8db0;border-top:1px solid #22345c;padding-top:9px;">'
+             + '<div class="card-pie" style="display:flex;align-items:center;'
+             + 'gap:10px;font-size:.75rem;color:#7a8db0;'
+             + 'border-top:1px solid #22345c;padding-top:9px;">'
              + '<span class="badge" style="background:#0f3460;border-radius:4px;'
              + 'padding:2px 7px;">' + _bibEsc(l[2]) + '</span><span>'
-             + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span></div></div>';
+             + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span>'
+             // El libro se abre en Drive. Es herramienta interna: el
+             // instructor sí puede leerlo entero.
+             + (l[5] ? '<a class="btn" target="_blank" rel="noopener" '
+                     + 'style="margin-left:auto;text-decoration:none;" '
+                     + 'href="https://drive.google.com/file/d/' + _bibEsc(l[5])
+                     + '/view">Abrir libro</a>' : '')
+             + '</div></div>';
       }).join('')
       + (r.length > 300 ? '<div class="no-results">Se muestran los primeros 300 '
          + 'de ' + r.length + '. Afina el filtro.</div>' : '')
