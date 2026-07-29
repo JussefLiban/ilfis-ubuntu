@@ -5384,6 +5384,12 @@ async function bibBuscar() {
   resum.innerHTML = '';
   libros.innerHTML = '';
 
+  // Los botones "Leer" y "Bajar" de los resultados salen de cruzar el título
+  // contra el catálogo. Si el catálogo aún no terminó de cargar, el cruce
+  // devuelve vacío y los libros aparecen sin forma de abrirlos. Se espera aquí:
+  // si ya está cargado, esto no cuesta nada.
+  try { await bibCatCargar(); } catch (_) {}
+
   try {
     const res = await _authFetch(BACKEND_BIBLIOTECA + '/biblioteca/buscar', {
       method: 'POST',
