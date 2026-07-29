@@ -5198,6 +5198,13 @@ async function _pintarSaldoCuenta() {
 // Planes contratados (duracion real registrada por el servidor al conceder el
 // acceso). Si no se conoce, NO se inventa: simplemente no se muestra el avance.
 let _misPlanes = {};
+// La bandera va FUERA de _misPlanes y no dentro. Estuvo dentro y provocó un
+// bucle infinito: renderMiCuenta marcaba _misPlanes.__cargado, _cargarMisPlanes
+// reemplazaba el objeto entero con la respuesta del servidor —y se llevaba la
+// marca— y al repintar volvía a cargar. Cada vuelta eran dos peticiones
+// (mis-planes + calculos/saldo). Llegó a 1,5 millones de peticiones en un día.
+let _misPlanesCargado = false;
+
 async function _cargarMisPlanes() {
   try {
     const u = auth.currentUser; if (!u) return;
@@ -5241,7 +5248,7 @@ function renderMiCuenta() {
   // El PAQUETE de cálculos no es una suscripción (no tiene fecha): es un saldo.
   // Se muestra aparte para que el cliente vea lo que compró y cuánto le queda.
   _pintarSaldoCuenta();
-  if (!_misPlanes.__cargado) { _misPlanes.__cargado = true; _cargarMisPlanes(); }
+  if (!_misPlanesCargado) { _misPlanesCargado = true; _cargarMisPlanes(); }
 
   if (keys.length === 0) {
     lista.innerHTML = `<div class="cuenta-empty">
@@ -5347,6 +5354,14 @@ function _bibIdDe(titulo) {
   return (l && l[5]) ? l[5] : '';
 }
 
+// La biblioteca vive en SU PROPIO servidor, no en el de la plataforma.
+// Motivo: el modelo pide 4 GB y la plataforma corre encendida las 24 horas;
+// tenerlos juntos costaba ~13 USD/mes de más para algo que se usa una vez por
+// semana. Separado, este servidor duerme y solo cobra los minutos que trabaja.
+// El precio: la primera búsqueda tras un rato de inactividad tarda cerca de un
+// minuto, porque tiene que despertar y cargar el modelo.
+const BACKEND_BIBLIOTECA = "https://ilfis-biblioteca-27378911758.us-central1.run.app";
+
 async function bibBuscar() {
   const texto  = (document.getElementById('bib-pregunta').value || '').trim();
   const idioma = document.getElementById('bib-idioma').value;
@@ -5358,12 +5373,19 @@ async function bibBuscar() {
   if (texto.length < 4) { estado.textContent = 'Escribe una pregunta.'; return; }
 
   btn.disabled = true;
+  // El servidor de la biblioteca duerme cuando no se usa. Si lleva rato
+  // apagado, la primera búsqueda tarda en despertar: se avisa a los 6 segundos
+  // para que nadie crea que se colgó.
   estado.textContent = 'Buscando en 1.641 libros...';
+  const aviso = setTimeout(function () {
+    estado.textContent = 'Despertando el buscador (solo la primera vez, '
+                       + 'puede tardar un minuto)...';
+  }, 6000);
   resum.innerHTML = '';
   libros.innerHTML = '';
 
   try {
-    const res = await _authFetch(BACKEND + '/biblioteca/buscar', {
+    const res = await _authFetch(BACKEND_BIBLIOTECA + '/biblioteca/buscar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texto: texto, idioma: idioma || null, resumen: true })
@@ -5421,6 +5443,7 @@ async function bibBuscar() {
     estado.textContent = '';
     resum.innerHTML = '<div class="bib-error">' + _bibEsc(e.message) + '</div>';
   } finally {
+    clearTimeout(aviso);
     btn.disabled = false;
   }
 }
