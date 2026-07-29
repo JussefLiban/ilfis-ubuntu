@@ -286,6 +286,23 @@ textarea::placeholder { color: #5a7a9a; }
 .videos-coming p { color: #7a8a9a; font-size: 0.88rem; line-height: 1.7; margin-bottom: 4px; }
 .videos-coming p strong { color: #aac; }
 
+/* ─── SALA DE PROFESORES · BIBLIOTECA TÉCNICA ────────────── */
+.bib-resumen { background:#16213e; border:1px solid #22345c; border-left:3px solid #c0392b;
+  border-radius:10px; padding:18px 20px; margin:16px 0 22px; line-height:1.6; font-size:.95rem; }
+.bib-resumen h3 { margin:0 0 10px; font-size:1rem; color:#fff; }
+.bib-resumen strong { color:#fff; }
+.bib-libro { background:#16213e; border:1px solid #22345c; border-radius:10px;
+  padding:14px 16px; margin-bottom:12px; }
+.bib-libro-tit { color:#fff; font-size:.95rem; line-height:1.35; margin-bottom:4px; }
+.bib-libro-meta { font-size:.72rem; color:#c0392b; text-transform:uppercase;
+  letter-spacing:.04em; margin-bottom:10px; }
+.bib-frag { border-top:1px solid #22345c; padding-top:10px; margin-top:10px;
+  font-size:.85rem; color:#9db0d0; line-height:1.5; }
+.bib-pag { display:inline-block; background:#0f3460; color:#cfe0ff; border-radius:4px;
+  padding:2px 8px; font-size:.72rem; margin-bottom:6px; }
+.bib-error { color:#ff9a8f; background:#2a1520; border:1px solid #5c2230;
+  border-radius:8px; padding:12px 14px; margin:14px 0; font-size:.9rem; }
+
 /* ─── PANEL EXPLORADOR ───────────────────────────────────── */
 #panel-explorador { align-items: stretch; }
 .explorador-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 24px 20px 40px; }
@@ -568,8 +585,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </button>
       <div class="lat-separador"></div>
       <div class="lat-titulo">Equipo ILFIS</div>
-      <button class="tab-btn lat-inactivo" disabled title="Sala de Profesores — próximamente">
-        <i class="ti ti-users" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Sala de Profesores</span><span class="lat-l2">Próximamente</span></span>
+      <button class="tab-btn" onclick="showTab('profesores', this)" title="Sala de Profesores — Biblioteca Técnica ILFIS">
+        <i class="ti ti-users" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Sala de Profesores</span><span class="lat-l2">Biblioteca Técnica</span></span>
       </button>
       <button class="tab-btn" onclick="showTab('admin', this)" title="Intranet Panel Admin">
         <i class="ti ti-shield-lock" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Intranet</span><span class="lat-l2">Panel Admin</span></span>
@@ -1201,6 +1218,41 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="cats" id="cat-chips"></div>
     <div class="exp-count" id="exp-count"></div>
     <div class="video-grid" id="video-grid"></div>
+  </div>
+</div>
+
+<!-- Panel Sala de Profesores — Biblioteca Técnica -->
+<!-- Herramienta INTERNA. Los libros no se reparten: se devuelven párrafos    -->
+<!-- citados con libro y página, igual que en "ILFIS interpreta NFPA".        -->
+<!-- El backend (/biblioteca/buscar) responde 403 a quien no sea instructor.  -->
+<div class="panel" id="panel-profesores">
+  <div class="explorador-inner">
+    <p class="subtitle">
+      <strong style="color:#fff;">Biblioteca Técnica ILFIS</strong> — 1.641 libros propios.
+      Pregunta y te dice qué libros lo tratan, en qué página y qué dicen.<br>
+      <span style="color:#7a8db0;font-size:.9em;">
+        Uso interno de instructores. Las normas NFPA y FM no están aquí:
+        para esas, usa sus propios módulos.
+      </span>
+    </p>
+
+    <div class="consulta-box">
+      <label>Tu pregunta</label>
+      <textarea id="bib-pregunta" rows="2"
+        placeholder="Ej: ¿cómo se protege un tanque de techo flotante con espuma?"></textarea>
+      <div class="search-row" style="margin-top:10px;align-items:center;">
+        <select id="bib-idioma" class="search-input" style="flex:0 0 190px;">
+          <option value="">Cualquier idioma</option>
+          <option value="ES">Solo español</option>
+          <option value="EN">Solo inglés</option>
+        </select>
+        <button class="btn-consultar" id="bib-btn" onclick="bibBuscar()">Buscar en los libros</button>
+      </div>
+    </div>
+
+    <div id="bib-estado" class="exp-count"></div>
+    <div id="bib-resumen"></div>
+    <div id="bib-libros"></div>
   </div>
 </div>
 
@@ -5228,6 +5280,110 @@ async function actualizarCuenta() {
   } catch(e) { console.error('actualizarCuenta:', e); }
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Actualizar'; }
 }
+
+// ── SALA DE PROFESORES · BIBLIOTECA TÉCNICA ──────────────────────────────
+// Pregunta -> /biblioteca/buscar -> redacción con citas + libros con sus
+// párrafos y páginas. Herramienta interna: el backend responde 403 a quien no
+// sea instructor, y aquí se muestra ese mensaje tal cual en vez de un error
+// genérico, para que el que no tiene acceso entienda por qué.
+function _bibEsc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// El borrador viene en markdown suelto. Se convierte lo mínimo (títulos,
+// negritas, viñetas) sin meter una librería entera para esto.
+function _bibMarkdown(t) {
+  const lineas = _bibEsc(t).split('\n');
+  let html = '', enLista = false;
+  for (let l of lineas) {
+    l = l.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+         .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    if (/^\s*[-*]\s+/.test(l)) {
+      if (!enLista) { html += '<ul>'; enLista = true; }
+      html += '<li>' + l.replace(/^\s*[-*]\s+/, '') + '</li>';
+      continue;
+    }
+    if (enLista) { html += '</ul>'; enLista = false; }
+    if (/^#{1,6}\s/.test(l))      html += '<h3>' + l.replace(/^#{1,6}\s*/, '') + '</h3>';
+    else if (/^\s*---+\s*$/.test(l)) html += '';
+    else if (l.trim())            html += '<p>' + l + '</p>';
+  }
+  if (enLista) html += '</ul>';
+  return html;
+}
+
+async function bibBuscar() {
+  const texto  = (document.getElementById('bib-pregunta').value || '').trim();
+  const idioma = document.getElementById('bib-idioma').value;
+  const estado = document.getElementById('bib-estado');
+  const resum  = document.getElementById('bib-resumen');
+  const libros = document.getElementById('bib-libros');
+  const btn    = document.getElementById('bib-btn');
+
+  if (texto.length < 4) { estado.textContent = 'Escribe una pregunta.'; return; }
+
+  btn.disabled = true;
+  estado.textContent = 'Buscando en 1.641 libros...';
+  resum.innerHTML = '';
+  libros.innerHTML = '';
+
+  try {
+    const res = await _authFetch(BACKEND + '/biblioteca/buscar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: texto, idioma: idioma || null, resumen: true })
+    });
+
+    if (res.status === 403) {
+      let msg = 'La biblioteca es una herramienta interna para instructores.';
+      try { const j = await res.json(); if (j && j.detail) msg = j.detail; } catch (_) {}
+      estado.textContent = '';
+      resum.innerHTML = '<div class="bib-error">' + _bibEsc(msg) + '</div>';
+      return;
+    }
+    if (!res.ok) throw new Error('El buscador respondió ' + res.status);
+
+    const d = await res.json();
+    if (!d.encontrado || !d.libros.length) {
+      estado.textContent = '';
+      resum.innerHTML = '<div class="bib-error">Ningún libro de la biblioteca '
+        + 'trata eso. Prueba con otras palabras, o puede que el tema esté en '
+        + 'NFPA o FM, que no viven aquí.</div>';
+      return;
+    }
+
+    estado.textContent = 'Responden ' + d.libros.length + ' libros';
+    if (d.borrador) {
+      resum.innerHTML = '<div class="bib-resumen">' + _bibMarkdown(d.borrador) + '</div>';
+    }
+
+    libros.innerHTML = d.libros.map(function (l) {
+      const frags = (l.fragmentos || []).slice(0, 3).map(function (f) {
+        return '<div class="bib-frag"><span class="bib-pag">pág. '
+             + _bibEsc(f.pagina) + '</span><br>' + _bibEsc(f.texto) + '</div>';
+      }).join('');
+      return '<div class="bib-libro">'
+           + '<div class="bib-libro-tit">' + _bibEsc(l.titulo) + '</div>'
+           + '<div class="bib-libro-meta">' + _bibEsc(l.temas) + ' · '
+           + _bibEsc(l.idioma) + '</div>' + frags + '</div>';
+    }).join('');
+
+  } catch (e) {
+    estado.textContent = '';
+    resum.innerHTML = '<div class="bib-error">' + _bibEsc(e.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Enter envía; Shift+Enter hace salto de línea.
+document.addEventListener('DOMContentLoaded', function () {
+  const c = document.getElementById('bib-pregunta');
+  if (c) c.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); bibBuscar(); }
+  });
+});
 
 function initExplorador() {
   _expInit = true;
