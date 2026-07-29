@@ -5486,7 +5486,11 @@ async function bibCatCargar() {
   const grid = document.getElementById('bib-cat-grid');
   grid.innerHTML = '<div class="no-results">Cargando el catálogo...</div>';
   try {
-    const r = await fetch('biblioteca_catalogo.json', { cache: 'force-cache' });
+    // OJO: nada de cache:'force-cache' aquí. Lo estuvo, y al publicar una
+    // versión nueva del catálogo el navegador seguía sirviendo la vieja: la
+    // página nueva leía datos viejos y marcaba TODOS los libros como "solo
+    // lectura". El número de versión fuerza a traerlo cuando cambia el formato.
+    const r = await fetch('biblioteca_catalogo.json?v=7');
     if (!r.ok) throw new Error('no se pudo leer el catálogo');
     _bibCat = await r.json();
   } catch (e) {
@@ -5547,7 +5551,10 @@ function bibCatPintar() {
              + 'padding:2px 7px;">' + _bibEsc(l[2]) + '</span><span>'
              + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span>'
              // Sin marca = se le puede preguntar. Con marca = solo se lee.
-             + (l[6] ? '' : '<span class="bib-noidx" title="No indexado en la '
+             // El dato puede faltar si el catálogo es de una versión anterior;
+             // en ese caso se asume que SÍ se puede preguntar, que es el
+             // comportamiento de siempre. Marcar de más asusta al instructor.
+             + (l[6] !== 0 ? '' : '<span class="bib-noidx" title="No indexado en la '
                           + 'inteligencia artificial: se lee y se baja, pero no '
                           + 'se le puede preguntar">solo lectura</span>')
              // Dos accesos, porque no siempre se quiere lo mismo: "Leer" abre
