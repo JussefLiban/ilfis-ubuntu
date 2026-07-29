@@ -305,6 +305,10 @@ textarea::placeholder { color: #5a7a9a; }
 .bib-mini { color:#8fb4e8; text-decoration:none; font-size:.78rem;
   border:1px solid #2a5a9a; border-radius:6px; padding:5px 11px; }
 .bib-mini:hover { background:#0f3460; }
+/* Marca de "está en el catálogo pero no se le puede preguntar" */
+.bib-noidx { display:inline-block; background:#2a2a1a; border:1px solid #5c5320;
+  color:#d8c87a; border-radius:4px; padding:2px 7px; font-size:.7rem;
+  text-transform:uppercase; letter-spacing:.03em; }
 
 /* ─── PANEL EXPLORADOR ───────────────────────────────────── */
 #panel-explorador { align-items: stretch; }
@@ -1237,6 +1241,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         Uso interno de instructores. Las normas NFPA y FM no están aquí:
         para esas, usa sus propios módulos.
       </span>
+    </p>
+    <p class="subtitle" style="background:#16213e;border:1px solid #22345c;
+       border-left:3px solid #8fb4e8;border-radius:8px;padding:11px 14px;
+       font-size:.85rem;line-height:1.5;">
+      <strong style="color:#fff;">Se puede preguntar sobre incendios.</strong>
+      Los libros de otras materias — climatización, eléctrico, tuberías
+      generales — están en el catálogo para <strong>leer y bajar</strong>, pero
+      <strong>no se les puede preguntar</strong>: no están indexados en la
+      inteligencia artificial. Llevan la marca
+      <span class="bib-noidx">solo lectura</span> en su ficha.
     </p>
 
     <div class="consulta-box">
@@ -5527,11 +5541,15 @@ function bibCatPintar() {
              + '<div style="font-size:.83rem;color:#9db0d0;line-height:1.4;flex:1;">'
              + _bibEsc(l[4] || '') + '</div>'
              + '<div class="card-pie" style="display:flex;align-items:center;'
-             + 'gap:10px;font-size:.75rem;color:#7a8db0;'
+             + 'gap:10px;font-size:.75rem;color:#7a8db0;flex-wrap:wrap;'
              + 'border-top:1px solid #22345c;padding-top:9px;">'
              + '<span class="badge" style="background:#0f3460;border-radius:4px;'
              + 'padding:2px 7px;">' + _bibEsc(l[2]) + '</span><span>'
              + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span>'
+             // Sin marca = se le puede preguntar. Con marca = solo se lee.
+             + (l[6] ? '' : '<span class="bib-noidx" title="No indexado en la '
+                          + 'inteligencia artificial: se lee y se baja, pero no '
+                          + 'se le puede preguntar">solo lectura</span>')
              // Dos accesos, porque no siempre se quiere lo mismo: "Leer" abre
              // el visor de Drive (útil para hojear un libro de 100 MB sin
              // bajarlo) y "Bajar" trae el PDF directo.
