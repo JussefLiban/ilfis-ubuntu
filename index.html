@@ -302,6 +302,9 @@ textarea::placeholder { color: #5a7a9a; }
   padding:2px 8px; font-size:.72rem; margin-bottom:6px; }
 .bib-error { color:#ff9a8f; background:#2a1520; border:1px solid #5c2230;
   border-radius:8px; padding:12px 14px; margin:14px 0; font-size:.9rem; }
+.bib-mini { color:#8fb4e8; text-decoration:none; font-size:.78rem;
+  border:1px solid #2a5a9a; border-radius:6px; padding:5px 11px; }
+.bib-mini:hover { background:#0f3460; }
 
 /* ─── PANEL EXPLORADOR ───────────────────────────────────── */
 #panel-explorador { align-items: stretch; }
@@ -5399,10 +5402,14 @@ async function bibBuscar() {
       // cruzarlos y ofrecer el botón de abrir el libro.
       const id = _bibIdDe(l.titulo);
       const abrir = id
-        ? '<a class="btn" target="_blank" rel="noopener" style="text-decoration:none;'
-          + 'display:inline-block;margin-top:12px;" '
+        ? '<div style="margin-top:12px;display:flex;gap:10px;align-items:center;">'
+          + '<a class="bib-mini" target="_blank" rel="noopener" '
           + 'href="https://drive.google.com/file/d/' + _bibEsc(id)
-          + '/view">Abrir libro</a>'
+          + '/view">Leer en Drive</a>'
+          + '<a class="btn" target="_blank" rel="noopener" '
+          + 'style="text-decoration:none;" '
+          + 'href="https://drive.google.com/uc?export=download&id=' + _bibEsc(id)
+          + '">Bajar el libro</a></div>'
         : '';
       return '<div class="bib-libro">'
            + '<div class="bib-libro-tit">' + _bibEsc(l.titulo) + '</div>'
@@ -5496,12 +5503,17 @@ function bibCatPintar() {
              + '<span class="badge" style="background:#0f3460;border-radius:4px;'
              + 'padding:2px 7px;">' + _bibEsc(l[2]) + '</span><span>'
              + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span>'
-             // El libro se abre en Drive. Es herramienta interna: el
-             // instructor sí puede leerlo entero.
-             + (l[5] ? '<a class="btn" target="_blank" rel="noopener" '
-                     + 'style="margin-left:auto;text-decoration:none;" '
+             // Dos accesos, porque no siempre se quiere lo mismo: "Leer" abre
+             // el visor de Drive (útil para hojear un libro de 100 MB sin
+             // bajarlo) y "Bajar" trae el PDF directo.
+             + (l[5] ? '<a class="bib-mini" target="_blank" rel="noopener" '
+                     + 'style="margin-left:auto;" '
                      + 'href="https://drive.google.com/file/d/' + _bibEsc(l[5])
-                     + '/view">Abrir libro</a>' : '')
+                     + '/view">Leer</a>'
+                     + '<a class="btn" target="_blank" rel="noopener" '
+                     + 'style="text-decoration:none;" '
+                     + 'href="https://drive.google.com/uc?export=download&id='
+                     + _bibEsc(l[5]) + '">Bajar</a>' : '')
              + '</div></div>';
       }).join('')
       + (r.length > 300 ? '<div class="no-results">Se muestran los primeros 300 '
