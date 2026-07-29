@@ -1241,7 +1241,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <textarea id="bib-pregunta" rows="2"
         placeholder="Ej: ¿cómo se protege un tanque de techo flotante con espuma?"></textarea>
       <div class="search-row" style="margin-top:10px;align-items:center;">
-        <select id="bib-idioma" class="search-input" style="flex:0 0 190px;">
+        <select id="bib-idioma" class="search-input" style="flex:0 0 190px;"
+                onchange="bibCatPintar()">
           <option value="">Cualquier idioma</option>
           <option value="ES">Solo español</option>
           <option value="EN">Solo inglés</option>
@@ -1253,6 +1254,23 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div id="bib-estado" class="exp-count"></div>
     <div id="bib-resumen"></div>
     <div id="bib-libros"></div>
+
+    <!-- Catálogo: pasear por los libros sin preguntar nada. Los datos se
+         cargan de biblioteca_catalogo.json la primera vez que se abre esta
+         pestaña, no con la página: son 121 KB que el alumno no necesita. -->
+    <div id="bib-catalogo-zona" style="margin-top:34px;">
+      <div style="border-top:1px solid #22345c;padding-top:22px;">
+        <p class="subtitle" style="margin-bottom:14px;">
+          <strong style="color:#fff;">O pasea por el catálogo</strong>
+          — <span id="bib-cat-n">…</span> libros por tema.
+        </p>
+        <input class="search-input" id="bib-cat-q" type="text"
+               placeholder="Filtrar por título o resumen..." oninput="bibCatPintar()">
+        <div class="cats" id="bib-cat-chips" style="margin-top:12px;"></div>
+        <div class="exp-count" id="bib-cat-count"></div>
+        <div class="video-grid" id="bib-cat-grid"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2056,6 +2074,9 @@ function showTab(name, btn) {
   if (!btn) btn = document.querySelector(`.tab-btn[onclick*="showTab('${name}'"]`);
   if (btn) btn.classList.add('active');
   if (name === 'explorador' && !_expInit) initExplorador();
+  // El catálogo de la biblioteca se trae la primera vez que se abre la Sala
+  // de Profesores, no al cargar la página.
+  if (name === 'profesores') bibCatCargar();
   _cargarEmbebido(name);
   localStorage.setItem('ilfis_tab_activa', name);
 }
@@ -5384,6 +5405,81 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); bibBuscar(); }
   });
 });
+
+// ── Catálogo de la biblioteca (pasear, sin preguntar) ────────────────────
+// Se carga una sola vez, al abrir la pestaña por primera vez. No viene con la
+// página porque son 121 KB que solo le sirven al instructor.
+let _bibCat = null, _bibCatTema = '';
+
+async function bibCatCargar() {
+  if (_bibCat) return true;
+  const grid = document.getElementById('bib-cat-grid');
+  grid.innerHTML = '<div class="no-results">Cargando el catálogo...</div>';
+  try {
+    const r = await fetch('biblioteca_catalogo.json', { cache: 'force-cache' });
+    if (!r.ok) throw new Error('no se pudo leer el catálogo');
+    _bibCat = await r.json();
+  } catch (e) {
+    grid.innerHTML = '<div class="bib-error">No se pudo cargar el catálogo: '
+                   + _bibEsc(e.message) + '</div>';
+    return false;
+  }
+
+  document.getElementById('bib-cat-n').textContent = _bibCat.libros.length;
+  document.getElementById('bib-cat-chips').innerHTML =
+    ['<button class="cat-btn active" data-t="" onclick="bibCatTema(this)">Todos '
+     + '<span>' + _bibCat.libros.length + '</span></button>']
+    .concat(_bibCat.temas.map(function (t) {
+      return '<button class="cat-btn" data-t="' + _bibEsc(t)
+           + '" onclick="bibCatTema(this)">' + _bibEsc(t)
+           + ' <span>' + _bibCat.conteo[t] + '</span></button>';
+    })).join('');
+  bibCatPintar();
+  return true;
+}
+
+function bibCatTema(b) {
+  _bibCatTema = b.dataset.t;
+  document.querySelectorAll('#bib-cat-chips .cat-btn').forEach(function (x) {
+    x.classList.toggle('active', x === b);
+  });
+  bibCatPintar();
+}
+
+function bibCatPintar() {
+  if (!_bibCat) return;
+  const q = (document.getElementById('bib-cat-q').value || '').toLowerCase().trim();
+  // El filtro de idioma de arriba también manda aquí: es la misma pantalla.
+  const idi = document.getElementById('bib-idioma').value;
+
+  const r = _bibCat.libros.filter(function (l) {
+    return (!_bibCatTema || l[1].indexOf(_bibCatTema) >= 0)
+        && (!idi || l[2] === idi)
+        && (!q || (l[0] + ' ' + (l[4] || '')).toLowerCase().indexOf(q) >= 0);
+  });
+
+  document.getElementById('bib-cat-count').textContent =
+    r.length + ' libros' + (r.length !== _bibCat.libros.length ? ' (filtrado)' : '');
+
+  document.getElementById('bib-cat-grid').innerHTML = r.length
+    ? r.slice(0, 300).map(function (l) {
+        return '<div class="card" style="background:#16213e;border:1px solid #22345c;'
+             + 'border-radius:10px;padding:14px 16px;display:flex;'
+             + 'flex-direction:column;gap:7px;">'
+             + '<div class="bib-libro-meta">' + _bibEsc(l[1].join(' · ')) + '</div>'
+             + '<div class="bib-libro-tit">' + _bibEsc(l[0]) + '</div>'
+             + '<div style="font-size:.83rem;color:#9db0d0;line-height:1.4;flex:1;">'
+             + _bibEsc(l[4] || '') + '</div>'
+             + '<div class="card-pie" style="display:flex;gap:10px;font-size:.75rem;'
+             + 'color:#7a8db0;border-top:1px solid #22345c;padding-top:9px;">'
+             + '<span class="badge" style="background:#0f3460;border-radius:4px;'
+             + 'padding:2px 7px;">' + _bibEsc(l[2]) + '</span><span>'
+             + (l[3] ? _bibEsc(l[3]) + ' pág' : '') + '</span></div></div>';
+      }).join('')
+      + (r.length > 300 ? '<div class="no-results">Se muestran los primeros 300 '
+         + 'de ' + r.length + '. Afina el filtro.</div>' : '')
+    : '<div class="no-results">Ningún libro con ese criterio.</div>';
+}
 
 function initExplorador() {
   _expInit = true;
