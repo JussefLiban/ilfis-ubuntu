@@ -3998,11 +3998,15 @@ async function adminCargarDocentes() {
     const fijos = (d.fijos_por_config || []).map(em =>
       `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #2a2a5a;color:#8899aa;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} 🔒</span>`).join('');
     const gest = (d.docentes || []).map(em =>
-      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #14532d;color:#4ade80;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} <span style="cursor:pointer;" title="Dar llave para su corrector automático" onclick="adminEmitirLlave('${_adminEsc(em).replace(/'/g,'&#39;')}')">🔑</span> <span style="cursor:pointer;color:#8899aa;font-weight:700;" title="Quitar acceso" onclick="adminQuitarDocente('${_adminEsc(em).replace(/'/g,'&#39;')}')">&times;</span></span>`).join('');
+      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #14532d;color:#4ade80;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} <span style="cursor:pointer;color:#8899aa;font-weight:700;" title="Quitar acceso" onclick="adminQuitarDocente('${_adminEsc(em).replace(/'/g,'&#39;')}')">&times;</span></span>`).join('');
     box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:9px;">' +
       ((fijos + gest) || '<span style="color:#8899aa;font-size:0.82rem;">— aún no hay instructores autorizados —</span>') +
-      '</div><div id="admin-doc-llave"></div>' +
-      '<p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;">Los correos con 🔒 vienen de la configuración del servidor y no se quitan desde aquí. El 🔑 da al profesor la llave que necesita su corrector automático para entrar al aula.</p>';
+      '</div>' +
+      '<p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;">Los correos con 🔒 vienen de la configuración del servidor y no se quitan desde aquí.</p>' +
+      '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #22345c;">' +
+      '<div style="font-size:0.82rem;color:#8899aa;margin-bottom:9px;">🔑 Llave del corrector automático — una por diplomado. El instructor la guarda una vez en su PC.</div>' +
+      '<button class="btn-sec" onclick="adminVerLlave()">Ver la llave de este diplomado</button>' +
+      '<div id="admin-doc-llave"></div></div>';
   } catch(e) {
     box.innerHTML = '<div class="admin-loading" style="color:#e87272;">Error: ' + e.message + '</div>';
   }
@@ -4023,34 +4027,60 @@ async function adminAltaDocente() {
   } catch(e) { alert('No pude autorizar: ' + e.message); }
 }
 
-// Llave del corrector automático: se emite desde aquí para no tener que pegar
-// claves en comandos. El servidor solo se la da a quien YA es docente de ese
-// diplomado, y emitir una nueva revoca la anterior — o sea que perder la llave
-// no es un problema: se vuelve a emitir y listo.
-async function adminEmitirLlave(email) {
+// Llave del corrector automático. Mismo concepto que la clave de administración:
+// UNA por diplomado, el instructor la pone una vez en su PC y no se le vuelve a
+// pedir. Se puede ver siempre (no hay que apuntarla) y para cortar el acceso se
+// cambia y se le da la nueva a quien siga.
+async function adminVerLlave() {
   const dip = _adminDocDiploma();
   const nombreDip = (DIPLOMAS.find(x => x.id === dip) || {}).nombre || dip;
-  if (!confirm('¿Dar una llave nueva a ' + email + ' para el ' + nombreDip + '?\n\n' +
-               'Si ya tenía una, deja de servir en ese momento.')) return;
   const caja = document.getElementById('admin-doc-llave');
-  if (caja) caja.innerHTML = '<div class="admin-loading" style="margin-top:14px;">Emitiendo...</div>';
+  if (caja) caja.innerHTML = '<div class="admin-loading" style="margin-top:14px;">Buscando...</div>';
   try {
-    const r = await fetch(BACKEND + '/api/cursos/' + dip + '/admin/llaves', {
-      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }) });
+    const r = await fetch(BACKEND + '/api/cursos/' + dip + '/admin/llave', {
+      headers: { 'x-admin-key': _getAdminKey() } });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
-    const llave = d.llave || '';
-    if (caja) caja.innerHTML =
-      '<div style="margin-top:16px;background:#0f1729;border:1px solid #14532d;border-radius:10px;padding:14px 16px;">' +
-      '<div style="color:#4ade80;font-size:0.82rem;margin-bottom:8px;">Llave de <strong>' + _adminEsc(email) + '</strong> · ' + _adminEsc(nombreDip) + '</div>' +
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-      '<input id="admin-llave-txt" readonly value="' + _adminEsc(llave) + '" style="flex:1;min-width:280px;background:#0b1220;border:1px solid #2a2a5a;color:#e6edf3;border-radius:8px;padding:9px 11px;font-family:monospace;font-size:0.8rem;">' +
-      '<button class="btn-sec" onclick="adminCopiarLlave()">Copiar</button></div>' +
-      '<p style="font-size:0.72rem;color:#e8b872;margin:10px 0 0;">Cópiala y mándasela al profesor ahora: no se vuelve a mostrar. Si se pierde, vuelve a pulsar el 🔑 y sale una nueva.</p></div>';
+    _adminPintarLlave(d.llave || '', nombreDip);
   } catch(e) {
-    if (caja) caja.innerHTML = '<div class="admin-loading" style="color:#e87272;margin-top:14px;">No pude emitirla: ' + e.message + '</div>';
+    if (caja) caja.innerHTML = '<div class="admin-loading" style="color:#e87272;margin-top:14px;">No pude leerla: ' + e.message + '</div>';
   }
+}
+
+async function adminCambiarLlave() {
+  const dip = _adminDocDiploma();
+  const nombreDip = (DIPLOMAS.find(x => x.id === dip) || {}).nombre || dip;
+  if (!confirm('¿Cambiar la llave del ' + nombreDip + '?\n\n' +
+               'La actual deja de servir en ese momento. Tendrás que darle la nueva ' +
+               'a los instructores que sigan usando el corrector.')) return;
+  const caja = document.getElementById('admin-doc-llave');
+  if (caja) caja.innerHTML = '<div class="admin-loading" style="margin-top:14px;">Cambiando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + dip + '/admin/llave/cambiar', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    _adminPintarLlave(d.llave || '', nombreDip, true);
+  } catch(e) {
+    if (caja) caja.innerHTML = '<div class="admin-loading" style="color:#e87272;margin-top:14px;">No pude cambiarla: ' + e.message + '</div>';
+  }
+}
+
+function _adminPintarLlave(llave, nombreDip, cambiada) {
+  const caja = document.getElementById('admin-doc-llave');
+  if (!caja) return;
+  caja.innerHTML =
+    '<div style="margin-top:16px;background:#0f1729;border:1px solid #14532d;border-radius:10px;padding:14px 16px;">' +
+    '<div style="color:#4ade80;font-size:0.82rem;margin-bottom:8px;">Llave del corrector · ' + _adminEsc(nombreDip) + '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+    '<input id="admin-llave-txt" readonly value="' + _adminEsc(llave) + '" style="flex:1;min-width:280px;background:#0b1220;border:1px solid #2a2a5a;color:#e6edf3;border-radius:8px;padding:9px 11px;font-family:monospace;font-size:0.8rem;">' +
+    '<button class="btn-sec" onclick="adminCopiarLlave()">Copiar</button>' +
+    '<button class="btn-sec" onclick="adminCambiarLlave()" title="Corta el acceso de quien tenga la actual">Cambiar</button></div>' +
+    '<p style="font-size:0.72rem;color:' + (cambiada ? '#e8b872' : '#7a8a9a') + ';margin:10px 0 0;">' +
+    (cambiada
+      ? 'Llave cambiada. La anterior ya no sirve: mándale esta a los instructores que sigan.'
+      : 'El instructor la guarda una vez en su PC y no se le vuelve a pedir. Puedes volver aquí a verla cuando quieras.') +
+    '</p></div>';
 }
 
 function adminCopiarLlave() {
