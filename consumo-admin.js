@@ -535,17 +535,30 @@
       + (LOG.umbral_flojo || 0.35) + '). Sube ese contenido y el asistente pasa de "no encontré" a responder. '
       + 'Es la lista de tareas más rentable del tablero, y también tu estudio de mercado: dice qué curso lanzar después.</div></div>';
 
-    // Costo por dia (ultimos 30 del log)
-    var fechas = Object.keys(LOG.por_dia || {}).sort().slice(-30);
+    // Gasto por dia: solo desde que el medidor de costo existe. Antes de esa
+    // fecha el log anotaba la pregunta pero no el gasto, y mezclar filas con
+    // US$ 0.00 "falso" confundia la lectura.
+    var todasF = Object.keys(LOG.por_dia || {}).sort();
+    var primeraConCosto = null;
+    todasF.forEach(function(f){ if(primeraConCosto === null && LOG.por_dia[f].costo > 0) primeraConCosto = f; });
+    var fechas = primeraConCosto === null ? []
+      : todasF.filter(function(f){ return f >= primeraConCosto; }).slice(-30);
     if(fechas.length){
-      var mx = 0.01; fechas.forEach(function(f){ if(LOG.por_dia[f].costo > mx) mx = LOG.por_dia[f].costo; });
-      h += '<div class="cns-sec">Costo de IA por día (últimos 30 con actividad)</div><div class="cns-box">'
+      var mx = 0.01, omitidas = 0;
+      todasF.forEach(function(f){ if(primeraConCosto && f < primeraConCosto) omitidas++; });
+      fechas.forEach(function(f){ if(LOG.por_dia[f].costo > mx) mx = LOG.por_dia[f].costo; });
+      h += '<div class="cns-sec">Gasto diario en IA (US$)</div><div class="cns-box">'
+        + '<div style="color:#8aa;font-size:.73rem;margin-bottom:8px;">Cada fila es un día con actividad. '
+        + '<b style="color:#dde;">El largo de la barra es el gasto en dólares</b>; al lado, el gasto exacto y cuántas respuestas lo generaron.</div>'
         + fechas.map(function(f){
             var d = LOG.por_dia[f];
-            return barra(fday(f), 100*d.costo/mx, 'US$ ' + d.costo.toFixed(2) + ' · ' + d.n + ' preg.', true);
+            return barra(fday(f), 100*d.costo/mx, 'US$ ' + d.costo.toFixed(2) + ' · ' + d.n + ' resp.', true);
           }).join('')
         + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-        + 'El gasto real día a día. Si un día se dispara sin que suban las preguntas, algo anda mal (respuestas muy largas o abuso).</div></div>';
+        + 'El gasto real día a día: si un día se dispara sin que suban las respuestas, algo anda mal (respuestas muy largas o abuso). '
+        + 'Se muestra desde el ' + fday(primeraConCosto) + ', cuando se instaló el medidor de costo'
+        + (omitidas ? ' — los ' + omitidas + ' días anteriores tenían preguntas pero sin gasto anotado, por eso no salen' : '')
+        + '. Y recuerda: NFPA y FM anotan su gasto recién desde el ' + fday(DESDE_MODS) + '.</div></div>';
     }
     return h;
   }
