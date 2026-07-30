@@ -3998,10 +3998,11 @@ async function adminCargarDocentes() {
     const fijos = (d.fijos_por_config || []).map(em =>
       `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #2a2a5a;color:#8899aa;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} 🔒</span>`).join('');
     const gest = (d.docentes || []).map(em =>
-      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #14532d;color:#4ade80;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} <span style="cursor:pointer;color:#8899aa;font-weight:700;" title="Quitar acceso" onclick="adminQuitarDocente('${_adminEsc(em).replace(/'/g,'&#39;')}')">&times;</span></span>`).join('');
+      `<span style="display:inline-flex;align-items:center;gap:8px;background:#0f1729;border:1px solid #14532d;color:#4ade80;border-radius:8px;padding:7px 11px;font-size:0.8rem;font-family:monospace;">${_adminEsc(em)} <span style="cursor:pointer;" title="Dar llave para su corrector automático" onclick="adminEmitirLlave('${_adminEsc(em).replace(/'/g,'&#39;')}')">🔑</span> <span style="cursor:pointer;color:#8899aa;font-weight:700;" title="Quitar acceso" onclick="adminQuitarDocente('${_adminEsc(em).replace(/'/g,'&#39;')}')">&times;</span></span>`).join('');
     box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:9px;">' +
       ((fijos + gest) || '<span style="color:#8899aa;font-size:0.82rem;">— aún no hay instructores autorizados —</span>') +
-      '</div><p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;">Los correos con 🔒 vienen de la configuración del servidor y no se quitan desde aquí.</p>';
+      '</div><div id="admin-doc-llave"></div>' +
+      '<p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;">Los correos con 🔒 vienen de la configuración del servidor y no se quitan desde aquí. El 🔑 da al profesor la llave que necesita su corrector automático para entrar al aula.</p>';
   } catch(e) {
     box.innerHTML = '<div class="admin-loading" style="color:#e87272;">Error: ' + e.message + '</div>';
   }
@@ -4020,6 +4021,45 @@ async function adminAltaDocente() {
     inp.value = '';
     adminCargarDocentes();
   } catch(e) { alert('No pude autorizar: ' + e.message); }
+}
+
+// Llave del corrector automático: se emite desde aquí para no tener que pegar
+// claves en comandos. El servidor solo se la da a quien YA es docente de ese
+// diplomado, y emitir una nueva revoca la anterior — o sea que perder la llave
+// no es un problema: se vuelve a emitir y listo.
+async function adminEmitirLlave(email) {
+  const dip = _adminDocDiploma();
+  const nombreDip = (DIPLOMAS.find(x => x.id === dip) || {}).nombre || dip;
+  if (!confirm('¿Dar una llave nueva a ' + email + ' para el ' + nombreDip + '?\n\n' +
+               'Si ya tenía una, deja de servir en ese momento.')) return;
+  const caja = document.getElementById('admin-doc-llave');
+  if (caja) caja.innerHTML = '<div class="admin-loading" style="margin-top:14px;">Emitiendo...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + dip + '/admin/llaves', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    const llave = d.llave || '';
+    if (caja) caja.innerHTML =
+      '<div style="margin-top:16px;background:#0f1729;border:1px solid #14532d;border-radius:10px;padding:14px 16px;">' +
+      '<div style="color:#4ade80;font-size:0.82rem;margin-bottom:8px;">Llave de <strong>' + _adminEsc(email) + '</strong> · ' + _adminEsc(nombreDip) + '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<input id="admin-llave-txt" readonly value="' + _adminEsc(llave) + '" style="flex:1;min-width:280px;background:#0b1220;border:1px solid #2a2a5a;color:#e6edf3;border-radius:8px;padding:9px 11px;font-family:monospace;font-size:0.8rem;">' +
+      '<button class="btn-sec" onclick="adminCopiarLlave()">Copiar</button></div>' +
+      '<p style="font-size:0.72rem;color:#e8b872;margin:10px 0 0;">Cópiala y mándasela al profesor ahora: no se vuelve a mostrar. Si se pierde, vuelve a pulsar el 🔑 y sale una nueva.</p></div>';
+  } catch(e) {
+    if (caja) caja.innerHTML = '<div class="admin-loading" style="color:#e87272;margin-top:14px;">No pude emitirla: ' + e.message + '</div>';
+  }
+}
+
+function adminCopiarLlave() {
+  const i = document.getElementById('admin-llave-txt');
+  if (!i) return;
+  i.select(); i.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(i.value).then(
+    () => { const b = event && event.target; if (b) { const t = b.textContent; b.textContent = 'Copiada'; setTimeout(() => b.textContent = t, 1500); } },
+    () => { try { document.execCommand('copy'); } catch(e) { alert('Cópiala a mano.'); } });
 }
 
 async function adminQuitarDocente(email) {
