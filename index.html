@@ -305,6 +305,11 @@ textarea::placeholder { color: #5a7a9a; }
 .bib-mini { color:#8fb4e8; text-decoration:none; font-size:.78rem;
   border:1px solid #2a5a9a; border-radius:6px; padding:5px 11px; }
 .bib-mini:hover { background:#0f3460; }
+/* "Bajar": mismo formato que "Leer" pero en verde claro, para distinguirlos
+   de un vistazo. Antes era un enlace azul que no se veia sobre el fondo. */
+.bib-baja { color:#7de8a0; text-decoration:none; font-size:.78rem;
+  border:1px solid #2a9a5a; border-radius:6px; padding:5px 11px; }
+.bib-baja:hover { background:#0f3d28; }
 /* Marca de "está en el catálogo pero no se le puede preguntar" */
 .bib-noidx { display:inline-block; background:#2a2a1a; border:1px solid #5c5320;
   color:#d8c87a; border-radius:4px; padding:2px 7px; font-size:.7rem;
@@ -5450,8 +5455,7 @@ async function bibBuscar() {
           + '<a class="bib-mini" target="_blank" rel="noopener" '
           + 'href="https://drive.google.com/file/d/' + _bibEsc(id)
           + '/view">Leer en Drive</a>'
-          + '<a class="btn" target="_blank" rel="noopener" '
-          + 'style="text-decoration:none;" '
+          + '<a class="bib-baja" target="_blank" rel="noopener" '
           + 'href="https://drive.google.com/uc?export=download&id=' + _bibEsc(id)
           + '">Bajar el libro</a></div>'
         : '';
@@ -5566,8 +5570,7 @@ function bibCatPintar() {
                      + 'style="margin-left:auto;" '
                      + 'href="https://drive.google.com/file/d/' + _bibEsc(l[5])
                      + '/view">Leer</a>'
-                     + '<a class="btn" target="_blank" rel="noopener" '
-                     + 'style="text-decoration:none;" '
+                     + '<a class="bib-baja" target="_blank" rel="noopener" '
                      + 'href="https://drive.google.com/uc?export=download&id='
                      + _bibEsc(l[5]) + '">Bajar</a>' : '')
              + '</div></div>';
@@ -5831,7 +5834,7 @@ function renderExplorador() {
 <!-- FIN FEEDBACK DE USUARIOS -->
 
 <script defer src="feedback-admin.js"></script>
-  <script defer src="consumo-admin.js?v=4"></script>
+  <script defer src="consumo-admin.js?v=5"></script>
   <!-- Generador de los "Exportar a Excel" (.xlsx de verdad, no CSV) -->
   <script defer src="excel-export.js"></script>
 </body>
