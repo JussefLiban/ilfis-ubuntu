@@ -15,6 +15,10 @@
   var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos', nfpa:'NFPA', fm:'FM', biblioteca:'Biblioteca'};
   // Fecha desde la que el servidor anota el modulo de cada pregunta.
   var DESDE_MODS = '2026-07-30';
+  // LANZAMIENTO PUBLICO: antes de esta fecha solo habia usuarios internos
+  // (pruebas del equipo). Ninguna metrica mira mas atras: ni las cuentas
+  // registradas antes, ni la actividad ni el gasto de esos dias.
+  var LANZAMIENTO = '2026-07-28';
 
   var USO = null, LOG = null, cargadoUna = false, cargandoAhora = false;
   var periodo = 30;            // dias; 0 = todo
@@ -81,22 +85,39 @@
   function fday(f){ if(!f) return '—'; var p=String(f).split('-'); return p.length===3 ? (p[2]+'/'+p[1]+'/'+p[0].slice(2)) : f; }
   function dstr(dt){ return dt.toISOString().slice(0,10); }
   function hoyDate(){ return hoyStr ? new Date(hoyStr+'T12:00:00Z') : new Date(); }
+  // Nunca se mira antes del lanzamiento publico, elija el periodo que elija.
   function desdeStr(){
-    if(!periodo) return null;
+    if(!periodo) return LANZAMIENTO;
     var d = hoyDate(); d.setUTCDate(d.getUTCDate() - (periodo - 1));
-    return dstr(d);
+    var f = dstr(d);
+    return f < LANZAMIENTO ? LANZAMIENTO : f;
   }
   function esPrueba(a){ return CUENTAS_PRUEBA.indexOf((a.email||'').toLowerCase()) !== -1; }
+  // Interno = cuenta del equipo, o registrada antes del lanzamiento publico.
+  function esInterno(a){ return esPrueba(a) || !a.registro || a.registro < LANZAMIENTO; }
   function alumnos(){
     var l = (USO && USO.alumnos) || [];
-    return sinPrueba ? l.filter(function(a){ return !esPrueba(a); }) : l;
+    return sinPrueba ? l.filter(function(a){ return !esInterno(a); }) : l;
   }
-  function enPeriodo(f){ var de = desdeStr(); return !!f && (!de || f >= de); }
+  function enPeriodo(f){ var de = desdeStr(); return !!f && f >= de; }
   function pregPeriodo(a){
-    var de = desdeStr(); if(!de) return a.preguntas || 0;
+    var de = desdeStr();
     var t = 0, pd = a.por_dia || {};
     for(var f in pd){ if(f >= de) t += pd[f]; }
     return t;
+  }
+  // Dias activos y dias al tope se recalculan dentro del periodo: los que
+  // trae el servidor abarcan toda la historia, incluida la etapa interna.
+  function diasActivos(a){
+    var de = desdeStr(), n = 0, pd = a.por_dia || {};
+    for(var f in pd){ if(f >= de && pd[f] > 0) n++; }
+    return n;
+  }
+  function diasAlTope(a){
+    var de = desdeStr(), tope = (USO && USO.resumen && USO.resumen.tope_diario) || 5;
+    var n = 0, pd = a.por_dia || {};
+    for(var f in pd){ if(f >= de && pd[f] >= tope) n++; }
+    return n;
   }
   function ultimaVez(a){
     var u = a.ultimo_ingreso || '', f = a.fin || '';
@@ -139,16 +160,17 @@
       '<div class="cns-bar">'
       +   '<div class="cns-seg" id="cns-periodos">'
       +     '<button data-p="1">Hoy</button><button data-p="7">7 días</button>'
-      +     '<button data-p="30" class="on">30 días</button><button data-p="0">Todo</button>'
+      +     '<button data-p="30" class="on">30 días</button><button data-p="0">Desde el lanzamiento</button>'
       +   '</div>'
       +   '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      +     '<button type="button" class="cns-btn" id="cns-prueba">Excluir cuentas del equipo ✓</button>'
+      +     '<button type="button" class="cns-btn" id="cns-prueba">Solo público ✓</button>'
       +     '<button type="button" class="cns-btn" id="cns-excel">⤓ Exportar a Excel</button>'
       +     '<button type="button" class="cns-btn" id="cns-reload">↻ Recargar</button>'
       +   '</div>'
       + '</div>'
       + '<div class="cns-subtabs">'
       +   '<button type="button" class="cns-subtab on" data-v="resumen">Resumen</button>'
+      +   '<button type="button" class="cns-subtab" data-v="crecimiento">Crecimiento</button>'
       +   '<button type="button" class="cns-subtab" data-v="alumnos">Por alumno</button>'
       +   '<button type="button" class="cns-subtab" data-v="modulos">Por módulo</button>'
       +   '<button type="button" class="cns-subtab" data-v="temas">Qué preguntan</button>'
@@ -159,7 +181,10 @@
     sec.querySelector('#cns-reload').addEventListener('click', function(){ cargar(true); });
     sec.querySelector('#cns-prueba').addEventListener('click', function(){
       sinPrueba = !sinPrueba;
-      this.textContent = 'Excluir cuentas del equipo ' + (sinPrueba ? '✓' : '✗');
+      this.textContent = sinPrueba ? 'Solo público ✓' : 'Incluye internos ✗';
+      this.title = sinPrueba
+        ? 'Excluye cuentas del equipo y las registradas antes del lanzamiento público.'
+        : 'Incluye también las cuentas internas previas al lanzamiento.';
       render();
     });
     sec.querySelector('#cns-excel').addEventListener('click', exportar);
@@ -189,7 +214,7 @@
     var h = { headers: { 'x-admin-key': key } };
     Promise.all([
       fetch(API + '/admin/uso', h).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }),
-      fetch(API + '/admin/consumo-log', h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      fetch(API + '/admin/consumo-log?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(res){
       USO = res[0]; LOG = res[1];
       hoyStr = (USO.resumen && USO.resumen.hoy) || null;
@@ -205,6 +230,7 @@
     var cuerpo = document.getElementById('cns-cuerpo');
     if(!cuerpo || !USO) return;
     if(vista === 'resumen')  cuerpo.innerHTML = vResumen();
+    if(vista === 'crecimiento') cuerpo.innerHTML = vCrecimiento();
     if(vista === 'alumnos'){ cuerpo.innerHTML = vAlumnos(); wireTabla(); }
     if(vista === 'modulos')  cuerpo.innerHTML = vModulos();
     if(vista === 'temas')    cuerpo.innerHTML = vTemas();
@@ -220,7 +246,7 @@
     function volvio(a){
       var u = ultimaVez(a);
       if(!u) return false;
-      if((a.preguntas || 0) > 0) return true;
+      if(pregPeriodo(a) > 0) return true;
       return !!a.registro && u > a.registro;
     }
     var entraron = periodo
@@ -229,7 +255,7 @@
     var pregs = 0, topers = 0, topesVeces = 0;
     l.forEach(function(a){
       pregs += pregPeriodo(a);
-      var t = a.topes || 0;
+      var t = diasAlTope(a);
       if(t > 0){ topers++; topesVeces += t; }
     });
     var costo = null, costoPreg = null;
@@ -237,15 +263,19 @@
       costo = 0;
       var nlog = 0;
       for(var f in LOG.por_dia){
-        if(!de || f >= de){ costo += LOG.por_dia[f].costo; nlog += LOG.por_dia[f].n; }
+        if(f >= de){ costo += LOG.por_dia[f].costo; nlog += LOG.por_dia[f].n; }
       }
       if(nlog) costoPreg = costo / nlog;
     }
-    var etiqueta = periodo === 1 ? 'hoy' : (periodo ? periodo + ' días' : 'todo');
+    var etiqueta = periodo === 1 ? 'hoy' : (periodo ? periodo + ' días' : 'desde el lanzamiento');
 
-    var h = '<div class="cns-stats">'
+    var h = '<div class="cns-pq" style="margin:0 0 14px;"><span class="t">De qué fecha en adelante</span>'
+      + 'La plataforma se lanzó al público el <b>' + fday(LANZAMIENTO) + '</b>. Todo lo que ves arranca ahí: '
+      + 'las cuentas registradas antes eran internas (pruebas del equipo) y quedan fuera, igual que su actividad y su gasto. '
+      + 'El botón <b>«Solo público»</b> de arriba las vuelve a incluir si alguna vez las necesitas.</div>'
+      + '<div class="cns-stats">'
       + stat(registrados, 'Registrados', nuevos + ' nuevos en ' + etiqueta,
-             'tamaño de tu audiencia; es el denominador de todo lo demás.')
+             'tamaño de tu audiencia pública; es el denominador de todo lo demás.')
       + stat(entraron, periodo ? 'Entraron (' + etiqueta + ')' : 'Volvieron tras registrarse',
              registrados ? Math.round(100*entraron/registrados) + '% de los registrados' : '',
              periodo ? 'separa el registro de la costumbre: si baja, se van callados.'
@@ -256,8 +286,9 @@
           ? stat('US$ ' + costo.toFixed(2), 'Costo IA (' + etiqueta + ')',
                  costoPreg != null ? 'US$ ' + costoPreg.toFixed(4) + ' por pregunta' : '',
                  'lo que te cuesta regalar 2026; se ve aquí antes que en la factura. '
-                 + '<b>Ojo:</b> NFPA y FM recién anotan su gasto desde el ' + fday(DESDE_MODS)
-                 + '; lo anterior a esa fecha solo incluye Chat IA/Experto y Videos, así que el histórico se queda corto.')
+                 + '<b>Ojo:</b> NFPA, FM y Biblioteca recién anotan su gasto desde el ' + fday(DESDE_MODS)
+                 + ', así que los días previos salen cortos. Y esto es solo la plataforma: '
+                 + 'el motor del Calculador y los pre-calificadores usan la misma cuenta de Anthropic y no pasan por aquí.')
           : stat('—', 'Costo IA', 'sin datos del log', ''))
       + stat(topers, 'Alumnos que toparon', topesVeces + ' días al tope en total',
              'demanda reprimida: tu lista de primeros clientes cuando se cobre.')
@@ -269,24 +300,36 @@
       + 'Le pone fecha al crecimiento: los picos coinciden con lo que publicaste, así que dice qué campaña trajo gente y cuál no movió nada. '
       + 'La escala se ajusta sola: por día hasta 1 mes, por semana hasta ~4 meses, por mes de ahí en adelante.</div></div>';
 
-    // Embudo (todo el histórico, no depende del periodo)
+    // EMBUDO. Cada escalón es un subconjunto estricto del anterior: si uno
+    // creciera respecto al de arriba, el dibujo mentiría. Por eso "activos
+    // esta semana" va como frase aparte y no como barra.
     var todos = l.length;
     var entraronAlg = l.filter(volvio).length;
-    var preguntaron = l.filter(function(a){ return (a.preguntas||0) > 0; }).length;
-    var volvieron = l.filter(function(a){ return (a.dias_activos||0) >= 2; }).length;
-    var d30 = (function(){ var d = hoyDate(); d.setUTCDate(d.getUTCDate()-29); return dstr(d); })();
-    var siguen = l.filter(function(a){ var u = ultimaVez(a); return u && u >= d30; }).length;
+    var preguntaron = l.filter(function(a){ return pregPeriodo(a) > 0; }).length;
+    var volvieron = l.filter(function(a){ return diasActivos(a) >= 2; }).length;
+    var d7 = (function(){ var d = hoyDate(); d.setUTCDate(d.getUTCDate()-6); return dstr(d); })();
+    var siguen = l.filter(function(a){
+      var pd = a.por_dia || {};
+      for(var f in pd){ if(f >= d7 && f >= de && pd[f] > 0) return true; }
+      return false;
+    }).length;
     function pct(n){ return todos ? Math.round(100*n/todos) : 0; }
+    var seFueron = todos - entraronAlg;
 
-    h += '<div class="cns-cols"><div><div class="cns-sec">¿Se quedan? (histórico)</div><div class="cns-box">'
+    h += '<div class="cns-cols"><div><div class="cns-sec">¿Se quedan? (desde el lanzamiento)</div><div class="cns-box">'
       + barra('Se registraron', 100, todos + ' · 100%')
       + barra('Volvieron tras registrarse', pct(entraronAlg), entraronAlg + ' · ' + pct(entraronAlg) + '%')
       + barra('Preguntaron ≥1 vez', pct(preguntaron), preguntaron + ' · ' + pct(preguntaron) + '%')
-      + barra('Volvieron otro día', pct(volvieron), volvieron + ' · ' + pct(volvieron) + '%')
-      + barra('Activos últimos 30 días', pct(siguen), siguen + ' · ' + pct(siguen) + '%')
-      + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-      + 'Cada escalón es una puerta: el más bajo dice dónde pierdes gente y qué arreglar primero, en vez de adivinar. '
-      + (todos - entraronAlg > 0 ? '<b>' + (todos-entraronAlg) + ' se registraron y no han vuelto</b> — problema de bienvenida, no de producto.' : '')
+      + barra('Preguntaron en 2 días o más', pct(volvieron), volvieron + ' · ' + pct(volvieron) + '%')
+      + '<div style="color:#8aa;font-size:.74rem;margin-top:8px;">Y de todos ellos, <b style="color:#dde;">'
+      + siguen + '</b> preguntaron algo en los últimos 7 días.</div>'
+      + '<div class="cns-pq"><span class="t">Cómo leerlo</span>'
+      + 'Cada escalón es un pedazo del de arriba, así que siempre va bajando: de los ' + todos + ' registrados, '
+      + entraronAlg + ' volvieron, y de esos ' + preguntaron + ' llegaron a preguntar. '
+      + (seFueron > 0
+          ? 'La caída más grande está en el primer escalón: <b>' + seFueron + ' se registraron y no han vuelto</b> ('
+            + todos + ' − ' + entraronAlg + '). Eso es correo de bienvenida o primera pantalla, no producto.'
+          : '')
       + '</div></div></div>';
 
     // Distribucion de intensidad en el periodo
@@ -374,6 +417,63 @@
     return svg + '<div style="color:#8aa;font-size:.72rem;margin-top:4px;">' + nota + ' Pasa el mouse por una barra para ver el número.</div>';
   }
 
+  function vCrecimiento(){
+    // Cuántos se registraron cada día y cuántos preguntaron ese mismo día.
+    var l = alumnos(), de = desdeStr();
+    var altas = {}, activos = {};
+    l.forEach(function(a){
+      if(a.registro && a.registro >= de) altas[a.registro] = (altas[a.registro] || 0) + 1;
+      var pd = a.por_dia || {};
+      for(var f in pd){ if(f >= de && pd[f] > 0) activos[f] = (activos[f] || 0) + 1; }
+    });
+    // Serie completa de días (incluye los de cero, si no el crecimiento engaña).
+    var dias = [], cur = new Date(de + 'T12:00:00Z'), fin = hoyDate();
+    while(cur <= fin){ dias.push(dstr(cur)); cur.setUTCDate(cur.getUTCDate() + 1); }
+    if(!dias.length) return '<div class="cns-box"><div class="cns-no">Sin días en el periodo.</div></div>';
+
+    var totalAltas = 0; dias.forEach(function(f){ totalAltas += (altas[f] || 0); });
+    var prom = totalAltas / dias.length;
+    var mejor = dias.slice().sort(function(x, y){ return (altas[y]||0) - (altas[x]||0); })[0];
+    // Base: los ya registrados antes del primer día mostrado.
+    var acum = l.filter(function(a){ return a.registro && a.registro < de; }).length;
+    var maxA = 1; dias.forEach(function(f){ if((altas[f]||0) > maxA) maxA = altas[f]; });
+
+    var h = '<div class="cns-stats">'
+      + stat(totalAltas, 'Altas en el periodo', dias.length + ' días',
+             'el crecimiento en bruto: cuánta gente nueva entró a la plataforma.')
+      + stat(prom.toFixed(1), 'Promedio por día', '',
+             'tu velocidad de crucero. Si un día se dispara, fue una campaña; si cae a cero varios días, se secó el canal.')
+      + stat((altas[mejor] || 0), 'Mejor día', fday(mejor),
+             'el récord a repetir: mira qué publicaste ese día.')
+      + stat(l.length, 'Total acumulado', 'al ' + fday(hoyStr),
+             'el tamaño actual de tu base pública.')
+      + '</div>';
+
+    h += '<div class="cns-sec">Usuarios nuevos por día</div><div class="cns-box"><div class="cns-tw">'
+      + '<table><tr><th class="l">Día</th><th>Nuevos</th><th class="l" style="width:40%;">&nbsp;</th>'
+      + '<th>Acumulado</th><th>Preguntaron</th></tr>';
+    var filas = [];
+    dias.forEach(function(f){
+      var n = altas[f] || 0;
+      acum += n;
+      filas.push('<tr' + (n ? '' : ' class="cns-zero"') + '>'
+        + '<td class="l">' + fday(f) + (f === hoyStr ? ' <span style="color:#8aa;">(hoy)</span>' : '') + '</td>'
+        + '<td>' + (n || '—') + '</td>'
+        + '<td class="l"><span style="display:block;background:#16213e;border-radius:4px;height:13px;overflow:hidden;">'
+        +   '<span style="display:block;height:100%;width:' + Math.round(100*n/maxA) + '%;background:#c0392b;"></span></span></td>'
+        + '<td>' + acum + '</td>'
+        + '<td>' + (activos[f] || '—') + '</td>'
+      + '</tr>');
+    });
+    h += filas.reverse().join('') + '</table></div>'   // el día más reciente arriba
+      + '<div class="cns-pq"><span class="t">Para qué sirve cada columna</span>'
+      + '<b>Nuevos</b>: cuántas cuentas se crearon ese día — es el crecimiento diario. '
+      + '<b>Acumulado</b>: cuánta gente tenías en total al cerrar ese día; es la curva que enseñas cuando cuentas cómo va la plataforma. '
+      + '<b>Preguntaron</b>: cuántos usaron el asistente ese día. Si crece «Nuevos» pero no «Preguntaron», estás juntando registros que no se activan. '
+      + 'Los días en cero también salen: sin ellos el crecimiento parece parejo cuando no lo es.</div></div>';
+    return h;
+  }
+
   function vAlumnos(){
     var etiqueta = periodo === 1 ? 'hoy' : (periodo ? 'últimos ' + periodo + ' días' : 'todo el histórico');
     return '<div class="cns-bar"><input type="text" class="cns-search" id="cns-search" placeholder="Buscar por nombre o correo…"></div>'
@@ -409,7 +509,7 @@
       return {
         a: a, nombre: a.nombre || '', email: a.email || '',
         ultima: ultimaVez(a) || '', registro: a.registro || '',
-        preg: pregPeriodo(a), dias_activos: a.dias_activos || 0, topes: a.topes || 0
+        preg: pregPeriodo(a), dias_activos: diasActivos(a), topes: diasAlTope(a)
       };
     });
     if(q) items = items.filter(function(it){
@@ -444,7 +544,7 @@
           .map(function(m){ return '<span class="cns-chip">' + (MODS[m] || m) + ' ' + a.mods[m] + '</span>'; }).join('') || '—';
         var avisos = '';
         if(!it.ultima) avisos += '<span class="cns-flag">no activó</span>';
-        else if((a.preguntas||0) > 0 && a.dias_desde_ultima != null && a.dias_desde_ultima > 14) avisos += '<span class="cns-flag">se enfrió</span>';
+        else if(it.preg > 0 && a.dias_desde_ultima != null && a.dias_desde_ultima > 14) avisos += '<span class="cns-flag">se enfrió</span>';
         var cls = it.preg > 0 ? '' : ' class="cns-zero"';
         return '<tr' + cls + '>'
           + '<td class="l"><div class="cns-name">' + esc(it.nombre) + avisos + '</div><div class="cns-mail">' + esc(it.email) + '</div></td>'
@@ -556,7 +656,7 @@
           }).join('')
         + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
         + 'El gasto real día a día: si un día se dispara sin que suban las respuestas, algo anda mal (respuestas muy largas o abuso). '
-        + 'Se muestra desde el ' + fday(primeraConCosto) + ', cuando se instaló el medidor de costo'
+        + 'Se muestra desde el ' + fday(primeraConCosto) + ' (lanzamiento público: ' + fday(LANZAMIENTO) + ')'
         + (omitidas ? ' — los ' + omitidas + ' días anteriores tenían preguntas pero sin gasto anotado, por eso no salen' : '')
         + '. Y recuerda: NFPA y FM anotan su gasto recién desde el ' + fday(DESDE_MODS) + '.</div></div>';
     }
@@ -567,12 +667,12 @@
   function exportar(){
     if(!USO || typeof ILFISExcel === 'undefined'){ alert('Aún no hay datos cargados.'); return; }
     var items = filasAlumnos();
-    var cab = ['Alumno','Correo','Última vez','Registrado','Preguntas (periodo)','Preguntas (total)','Días activos','Días al tope','Módulos'];
+    var cab = ['Alumno','Correo','Última vez','Registrado','Preguntas (periodo)','Días activos','Días al tope','Módulos'];
     var filas = items.map(function(it){
       var a = it.a;
       var mods = Object.keys(a.mods || {}).map(function(m){ return (MODS[m]||m) + ' ' + a.mods[m]; }).join(', ');
       return [it.nombre, it.email, it.ultima ? fday(it.ultima) : 'nunca entró', fday(it.registro || null),
-              it.preg, a.preguntas || 0, it.dias_activos, it.topes, mods];
+              it.preg, it.dias_activos, it.topes, mods];
     });
     ILFISExcel.bajar({ archivo: 'consumo_alumnos', hojas: [{ nombre: 'Consumo', cabeceras: cab, filas: filas }] });
   }
