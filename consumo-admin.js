@@ -3,7 +3,7 @@
    Aditivo: no modifica el codigo existente. Reusa la clave admin (ilfis_admin_key)
    y la constante API. Lee /admin/uso y /admin/consumo-log (solo lectura).
    Sigue la maqueta aprobada MOCKUP_Consumo_Admin.html (jul 2026):
-   4 vistas (Resumen / Por alumno / Por modulo / Que preguntan), selector de
+   5 vistas (Resumen / Crecimiento / Por suscriptor / Por modulo / Que preguntan),
    periodo, filtro de cuentas de prueba y export a Excel real (excel-export.js).
    Para quitarlo: borrar la linea <script src="consumo-admin.js">. */
 (function(){
@@ -171,7 +171,7 @@
       + '<div class="cns-subtabs">'
       +   '<button type="button" class="cns-subtab on" data-v="resumen">Resumen</button>'
       +   '<button type="button" class="cns-subtab" data-v="crecimiento">Crecimiento</button>'
-      +   '<button type="button" class="cns-subtab" data-v="alumnos">Por alumno</button>'
+      +   '<button type="button" class="cns-subtab" data-v="alumnos">Por suscriptor</button>'
       +   '<button type="button" class="cns-subtab" data-v="modulos">Por módulo</button>'
       +   '<button type="button" class="cns-subtab" data-v="temas">Qué preguntan</button>'
       + '</div>'
@@ -275,12 +275,12 @@
       + 'El botón <b>«Solo público»</b> de arriba las vuelve a incluir si alguna vez las necesitas.</div>'
       + '<div class="cns-stats">'
       + stat(registrados, 'Registrados', nuevos + ' nuevos en ' + etiqueta,
-             'tamaño de tu audiencia pública; es el denominador de todo lo demás.')
+             'cuántos suscriptores públicos tienes; es el denominador de todo lo demás.')
       + stat(entraron, periodo ? 'Entraron (' + etiqueta + ')' : 'Volvieron tras registrarse',
              registrados ? Math.round(100*entraron/registrados) + '% de los registrados' : '',
              periodo ? 'separa el registro de la costumbre: si baja, se van callados.'
                      : 'registrarse ya cuenta como un ingreso, así que aquí se exige haber vuelto otro día o haber preguntado algo.')
-      + stat(pregs, 'Preguntas (' + etiqueta + ')', 'con tope de ' + (USO.resumen.tope_diario||5) + '/día por alumno',
+      + stat(pregs, 'Preguntas (' + etiqueta + ')', 'con tope de ' + (USO.resumen.tope_diario||5) + '/día por suscriptor',
              'el latido del producto: cada una es un problema real resuelto.')
       + (costo != null
           ? stat('US$ ' + costo.toFixed(2), 'Costo IA (' + etiqueta + ')',
@@ -290,7 +290,7 @@
                  + ', así que los días previos salen cortos. Y esto es solo la plataforma: '
                  + 'el motor del Calculador y los pre-calificadores usan la misma cuenta de Anthropic y no pasan por aquí.')
           : stat('—', 'Costo IA', 'sin datos del log', ''))
-      + stat(topers, 'Alumnos que toparon', topesVeces + ' días al tope en total',
+      + stat(topers, 'Suscriptores que toparon', topesVeces + ' días al tope en total',
              'demanda reprimida: tu lista de primeros clientes cuando se cobre.')
       + '</div>';
 
@@ -440,16 +440,16 @@
 
     var h = '<div class="cns-stats">'
       + stat(totalAltas, 'Altas en el periodo', dias.length + ' días',
-             'el crecimiento en bruto: cuánta gente nueva entró a la plataforma.')
+             'el crecimiento en bruto: cuántos suscriptores nuevos entraron a la plataforma.')
       + stat(prom.toFixed(1), 'Promedio por día', '',
              'tu velocidad de crucero. Si un día se dispara, fue una campaña; si cae a cero varios días, se secó el canal.')
       + stat((altas[mejor] || 0), 'Mejor día', fday(mejor),
              'el récord a repetir: mira qué publicaste ese día.')
       + stat(l.length, 'Total acumulado', 'al ' + fday(hoyStr),
-             'el tamaño actual de tu base pública.')
+             'cuántos suscriptores públicos tienes hoy en total.')
       + '</div>';
 
-    h += '<div class="cns-sec">Usuarios nuevos por día</div><div class="cns-box"><div class="cns-tw">'
+    h += '<div class="cns-sec">Suscriptores nuevos por día</div><div class="cns-box"><div class="cns-tw">'
       + '<table><tr><th class="l">Día</th><th>Nuevos</th><th class="l" style="width:40%;">&nbsp;</th>'
       + '<th>Acumulado</th><th>Preguntaron</th></tr>';
     var filas = [];
@@ -467,9 +467,9 @@
     });
     h += filas.reverse().join('') + '</table></div>'   // el día más reciente arriba
       + '<div class="cns-pq"><span class="t">Para qué sirve cada columna</span>'
-      + '<b>Nuevos</b>: cuántas cuentas se crearon ese día — es el crecimiento diario. '
+      + '<b>Nuevos</b>: cuántos suscriptores se registraron ese día — es el crecimiento diario. '
       + '<b>Acumulado</b>: cuánta gente tenías en total al cerrar ese día; es la curva que enseñas cuando cuentas cómo va la plataforma. '
-      + '<b>Preguntaron</b>: cuántos usaron el asistente ese día. Si crece «Nuevos» pero no «Preguntaron», estás juntando registros que no se activan. '
+      + '<b>Preguntaron</b>: cuántos usaron el asistente ese día. Si crece «Nuevos» pero no «Preguntaron», estás juntando suscriptores que no se activan. '
       + 'Los días en cero también salen: sin ellos el crecimiento parece parejo cuando no lo es.</div></div>';
     return h;
   }
@@ -494,7 +494,7 @@
   }
 
   var COLS = [
-    {k:'nombre',   t:'Alumno', l:true},
+    {k:'nombre',   t:'Suscriptor', l:true},
     {k:'ultima',   t:'Última vez'},
     {k:'registro', t:'Registrado'},
     {k:'preg',     t:'Preguntas'},
@@ -556,7 +556,7 @@
           + '<td>' + (it.topes || '—') + '</td>'
         + '</tr>';
       }).join('');
-      if(!items.length) rows = '<tr><td class="cns-no" colspan="7">No hay alumnos que coincidan.</td></tr>';
+      if(!items.length) rows = '<tr><td class="cns-no" colspan="7">No hay suscriptores que coincidan.</td></tr>';
       cont.innerHTML = head + rows;
       cont.querySelectorAll('th').forEach(function(th){
         th.addEventListener('click', function(){
@@ -571,7 +571,7 @@
 
   function vModulos(){
     var l = alumnos();
-    var tot = {};   // modulo -> {n, alumnos}
+    var tot = {};   // modulo -> {n, suscriptores}
     l.forEach(function(a){
       for(var m in (a.mods || {})){
         tot[m] = tot[m] || {n:0, al:0};
@@ -586,7 +586,7 @@
       h += '<div class="cns-no">Todavía no hay datos: el servidor empezó a anotar el módulo de cada pregunta el '
         + fday(DESDE_MODS) + '. En unos días esta tabla se llena sola.</div>';
     } else {
-      h += '<div class="cns-tw"><table><tr><th class="l">Módulo</th><th>Preguntas</th><th>Alumnos distintos</th><th>Preg./alumno</th></tr>'
+      h += '<div class="cns-tw"><table><tr><th class="l">Módulo</th><th>Preguntas</th><th>Suscriptores distintos</th><th>Preg./suscriptor</th></tr>'
         + claves.map(function(k){
             var t = tot[k];
             return '<tr><td class="l"><span class="cns-name">' + (MODS[k] || k) + '</span></td>'
@@ -597,8 +597,8 @@
       }).join('') + '</div>';
     }
     h += '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-      + '<b>Preguntas</b>: qué módulo sostiene la plataforma. <b>Alumnos distintos</b>: si el uso es de muchos o de tres fanáticos. '
-      + '<b>Preg./alumno</b>: profundidad — alta es herramienta diaria, baja es que lo probaron y no volvieron. '
+      + '<b>Preguntas</b>: qué módulo sostiene la plataforma. <b>Suscriptores distintos</b>: si el uso es de muchos o de tres fanáticos. '
+      + '<b>Preg./suscriptor</b>: profundidad — alta es herramienta diaria, baja es que lo probaron y no volvieron. '
       + 'Se cuenta desde el ' + fday(DESDE_MODS) + '.</div></div>';
 
     // Reparto historico por fuente del log (corpus/youtube), disponible desde antes
@@ -631,7 +631,7 @@
       h += '<div class="cns-no">Ninguna floja registrada. Buen respaldo en todas.</div>';
     }
     h += '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-      + 'Cada línea es un hueco en tu material: el alumno preguntó y el sistema no encontró buen respaldo (puntaje &lt; '
+      + 'Cada línea es un hueco en tu material: el suscriptor preguntó y el sistema no encontró buen respaldo (puntaje &lt; '
       + (LOG.umbral_flojo || 0.35) + '). Sube ese contenido y el asistente pasa de "no encontré" a responder. '
       + 'Es la lista de tareas más rentable del tablero, y también tu estudio de mercado: dice qué curso lanzar después.</div></div>';
 
@@ -667,14 +667,14 @@
   function exportar(){
     if(!USO || typeof ILFISExcel === 'undefined'){ alert('Aún no hay datos cargados.'); return; }
     var items = filasAlumnos();
-    var cab = ['Alumno','Correo','Última vez','Registrado','Preguntas (periodo)','Días activos','Días al tope','Módulos'];
+    var cab = ['Suscriptor','Correo','Última vez','Registrado','Preguntas (periodo)','Días activos','Días al tope','Módulos'];
     var filas = items.map(function(it){
       var a = it.a;
       var mods = Object.keys(a.mods || {}).map(function(m){ return (MODS[m]||m) + ' ' + a.mods[m]; }).join(', ');
       return [it.nombre, it.email, it.ultima ? fday(it.ultima) : 'nunca entró', fday(it.registro || null),
               it.preg, it.dias_activos, it.topes, mods];
     });
-    ILFISExcel.bajar({ archivo: 'consumo_alumnos', hojas: [{ nombre: 'Consumo', cabeceras: cab, filas: filas }] });
+    ILFISExcel.bajar({ archivo: 'consumo_suscriptores', hojas: [{ nombre: 'Consumo', cabeceras: cab, filas: filas }] });
   }
 
   /* ── enganche al panel ───────────────────────────────────── */
