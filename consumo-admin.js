@@ -12,7 +12,7 @@
   // Cuentas del equipo: se excluyen de las metricas para no inflar los numeros.
   var CUENTAS_PRUEBA = ['grupo3speru@gmail.com', 'contacto@ilfislatinoamerica.com'];
   var MODS = {consultas:'Chat IA', experto:'Experto', nfpa:'NFPA', fm:'FM', videos:'Videos'};
-  var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos'};
+  var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos', nfpa:'NFPA', fm:'FM'};
   // Fecha desde la que el servidor anota el modulo de cada pregunta.
   var DESDE_MODS = '2026-07-30';
 
@@ -214,7 +214,18 @@
     var l = alumnos(), de = desdeStr();
     var registrados = l.length;
     var nuevos = l.filter(function(a){ return enPeriodo(a.registro); }).length;
-    var entraron = l.filter(function(a){ return enPeriodo(ultimaVez(a)); }).length;
+    // OJO: Firebase cuenta el registro mismo como un ingreso. Para no mostrar
+    // un "100% entraron" vacio, en "Todo" se exige haber vuelto DESPUES del
+    // dia del registro (o haber preguntado algo).
+    function volvio(a){
+      var u = ultimaVez(a);
+      if(!u) return false;
+      if((a.preguntas || 0) > 0) return true;
+      return !!a.registro && u > a.registro;
+    }
+    var entraron = periodo
+      ? l.filter(function(a){ return enPeriodo(ultimaVez(a)); }).length
+      : l.filter(volvio).length;
     var pregs = 0, topers = 0, topesVeces = 0;
     l.forEach(function(a){
       pregs += pregPeriodo(a);
@@ -235,15 +246,18 @@
     var h = '<div class="cns-stats">'
       + stat(registrados, 'Registrados', nuevos + ' nuevos en ' + etiqueta,
              'tamaño de tu audiencia; es el denominador de todo lo demás.')
-      + stat(entraron, 'Entraron (' + etiqueta + ')',
+      + stat(entraron, periodo ? 'Entraron (' + etiqueta + ')' : 'Volvieron tras registrarse',
              registrados ? Math.round(100*entraron/registrados) + '% de los registrados' : '',
-             'separa el registro de la costumbre: si baja, se van callados.')
+             periodo ? 'separa el registro de la costumbre: si baja, se van callados.'
+                     : 'registrarse ya cuenta como un ingreso, así que aquí se exige haber vuelto otro día o haber preguntado algo.')
       + stat(pregs, 'Preguntas (' + etiqueta + ')', 'con tope de ' + (USO.resumen.tope_diario||5) + '/día por alumno',
              'el latido del producto: cada una es un problema real resuelto.')
       + (costo != null
           ? stat('US$ ' + costo.toFixed(2), 'Costo IA (' + etiqueta + ')',
                  costoPreg != null ? 'US$ ' + costoPreg.toFixed(4) + ' por pregunta' : '',
-                 'lo que te cuesta regalar 2026; se ve aquí antes que en la factura.')
+                 'lo que te cuesta regalar 2026; se ve aquí antes que en la factura. '
+                 + '<b>Ojo:</b> NFPA y FM recién anotan su gasto desde el ' + fday(DESDE_MODS)
+                 + '; lo anterior a esa fecha solo incluye Chat IA/Experto y Videos, así que el histórico se queda corto.')
           : stat('—', 'Costo IA', 'sin datos del log', ''))
       + stat(topers, 'Alumnos que toparon', topesVeces + ' días al tope en total',
              'demanda reprimida: tu lista de primeros clientes cuando se cobre.')
@@ -257,7 +271,7 @@
 
     // Embudo (todo el histórico, no depende del periodo)
     var todos = l.length;
-    var entraronAlg = l.filter(function(a){ return !!ultimaVez(a); }).length;
+    var entraronAlg = l.filter(volvio).length;
     var preguntaron = l.filter(function(a){ return (a.preguntas||0) > 0; }).length;
     var volvieron = l.filter(function(a){ return (a.dias_activos||0) >= 2; }).length;
     var d30 = (function(){ var d = hoyDate(); d.setUTCDate(d.getUTCDate()-29); return dstr(d); })();
@@ -266,13 +280,13 @@
 
     h += '<div class="cns-cols"><div><div class="cns-sec">¿Se quedan? (histórico)</div><div class="cns-box">'
       + barra('Se registraron', 100, todos + ' · 100%')
-      + barra('Entraron alguna vez', pct(entraronAlg), entraronAlg + ' · ' + pct(entraronAlg) + '%')
+      + barra('Volvieron tras registrarse', pct(entraronAlg), entraronAlg + ' · ' + pct(entraronAlg) + '%')
       + barra('Preguntaron ≥1 vez', pct(preguntaron), preguntaron + ' · ' + pct(preguntaron) + '%')
       + barra('Volvieron otro día', pct(volvieron), volvieron + ' · ' + pct(volvieron) + '%')
       + barra('Activos últimos 30 días', pct(siguen), siguen + ' · ' + pct(siguen) + '%')
       + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
       + 'Cada escalón es una puerta: el más bajo dice dónde pierdes gente y qué arreglar primero, en vez de adivinar. '
-      + (todos - entraronAlg > 0 ? '<b>' + (todos-entraronAlg) + ' se registraron y nunca entraron</b> — problema de bienvenida, no de producto.' : '')
+      + (todos - entraronAlg > 0 ? '<b>' + (todos-entraronAlg) + ' se registraron y no han vuelto</b> — problema de bienvenida, no de producto.' : '')
       + '</div></div></div>';
 
     // Distribucion de intensidad en el periodo
