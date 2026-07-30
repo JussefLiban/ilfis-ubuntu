@@ -4871,15 +4871,14 @@ function eduExportarDatos() {
   const lista = _eduListaActual();
   const g = (u, k) => (_adminDatos[u.uid] || {})[k] || '';
   const nom = u => (_eduRoster[u.uid] || {}).nombre || (_adminDatos[u.uid] || {}).nombre_certificado || u.nombre || '';
-  const q = s => `"${String(s == null ? '' : s).replace(/"/g, '""')}"`;
-  const cab = ['#', 'Nombre completo', 'Correo', 'Pais nacimiento', 'Pais residencia', 'Telefono', 'Fecha nacimiento'];
-  const filas = lista.map((u, i) => [((_eduRoster[u.uid] || {}).numero != null ? _eduRoster[u.uid].numero : (i + 1)), nom(u), u.email || g(u, 'email'),
-    g(u, 'pais_nacimiento'), g(u, 'pais_residencia'), g(u, 'telefono'), g(u, 'fecha_nacimiento')].map(q).join(';'));
-  const csv = '﻿' + [cab.map(q).join(';'), ...filas].join('\r\n');
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = 'datos_alumnos.csv'; document.body.appendChild(a); a.click();
-  a.remove(); URL.revokeObjectURL(url);
+  const cab = ['N°', 'Nombre completo', 'Correo', 'País nacimiento', 'País residencia', 'Teléfono', 'Fecha nacimiento'];
+  // El N° va como número (para ordenar en Excel); el teléfono va como texto (no perder + ni ceros).
+  const filas = lista.map((u, i) => {
+    const n = (_eduRoster[u.uid] || {}).numero;
+    return [(n != null ? Number(n) : i + 1), nom(u), u.email || g(u, 'email'),
+      g(u, 'pais_nacimiento'), g(u, 'pais_residencia'), String(g(u, 'telefono') || ''), g(u, 'fecha_nacimiento')];
+  });
+  ILFISExcel.bajar({ archivo: 'datos_alumnos', hojas: [{ nombre: 'Alumnos', cabeceras: cab, filas }] });
 }
 
 async function adminDarPlataforma(uid, email) {
@@ -5833,5 +5832,7 @@ function renderExplorador() {
 
 <script defer src="feedback-admin.js"></script>
   <script defer src="consumo-admin.js"></script>
+  <!-- Generador de los "Exportar a Excel" (.xlsx de verdad, no CSV) -->
+  <script defer src="excel-export.js"></script>
 </body>
 </html>

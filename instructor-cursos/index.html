@@ -215,6 +215,8 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Generador de los "Exportar a Excel" (.xlsx de verdad, no CSV) -->
+<script src="../excel-export.js"></script>
 <script>
 const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 // El panel sirve a CUALQUIER curso: el id llega por ?curso=… Si no viene, es Rociadores
@@ -588,25 +590,18 @@ function renderCola(){
     `<tr><td colspan="5" style="text-align:center;color:var(--verde);padding:22px;">✓ No hay nada pendiente de calificar</td></tr>`;
 }
 
-// ── Exportar notas (CSV con BOM y separador ; — Excel lo abre en columnas) ──
+// ── Exportar notas (.xlsx de verdad — ver excel-export.js) ──
 function exportarNotas(){
   if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
-  const cab = ["N°","Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Ultimo acceso",
+  const cab = ["N°","Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Último acceso",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
-  const q = s => `"${String(s == null ? "" : s).replace(/"/g,'""')}"`;
   const filas = alumnos.map(a => [
-    (a.numero == null ? "" : a.numero), nomDe(a.uid, a.email), a.email, a.avance, a.comp, a.total, txtDias(a.dias),
-    a.enviados, a.aprobados, (a.promedio == null ? "" : a.promedio), a.manual, a.estado.txt
-  ].map(q).join(";"));
-  const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
-  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const hoy = new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Lima"}).format(new Date()); // YYYY-MM-DD
-  const a = document.createElement("a");
-  a.href = url; a.download = `notas_rociadores_${hoy}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+    (a.numero == null ? "" : Number(a.numero)), nomDe(a.uid, a.email), a.email,
+    _num(a.avance), _num(a.comp), _num(a.total), txtDias(a.dias),
+    _num(a.enviados), _num(a.aprobados), (a.promedio == null ? "" : _num(a.promedio)), _num(a.manual), a.estado.txt
+  ]);
+  ILFISExcel.bajar({ archivo:`notas_${CURSO}`, hojas:[{ nombre:"Por alumno", cabeceras:cab, filas }] });
 }
 
 // ── Entregas de tareas ──
@@ -1042,22 +1037,15 @@ async function guardarEvalNota(uid, codigo){
 }
 function exportarPlanilla(){
   if(!P || !P.columnas) return;
-  const q = s => `"${String(s==null?"":s).replace(/"/g,'""')}"`;
   const cab = ["Ranking","Alumno","Correo",
     ...P.columnas.map(c => _colLbl(c)),
-    "Promedio Semanal","Promedio Examenes","Nota Concepto","Promedio Total","Resultado"];
+    "Promedio Semanal","Promedio Exámenes","Nota Concepto","Promedio Total","Resultado"];
   const filas = (P.alumnos||[]).map(a => [
-    a.ranking, a.nombre, a.email,
+    (a.ranking==null ? "" : Number(a.ranking)), a.nombre, a.email,
     ...P.columnas.map(c => { const v = a.celdas ? a.celdas[c.codigo] : null; return v==null?"":fmtN(v); }),
     _num(a.promedio_semanal), _num(a.promedio_examenes), _num(a.concepto), _num(a.promedio_total), a.resultado||""
-  ].map(q).join(";"));
-  const csv = "﻿" + [cab.map(q).join(";"), ...filas].join("\r\n");
-  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const hoy = new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Lima"}).format(new Date());
-  const el = document.createElement("a"); el.href = url; el.download = `planilla_rociadores_${hoy}.csv`;
-  document.body.appendChild(el); el.click(); el.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  ]);
+  ILFISExcel.bajar({ archivo:`planilla_${CURSO}`, hojas:[{ nombre:"Libro de notas", cabeceras:cab, filas }] });
 }
 
 // ═══════════════ ALUMNO DE PRUEBA (verificar el cálculo vs el Excel) ═══════════════
