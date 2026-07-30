@@ -12,7 +12,7 @@
   // Cuentas del equipo: se excluyen de las metricas para no inflar los numeros.
   var CUENTAS_PRUEBA = ['grupo3speru@gmail.com', 'contacto@ilfislatinoamerica.com'];
   var MODS = {consultas:'Chat IA', experto:'Experto', nfpa:'NFPA', fm:'FM', videos:'Videos'};
-  var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos', nfpa:'NFPA', fm:'FM'};
+  var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos', nfpa:'NFPA', fm:'FM', biblioteca:'Biblioteca'};
   // Fecha desde la que el servidor anota el modulo de cada pregunta.
   var DESDE_MODS = '2026-07-30';
 
