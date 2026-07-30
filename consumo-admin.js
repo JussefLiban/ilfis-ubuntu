@@ -20,7 +20,15 @@
   // registradas antes, ni la actividad ni el gasto de esos dias.
   var LANZAMIENTO = '2026-07-28';
 
-  var USO = null, LOG = null, cargadoUna = false, cargandoAhora = false;
+  // Secciones de la plataforma, para el reparto de tiempo trabajando.
+  var SECCIONES = {consultar:'Chat IA', experto:'Pregúntale al Experto', nfpa:'ILFIS interpreta NFPA',
+                   fm:'ILFIS interpreta FM', calculadoras:'Calcula con Ubuntu', videos:'Videos',
+                   cuenta:'Mi Cuenta', tarifario:'Planes y Precios', catalogo:'¿Cuál me conviene?',
+                   explorador:'Explorador', biblioteca:'Sala de Profesores',
+                   'plataforma-educativa':'Plataforma Educativa', admin:'Panel Intranet',
+                   plataforma:'Sin ubicar'};
+
+  var USO = null, LOG = null, TIEMPO = null, cargadoUna = false, cargandoAhora = false;
   var periodo = 30;            // dias; 0 = todo
   var sinPrueba = true;        // excluir cuentas del equipo
   var vista = 'resumen';
@@ -130,6 +138,28 @@
     if(d === 1) return 'ayer';
     return 'hace ' + d + ' días';
   }
+  /* ── tiempo trabajando ───────────────────────────────────── */
+  function minutos(seg){
+    seg = Math.round(seg || 0);
+    if(seg < 60) return seg + ' s';
+    var m = Math.round(seg / 60);
+    if(m < 60) return m + ' min';
+    var hh = Math.floor(m / 60), mm = m % 60;
+    return hh + ' h' + (mm ? ' ' + mm + ' min' : '');
+  }
+  function tiempoDe(a){
+    // Segundos trabajados por ese suscriptor dentro del periodo elegido.
+    if(!TIEMPO || !TIEMPO.por_uid) return null;
+    var r = TIEMPO.por_uid[a.uid];
+    if(!r) return 0;
+    var de = desdeStr(), t = 0, pd = r.por_dia || {};
+    for(var f in pd){ if(f >= de) t += pd[f]; }
+    return t;
+  }
+  function hayTiempo(){
+    return !!(TIEMPO && TIEMPO.por_uid && Object.keys(TIEMPO.por_uid).length);
+  }
+
   function stat(n, l, s, q){
     return '<div class="cns-stat"><div class="n">'+n+'</div><div class="l">'+l+'</div>'
       + (s ? '<div class="s">'+s+'</div>' : '')
@@ -214,9 +244,10 @@
     var h = { headers: { 'x-admin-key': key } };
     Promise.all([
       fetch(API + '/admin/uso', h).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }),
-      fetch(API + '/admin/consumo-log?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      fetch(API + '/admin/consumo-log?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch(API + '/admin/tiempo?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(res){
-      USO = res[0]; LOG = res[1];
+      USO = res[0]; LOG = res[1]; TIEMPO = res[2];
       hoyStr = (USO.resumen && USO.resumen.hoy) || null;
       cargadoUna = true; cargandoAhora = false; render();
     }).catch(function(e){
@@ -347,6 +378,50 @@
       + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
       + 'Parte a los registrados por intensidad. Con esto se decide el precio y dónde poner el corte del plan gratis. '
       + 'Los de "más de 20" y los que topan el límite ya te dijeron que sí.</div></div></div></div>';
+
+    // TIEMPO TRABAJANDO
+    h += '<div class="cns-sec">Tiempo trabajando</div><div class="cns-box">';
+    if(!hayTiempo()){
+      h += '<div class="cns-no">Todavía no hay datos. La medición se acaba de instalar: '
+        + 'se irá llenando conforme la gente entre a la plataforma.</div>';
+    } else {
+      var segTot = 0, conTiempo = 0;
+      l.forEach(function(a){ var t = tiempoDe(a); if(t > 0){ segTot += t; conTiempo++; } });
+      var diasT = Object.keys(TIEMPO.por_dia || {}).filter(function(f){ return f >= de; }).length || 1;
+      var horaTop = null, maxH = -1;
+      for(var hh in (TIEMPO.por_hora || {})){
+        if(TIEMPO.por_hora[hh] > maxH){ maxH = TIEMPO.por_hora[hh]; horaTop = hh; }
+      }
+      h += '<div class="cns-stats">'
+        + stat(minutos(segTot), 'Tiempo total', conTiempo + ' suscriptores',
+               'cuánto trabajo real hubo dentro de la plataforma en el periodo.')
+        + stat(minutos(conTiempo ? segTot/conTiempo : 0), 'Por suscriptor', 'promedio',
+               'distingue al que mira y se va del que se sienta a trabajar.')
+        + stat(minutos(segTot/diasT), 'Por día', diasT + ' días con actividad',
+               'el pulso diario: si cae varios días seguidos, algo pasó.')
+        + (horaTop !== null
+            ? stat(horaTop + ':00 – ' + ((+horaTop + 1) % 24) + ':00', 'Hora preferida', 'hora de Perú (UTC)',
+                   'a qué hora publicar, mandar correos y programar clases en vivo.')
+            : '')
+        + '</div>';
+      // Reparto por seccion
+      var secs = Object.keys(TIEMPO.por_seccion || {}).sort(function(x, y){
+        return TIEMPO.por_seccion[y] - TIEMPO.por_seccion[x];
+      }).slice(0, 8);
+      if(secs.length){
+        var maxS = TIEMPO.por_seccion[secs[0]] || 1;
+        h += '<div style="margin-top:10px;">' + secs.map(function(s){
+          return barra(SECCIONES[s] || s, 100*TIEMPO.por_seccion[s]/maxS, minutos(TIEMPO.por_seccion[s]));
+        }).join('') + '</div>';
+      }
+    }
+    h += '<div class="cns-pq"><span class="t">Cómo se mide (y por qué así)</span>'
+      + 'El reloj <b>no cuenta ventanas abiertas, cuenta señales de vida</b>. Solo corre si se cumplen las dos cosas a la vez: '
+      + '<b>1)</b> la pestaña está al frente (si se va a otra o minimiza, se detiene solo) y '
+      + '<b>2)</b> hubo señal en el último minuto: mover el mouse, un clic, escribir o rodar la página. '
+      + 'Sin señal el reloj se para y vuelve al toque siguiente, así que una ventana abierta toda la noche suma <b>cero</b>. '
+      + 'Por eso se llama <b>tiempo trabajando</b> y no "tiempo en la plataforma": es lo único honesto que se puede afirmar. '
+      + 'El reparto de abajo dice dónde se le va el tiempo a la gente.</div></div>';
 
     // Calidad del asistente
     if(LOG && LOG.n_total){
@@ -488,6 +563,7 @@
       + '<b>Registrado</b>: cruzado con la anterior dice cuánto duró. '
       + '<b>Preguntas</b> (' + etiqueta + '): el uso real. '
       + '<b>Días act.</b>: hábito o atracón de un día. '
+      + '<b>Trabajando</b>: minutos reales dentro de la plataforma (pestaña al frente y con señal del usuario); delata a quien pregunta y se va sin leer. '
       + '<b>Topó</b>: días que chocó con el límite — quiere más de lo que el gratis le da. '
       + 'Avisos: <span class="cns-flag">se enfrió</span> más de 14 días sin entrar habiendo usado · <span class="cns-flag">no activó</span> se registró y nunca entró.</div>'
       + '</div>';
@@ -500,6 +576,7 @@
     {k:'preg',     t:'Preguntas'},
     {k:'mods',     t:'Módulos', l:true, nosort:true},
     {k:'dias_activos', t:'Días act.'},
+    {k:'tiempo',   t:'Trabajando'},
     {k:'topes',    t:'Topó'}
   ];
 
@@ -509,7 +586,8 @@
       return {
         a: a, nombre: a.nombre || '', email: a.email || '',
         ultima: ultimaVez(a) || '', registro: a.registro || '',
-        preg: pregPeriodo(a), dias_activos: diasActivos(a), topes: diasAlTope(a)
+        preg: pregPeriodo(a), dias_activos: diasActivos(a), topes: diasAlTope(a),
+        tiempo: tiempoDe(a) || 0
       };
     });
     if(q) items = items.filter(function(it){
@@ -553,10 +631,11 @@
           + '<td>' + it.preg + '</td>'
           + '<td class="l">' + chips + '</td>'
           + '<td>' + it.dias_activos + '</td>'
+          + '<td>' + (it.tiempo ? minutos(it.tiempo) : '—') + '</td>'
           + '<td>' + (it.topes || '—') + '</td>'
         + '</tr>';
       }).join('');
-      if(!items.length) rows = '<tr><td class="cns-no" colspan="7">No hay suscriptores que coincidan.</td></tr>';
+      if(!items.length) rows = '<tr><td class="cns-no" colspan="8">No hay suscriptores que coincidan.</td></tr>';
       cont.innerHTML = head + rows;
       cont.querySelectorAll('th').forEach(function(th){
         th.addEventListener('click', function(){
@@ -667,12 +746,12 @@
   function exportar(){
     if(!USO || typeof ILFISExcel === 'undefined'){ alert('Aún no hay datos cargados.'); return; }
     var items = filasAlumnos();
-    var cab = ['Suscriptor','Correo','Última vez','Registrado','Preguntas (periodo)','Días activos','Días al tope','Módulos'];
+    var cab = ['Suscriptor','Correo','Última vez','Registrado','Preguntas (periodo)','Días activos','Días al tope','Minutos trabajando','Módulos'];
     var filas = items.map(function(it){
       var a = it.a;
       var mods = Object.keys(a.mods || {}).map(function(m){ return (MODS[m]||m) + ' ' + a.mods[m]; }).join(', ');
       return [it.nombre, it.email, it.ultima ? fday(it.ultima) : 'nunca entró', fday(it.registro || null),
-              it.preg, it.dias_activos, it.topes, mods];
+              it.preg, it.dias_activos, it.topes, Math.round((it.tiempo||0)/60), mods];
     });
     ILFISExcel.bajar({ archivo: 'consumo_suscriptores', hojas: [{ nombre: 'Consumo', cabeceras: cab, filas: filas }] });
   }
