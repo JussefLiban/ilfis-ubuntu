@@ -209,6 +209,9 @@
     sec.innerHTML =
       '<div class="cns-bar" style="justify-content:flex-end;">'
       +   '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +     '<a class="cns-btn" style="text-decoration:none;" target="_blank" rel="noopener"'
+      +       ' title="Tu saldo real vive en la cuenta de Anthropic; el panel no puede leerlo."'
+      +       ' href="https://console.anthropic.com/settings/billing">💳 Mi saldo Anthropic ↗</a>'
       +     '<button type="button" class="cns-btn" id="cns-prueba">Solo público ✓</button>'
       +     '<button type="button" class="cns-btn" id="cns-excel">⤓ Exportar a Excel</button>'
       +     '<button type="button" class="cns-btn" id="cns-reload">↻ Recargar</button>'
@@ -791,7 +794,7 @@
     var claves = Object.keys(tot).sort(function(x, y){ return tot[y].n - tot[x].n; });
     var suma = 0; claves.forEach(function(k){ suma += tot[k].n; });
 
-    var h = '<div class="cns-sec">Qué módulo se usa de verdad</div><div class="cns-box">';
+    var h = '<div class="cns-sec">Quién usa cada módulo (desde el ' + fday(DESDE_MODS) + ')</div><div class="cns-box">';
     if(!claves.length){
       h += '<div class="cns-no">Todavía no hay datos: el servidor empezó a anotar el módulo de cada pregunta el '
         + fday(DESDE_MODS) + '. En unos días esta tabla se llena sola.</div>';
@@ -809,20 +812,24 @@
     h += '<div class="cns-pq"><span class="t">Para qué sirve</span>'
       + '<b>Preguntas</b>: qué módulo sostiene la plataforma. <b>Suscriptores distintos</b>: si el uso es de muchos o de tres fanáticos. '
       + '<b>Preg./suscriptor</b>: profundidad — alta es herramienta diaria, baja es que lo probaron y no volvieron. '
-      + 'Se cuenta desde el ' + fday(DESDE_MODS) + '.</div></div>';
+      + '<br><br>Esta tabla dice <b>quién</b> preguntó y en qué módulo, y solo cuenta desde el ' + fday(DESDE_MODS) + ', '
+      + 'que es cuando el servidor aprendió a anotarlo. Por eso los números son más chicos que los del bloque de abajo.</div></div>';
 
     // Reparto historico por fuente del log (corpus/youtube), disponible desde antes
     if(LOG && LOG.por_fuente){
       var fk = Object.keys(LOG.por_fuente).sort(function(x, y){ return LOG.por_fuente[y].n - LOG.por_fuente[x].n; });
       var fs = 0; fk.forEach(function(k){ fs += LOG.por_fuente[k].n; });
-      h += '<div class="cns-sec">Histórico del log (desde jul 2026)</div><div class="cns-box">'
+      h += '<div class="cns-sec">Cuánto cuesta cada tipo de búsqueda (desde el lanzamiento)</div><div class="cns-box">'
         + fk.map(function(k){
             var t = LOG.por_fuente[k];
             return barra((FUENTES[k] || k), fs ? 100*t.n/fs : 0,
               t.n + ' · US$ ' + (t.costo || 0).toFixed(2), k !== 'corpus');
           }).join('')
-        + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-        + 'El log guarda cada respuesta con su costo real en dólares. Aquí se ve qué parte del gasto de IA se lleva cada tipo de búsqueda.</div></div>';
+        + '<div class="cns-pq"><span class="t">Para qué sirve — y por qué no cuadra con la tabla de arriba</span>'
+        + 'Aquí cada barra es un tipo de búsqueda, con cuántas respuestas dio y cuánto costaron en dólares. '
+        + 'Sale de otro cuaderno: el de costos, que guarda <b>todo desde el lanzamiento</b> pero <b>no sabe de quién</b> fue cada respuesta. '
+        + 'La tabla de arriba sabe de quién, pero solo desde el ' + fday(DESDE_MODS) + '. '
+        + 'Por eso los números no coinciden todavía; en unos días se van a parecer.</div></div>';
     }
     return h;
   }
