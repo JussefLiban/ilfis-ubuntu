@@ -269,10 +269,63 @@
   }
 
   /* ── vistas ──────────────────────────────────────────────── */
+  /* ── saldo de Anthropic (escrito a mano, cruzado con el gasto real) ── */
+  function wireSaldo(){
+    var inp = document.getElementById('cns-saldo');
+    var out = document.getElementById('cns-saldo-out');
+    var btn = document.getElementById('cns-saldo-ok');
+    if(!inp || !out) return;
+    var LS_S = 'ilfis_saldo_anthropic';
+
+    function gastoDiario(){
+      if(!LOG || !LOG.por_dia) return null;
+      var de = desdeStr(), dias = Object.keys(LOG.por_dia).filter(function(f){ return f >= de; });
+      if(!dias.length) return null;
+      var s = 0; dias.forEach(function(f){ s += LOG.por_dia[f].costo; });
+      return s / dias.length;
+    }
+    function pintar(){
+      var g = null;
+      try { g = JSON.parse(localStorage.getItem(LS_S) || 'null'); } catch(e){}
+      if(!g || g.saldo == null){
+        out.innerHTML = '<span style="color:#8aa;">Escribe tu saldo para ver hasta cuándo alcanza.</span>';
+        return;
+      }
+      var gd = gastoDiario();
+      var txt = 'Saldo anotado: <b>US$ ' + Number(g.saldo).toFixed(2) + '</b>'
+        + '<span style="color:#8aa;"> (al ' + fday(g.fecha) + ')</span>. ';
+      if(gd && gd > 0){
+        // Descontar lo gastado por la plataforma desde que anotó el saldo.
+        var gastado = 0;
+        for(var f in LOG.por_dia){ if(f > g.fecha) gastado += LOG.por_dia[f].costo; }
+        var queda = Number(g.saldo) - gastado;
+        var dias = Math.floor(queda / gd);
+        var fin = hoyDate(); fin.setUTCDate(fin.getUTCDate() + dias);
+        var color = dias <= 7 ? '#f87171' : (dias <= 21 ? '#e8b44a' : '#4ade80');
+        txt += 'Gastando US$ ' + gd.toFixed(3) + ' al día, te quedan <b style="color:' + color + ';">'
+          + (dias > 0 ? dias + ' días' : 'menos de un día')
+          + '</b> — hasta el <b>' + fday(dstr(fin)) + '</b>.';
+        if(gastado > 0) txt += ' <span style="color:#8aa;">(ya se descontaron US$ ' + gastado.toFixed(2) + ' desde esa fecha)</span>';
+      } else {
+        txt += '<span style="color:#8aa;">Aún no hay gasto medido para proyectar.</span>';
+      }
+      out.innerHTML = txt;
+    }
+    function guardar(){
+      var v = parseFloat(inp.value);
+      if(isNaN(v) || v < 0){ out.innerHTML = '<span style="color:#f87171;">Escribe un número, por ejemplo 20</span>'; return; }
+      localStorage.setItem(LS_S, JSON.stringify({ saldo: v, fecha: hoyStr || dstr(new Date()) }));
+      pintar();
+    }
+    btn.addEventListener('click', guardar);
+    inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') guardar(); });
+    pintar();
+  }
+
   function render(){
     var cuerpo = document.getElementById('cns-cuerpo');
     if(!cuerpo || !USO) return;
-    if(vista === 'resumen')  cuerpo.innerHTML = vResumen();
+    if(vista === 'resumen'){ cuerpo.innerHTML = vResumen(); wireSaldo(); }
     if(vista === 'crecimiento') cuerpo.innerHTML = vCrecimiento();
     if(vista === 'alumnos'){ cuerpo.innerHTML = vAlumnos(); wireTabla(); }
     if(vista === 'modulos')  cuerpo.innerHTML = vModulos();
@@ -391,6 +444,37 @@
       + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
       + 'Parte a los registrados por intensidad. Con esto se decide el precio y dónde poner el corte del plan gratis. '
       + 'Los de "más de 20" y los que topan el límite ya te dijeron que sí.</div></div></div></div>';
+
+    // SALDO ANTHROPIC. La API de Anthropic no expone el saldo restante (solo el
+    // gasto), así que el saldo lo escribe Jussef y se guarda en este navegador;
+    // el panel lo cruza con el gasto medido para decir hasta cuándo alcanza.
+    var SALDO_LS = 'ilfis_saldo_anthropic';
+    var guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(SALDO_LS) || 'null'); } catch(e){}
+    var gastoDia = null;
+    if(LOG && LOG.por_dia){
+      var dd = Object.keys(LOG.por_dia).filter(function(f){ return f >= de; });
+      if(dd.length){
+        var s = 0; dd.forEach(function(f){ s += LOG.por_dia[f].costo; });
+        gastoDia = s / dd.length;
+      }
+    }
+    h += '<div class="cns-sec">Saldo de Anthropic</div><div class="cns-box">'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">'
+      +   '<span style="color:#8aa;font-size:.8rem;">Saldo que te queda (US$):</span>'
+      +   '<input type="number" step="0.01" min="0" id="cns-saldo" value="' + (guardado && guardado.saldo != null ? guardado.saldo : '') + '"'
+      +     ' placeholder="5.17" style="width:110px;padding:7px 10px;border-radius:8px;border:1px solid #2a2a5a;background:#0f1830;color:#dde;font-family:inherit;">'
+      +   '<button type="button" class="cns-btn" id="cns-saldo-ok">Guardar</button>'
+      +   '<a class="cns-btn" style="text-decoration:none;" target="_blank" rel="noopener"'
+      +     ' href="https://console.anthropic.com/settings/billing">↗ Abrir mi cuenta de Anthropic</a>'
+      + '</div>'
+      + '<div id="cns-saldo-out" style="color:#dde;font-size:.82rem;"></div>'
+      + '<div class="cns-pq"><span class="t">Por qué se escribe a mano</span>'
+      + 'Anthropic <b>no publica el saldo restante</b> por programa: solo deja consultar el gasto. '
+      + 'Así que escribes aquí lo que ves en tu cuenta (botón de la derecha) y el panel lo cruza con el gasto real '
+      + 'que ya está midiendo, para decirte hasta qué día te alcanza. Se guarda solo en esta computadora. '
+      + '<b>Ojo:</b> el gasto medido aquí es solo la plataforma; el motor del Calculador y los pre-calificadores '
+      + 'usan la misma cuenta, así que el saldo real baja más rápido que esta cuenta.</div></div>';
 
     // TIEMPO TRABAJANDO
     h += '<div class="cns-sec">Tiempo trabajando</div><div class="cns-box">';
