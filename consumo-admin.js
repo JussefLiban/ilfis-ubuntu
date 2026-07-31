@@ -170,6 +170,16 @@
     return !!(TIEMPO && TIEMPO.por_uid && Object.keys(TIEMPO.por_uid).length);
   }
 
+  // Selector de periodo, dibujado junto a lo que afecta (no en una barra fija).
+  function selPeriodo(queAfecta){
+    var ops = [[1,'Hoy'],[7,'7 días'],[30,'30 días'],[0,'Desde el lanzamiento']];
+    return '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 10px;">'
+      + '<span style="color:#8aa;font-size:.75rem;">' + queAfecta + ':</span>'
+      + '<span class="cns-seg">' + ops.map(function(o){
+          return '<button type="button" data-p="' + o[0] + '"' + (periodo === o[0] ? ' class="on"' : '') + '>' + o[1] + '</button>';
+        }).join('') + '</span></div>';
+  }
+
   function stat(n, l, s, q){
     return '<div class="cns-stat"><div class="n">'+n+'</div><div class="l">'+l+'</div>'
       + (s ? '<div class="s">'+s+'</div>' : '')
@@ -197,11 +207,7 @@
     var sec = document.createElement('div');
     sec.className = 'admin-section'; sec.id = 'admin-sec-consumo';
     sec.innerHTML =
-      '<div class="cns-bar">'
-      +   '<div class="cns-seg" id="cns-periodos">'
-      +     '<button data-p="1">Hoy</button><button data-p="7">7 días</button>'
-      +     '<button data-p="30" class="on">30 días</button><button data-p="0">Desde el lanzamiento</button>'
-      +   '</div>'
+      '<div class="cns-bar" style="justify-content:flex-end;">'
       +   '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +     '<button type="button" class="cns-btn" id="cns-prueba">Solo público ✓</button>'
       +     '<button type="button" class="cns-btn" id="cns-excel">⤓ Exportar a Excel</button>'
@@ -229,11 +235,13 @@
       render();
     });
     sec.querySelector('#cns-excel').addEventListener('click', exportar);
-    sec.querySelectorAll('#cns-periodos button').forEach(function(b){
-      b.addEventListener('click', function(){
-        sec.querySelectorAll('#cns-periodos button').forEach(function(x){ x.classList.remove('on'); });
-        b.classList.add('on'); periodo = parseInt(b.dataset.p, 10); render();
-      });
+    // El selector de periodo ya no vive en una barra fija arriba: se dibuja
+    // dentro de cada vista, pegado a lo que gobierna. Un escuchador para todos.
+    sec.addEventListener('click', function(ev){
+      var b = ev.target && ev.target.closest ? ev.target.closest('[data-p]') : null;
+      if(!b || !sec.contains(b)) return;
+      periodo = parseInt(b.dataset.p, 10);
+      render();
     });
     sec.querySelectorAll('.cns-subtab').forEach(function(b){
       b.addEventListener('click', function(){
@@ -370,6 +378,7 @@
       + 'La plataforma se lanzó al público el <b>' + fday(LANZAMIENTO) + '</b>. Todo lo que ves arranca ahí: '
       + 'las cuentas registradas antes eran internas (pruebas del equipo) y quedan fuera, igual que su actividad y su gasto. '
       + 'El botón <b>«Solo público»</b> de arriba las vuelve a incluir si alguna vez las necesitas.</div>'
+      + selPeriodo('Números de estas tarjetas')
       + '<div class="cns-stats">'
       + stat(registrados, 'Registrados', nuevos + ' nuevos en ' + etiqueta,
              'cuántos suscriptores públicos tienes; es el denominador de todo lo demás.')
@@ -391,7 +400,7 @@
              'demanda reprimida: tu lista de primeros clientes cuando se cobre.')
       + '</div>';
 
-    h += '<div class="cns-sec">Altas nuevas (según el periodo elegido)</div><div class="cns-box">'
+    h += '<div class="cns-sec">Suscriptores nuevos · ' + etiqueta + '</div><div class="cns-box">'
       + graficoAltas(l)
       + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
       + 'Le pone fecha al crecimiento: los picos coinciden con lo que publicaste, así que dice qué campaña trajo gente y cuál no movió nada. '
@@ -560,33 +569,53 @@
     fechas.forEach(function(f){ var k = clave(f); if(k in grupos) grupos[k]++; });
     var max = 1; orden.forEach(function(k){ if(grupos[k] > max) max = grupos[k]; });
 
-    var W = 900, H = 150, base = 120, bw = Math.max(4, Math.floor(W / orden.length) - 3);
-    var svg = '<svg viewBox="0 0 ' + (W+40) + ' ' + H + '" style="width:100%;height:auto">'
-      + '<line x1="34" y1="'+base+'" x2="'+(W+38)+'" y2="'+base+'" stroke="#2a2a5a"/>'
-      + '<text x="26" y="'+(base+4)+'" fill="#8aa" font-size="10" text-anchor="end">0</text>'
-      + '<text x="26" y="20" fill="#8aa" font-size="10" text-anchor="end">'+max+'</text>';
-    orden.forEach(function(k, i){
-      var v = grupos[k], hh = Math.round((base-14) * v / max);
-      var x = 38 + i * (bw + 3);
-      var esParcial = (i === orden.length - 1 && modo !== 'dia');
-      svg += '<rect x="'+x+'" y="'+(base-hh)+'" width="'+bw+'" height="'+hh+'" fill="'+(esParcial?'#7a2c22':'#c0392b')+'">'
-        + '<title>'+k+': '+v+'</title></rect>';
-    });
-    // rotulos: primero, medio, ultimo
+    // Con pocas barras se veian como muros: se limita el ancho, se centran, y
+    // cada barra lleva su numero encima y su fecha debajo.
+    var W = 900, H = 168, base = 128, IZQ = 40;
+    var pocas = orden.length <= 16;
+    var paso = Math.floor((W - IZQ) / orden.length);
+    var bw = Math.max(4, Math.min(54, paso - (pocas ? 14 : 3)));
+    var x0 = IZQ + Math.max(0, ((W - IZQ) - orden.length * paso) / 2);
     function rot(k){
       if(modo === 'mes') return k;
       if(modo === 'semana') return 'sem. ' + fday(k).slice(0,5);
       return fday(k).slice(0,5);
     }
-    [[0,'start'],[Math.floor((orden.length-1)/2),'middle'],[orden.length-1,'end']].forEach(function(p){
-      var x = 38 + p[0] * (bw + 3) + bw/2;
-      svg += '<text x="'+x+'" y="'+(base+16)+'" fill="#8aa" font-size="10" text-anchor="'+p[1]+'">'+rot(orden[p[0]])+'</text>';
+    var svg = '<svg viewBox="0 0 ' + (W+40) + ' ' + H + '" style="width:100%;height:auto">';
+    // rejilla suave en 0, mitad y maximo
+    [0, 0.5, 1].forEach(function(f){
+      var y = base - Math.round((base-24) * f);
+      svg += '<line x1="'+(IZQ-6)+'" y1="'+y+'" x2="'+(W+38)+'" y2="'+y+'" stroke="'+(f?'#1c2540':'#2a2a5a')+'"/>'
+        + '<text x="'+(IZQ-12)+'" y="'+(y+4)+'" fill="#8aa" font-size="11" text-anchor="end">'
+        + Math.round(max*f) + '</text>';
     });
+    orden.forEach(function(k, i){
+      var v = grupos[k], hh = Math.round((base-24) * v / max);
+      var x = x0 + i * paso + (paso - bw) / 2;
+      var esParcial = (i === orden.length - 1 && modo !== 'dia');
+      var cx = x + bw/2;
+      svg += '<rect x="'+x+'" y="'+(base-hh)+'" width="'+bw+'" height="'+hh+'" rx="3" '
+        + 'fill="'+(esParcial?'#7a2c22':'#c0392b')+'"><title>'+rot(k)+': '+v+'</title></rect>';
+      if(pocas){
+        // numero encima de la barra y fecha debajo, en cada una
+        svg += '<text x="'+cx+'" y="'+(base-hh-7)+'" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">'+v+'</text>'
+          + '<text x="'+cx+'" y="'+(base+18)+'" fill="#9db4ff" font-size="11" text-anchor="middle">'+rot(k)+'</text>';
+      }
+    });
+    if(!pocas){
+      // muchas barras: solo tres rotulos, para que no se amontonen
+      [[0,'start'],[Math.floor((orden.length-1)/2),'middle'],[orden.length-1,'end']].forEach(function(p){
+        var x = x0 + p[0] * paso + paso/2;
+        svg += '<text x="'+x+'" y="'+(base+18)+'" fill="#9db4ff" font-size="11" text-anchor="'+p[1]+'">'+rot(orden[p[0]])+'</text>';
+      });
+    }
     svg += '</svg>';
-    var nota = modo === 'dia' ? 'Cada barra es un día.'
-      : (modo === 'semana' ? 'Cada barra es una semana (empieza lunes); la última va incompleta y se pinta más clara.'
-                           : 'Cada barra es un mes; el último va incompleto y se pinta más claro.');
-    return svg + '<div style="color:#8aa;font-size:.72rem;margin-top:4px;">' + nota + ' Pasa el mouse por una barra para ver el número.</div>';
+    var nota = modo === 'dia' ? 'Cada barra es un día; el número encima son los suscriptores nuevos de ese día.'
+      : (modo === 'semana' ? 'Cada barra es una semana (empieza lunes); la última va incompleta y se pinta más oscura.'
+                           : 'Cada barra es un mes; el último va incompleto y se pinta más oscuro.');
+    if(!pocas) nota += ' Pasa el mouse por una barra para ver el número.';
+    return svg + '<div style="color:#8aa;font-size:.73rem;margin-top:2px;">' + nota
+      + ' La escala de la izquierda va de 0 a ' + max + '.</div>';
   }
 
   function vCrecimiento(){
@@ -610,7 +639,8 @@
     var acum = l.filter(function(a){ return a.registro && a.registro < de; }).length;
     var maxA = 1; dias.forEach(function(f){ if((altas[f]||0) > maxA) maxA = altas[f]; });
 
-    var h = '<div class="cns-stats">'
+    var h = selPeriodo('Periodo que se está midiendo')
+      + '<div class="cns-stats">'
       + stat(totalAltas, 'Altas en el periodo', dias.length + ' días',
              'el crecimiento en bruto: cuántos suscriptores nuevos entraron a la plataforma.')
       + stat(prom.toFixed(1), 'Promedio por día', '',
@@ -648,7 +678,8 @@
 
   function vAlumnos(){
     var etiqueta = periodo === 1 ? 'hoy' : (periodo ? 'últimos ' + periodo + ' días' : 'todo el histórico');
-    return '<div class="cns-bar"><input type="text" class="cns-search" id="cns-search" placeholder="Buscar por nombre o correo…"></div>'
+    return selPeriodo('La columna Preguntas cuenta')
+      + '<div class="cns-bar"><input type="text" class="cns-search" id="cns-search" placeholder="Buscar por nombre o correo…"></div>'
       + '<div class="cns-box"><div class="cns-tw"><table id="cns-tabla"></table></div>'
       + '<div class="cns-pq"><span class="t">Cómo leer la columna Módulos</span>'
       + 'Cada etiqueta es <b>módulo + preguntas hechas ahí</b>. Ejemplo: <span class="cns-chip">Experto 21</span> = 21 preguntas en Pregúntale al Experto. '
@@ -821,7 +852,8 @@
     });
     filas.sort(function(x, y){ return y.n - x.n; });
 
-    var h = '<div class="cns-stats">'
+    var h = selPeriodo('Expedientes contados')
+      + '<div class="cns-stats">'
       + stat(totExp, 'Expedientes', 'en el periodo',
              'el uso real del Calculador: cada expediente es un cálculo entregado.')
       + stat(usuarios, 'Suscriptores que calculan', '',
