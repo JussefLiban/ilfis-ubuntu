@@ -794,43 +794,69 @@
     var claves = Object.keys(tot).sort(function(x, y){ return tot[y].n - tot[x].n; });
     var suma = 0; claves.forEach(function(k){ suma += tot[k].n; });
 
-    var h = '<div class="cns-sec">Quién usa cada módulo (desde el ' + fday(DESDE_MODS) + ')</div><div class="cns-box">';
-    if(!claves.length){
-      h += '<div class="cns-no">Todavía no hay datos: el servidor empezó a anotar el módulo de cada pregunta el '
-        + fday(DESDE_MODS) + '. En unos días esta tabla se llena sola.</div>';
+    // UNA SOLA TABLA. Antes eran dos bloques que parecian lo mismo con cifras
+    // distintas (uno sabe de quien desde el 30/07, el otro sabe el costo desde
+    // el lanzamiento). Ahora es una fila por modulo y un guion donde aun no hay
+    // dato, que es mas honesto que una segunda tabla.
+    var COSTO_DE = {corpus:['consultas','experto'], youtube:['videos'], nfpa:['nfpa'], fm:['fm']};
+    var costoMod = {}, respMod = {};
+    if(LOG && LOG.por_fuente){
+      for(var f in LOG.por_fuente){
+        var destinos = COSTO_DE[f] || [f];
+        // El log no separa Chat IA de Experto (comparten corpus): se muestra junto.
+        var clave = destinos.length > 1 ? destinos.join('+') : destinos[0];
+        costoMod[clave] = (costoMod[clave] || 0) + (LOG.por_fuente[f].costo || 0);
+        respMod[clave]  = (respMod[clave]  || 0) + (LOG.por_fuente[f].n || 0);
+      }
+    }
+    function etiqueta(k){
+      return k.split('+').map(function(x){ return MODS[x] || FUENTES[x] || x; }).join(' / ');
+    }
+    // Universo de filas: lo que tiene preguntas anotadas + lo que tiene costo.
+    var filasMod = {};
+    claves.forEach(function(k){ filasMod[k] = true; });
+    Object.keys(respMod).forEach(function(k){
+      // si el costo agrupa dos modulos y alguno ya tiene fila propia, se respeta
+      if(!(k in filasMod)) filasMod[k] = true;
+    });
+    var orden = Object.keys(filasMod).sort(function(x, y){
+      return (respMod[y] || (tot[y] ? tot[y].n : 0)) - (respMod[x] || (tot[x] ? tot[x].n : 0));
+    });
+
+    var h = '<div class="cns-sec">Uso y costo por módulo</div><div class="cns-box">';
+    if(!orden.length){
+      h += '<div class="cns-no">Todavía no hay actividad registrada en ningún módulo.</div>';
     } else {
-      h += '<div class="cns-tw"><table><tr><th class="l">Módulo</th><th>Preguntas</th><th>Suscriptores distintos</th><th>Preg./suscriptor</th></tr>'
-        + claves.map(function(k){
+      var maxResp = 1;
+      orden.forEach(function(k){ var n = respMod[k] || (tot[k] ? tot[k].n : 0); if(n > maxResp) maxResp = n; });
+      h += '<div class="cns-tw"><table>'
+        + '<tr><th class="l">Módulo</th><th>Respuestas</th><th>Costo IA</th>'
+        + '<th>Suscriptores</th><th>Preg./suscriptor</th></tr>'
+        + orden.map(function(k){
             var t = tot[k];
-            return '<tr><td class="l"><span class="cns-name">' + (MODS[k] || k) + '</span></td>'
-              + '<td>' + t.n + '</td><td>' + t.al + '</td><td>' + (t.al ? (t.n/t.al).toFixed(1) : '—') + '</td></tr>';
+            var resp = respMod[k] != null ? respMod[k] : (t ? t.n : null);
+            var cost = costoMod[k];
+            return '<tr><td class="l"><span class="cns-name">' + etiqueta(k) + '</span></td>'
+              + '<td>' + (resp != null ? resp : '—') + '</td>'
+              + '<td>' + (cost != null ? 'US$ ' + cost.toFixed(2) : '—') + '</td>'
+              + '<td>' + (t ? t.al : '—') + '</td>'
+              + '<td>' + (t && t.al ? (t.n / t.al).toFixed(1) : '—') + '</td></tr>';
           }).join('') + '</table></div>';
-      h += '<div style="margin-top:10px;">' + claves.map(function(k){
-        return barra(MODS[k] || k, suma ? 100*tot[k].n/suma : 0, tot[k].n + ' · ' + (suma ? Math.round(100*tot[k].n/suma) : 0) + '%');
+      h += '<div style="margin-top:12px;">' + orden.map(function(k){
+        var n = respMod[k] != null ? respMod[k] : (tot[k] ? tot[k].n : 0);
+        return barra(etiqueta(k), 100 * n / maxResp, String(n));
       }).join('') + '</div>';
     }
-    h += '<div class="cns-pq"><span class="t">Para qué sirve</span>'
-      + '<b>Preguntas</b>: qué módulo sostiene la plataforma. <b>Suscriptores distintos</b>: si el uso es de muchos o de tres fanáticos. '
-      + '<b>Preg./suscriptor</b>: profundidad — alta es herramienta diaria, baja es que lo probaron y no volvieron. '
-      + '<br><br>Esta tabla dice <b>quién</b> preguntó y en qué módulo, y solo cuenta desde el ' + fday(DESDE_MODS) + ', '
-      + 'que es cuando el servidor aprendió a anotarlo. Por eso los números son más chicos que los del bloque de abajo.</div></div>';
+    h += '<div class="cns-pq"><span class="t">Cómo leer esta tabla</span>'
+      + '<b>Respuestas</b>: cuánto se usa ese módulo — es lo que dice qué sostiene la plataforma. '
+      + '<b>Costo IA</b>: cuánto te cuesta ese módulo en dólares. '
+      + '<b>Suscriptores</b>: si el uso es de mucha gente o de dos fanáticos. '
+      + '<b>Preg./suscriptor</b>: profundidad — alta es herramienta de trabajo diaria, baja es que lo probaron y no volvieron.'
+      + '<br><br><b>Los guiones no son ceros: son datos que aún no existen.</b> Respuestas y costo se miden desde el lanzamiento ('
+      + fday(LANZAMIENTO) + '); las dos últimas columnas solo desde el ' + fday(DESDE_MODS)
+      + ', que es cuando el servidor aprendió a anotar quién pregunta en cada módulo. En unos días la tabla se completa sola. '
+      + 'Chat IA y Experto comparten el mismo buscador, así que su costo va junto.</div></div>';
 
-    // Reparto historico por fuente del log (corpus/youtube), disponible desde antes
-    if(LOG && LOG.por_fuente){
-      var fk = Object.keys(LOG.por_fuente).sort(function(x, y){ return LOG.por_fuente[y].n - LOG.por_fuente[x].n; });
-      var fs = 0; fk.forEach(function(k){ fs += LOG.por_fuente[k].n; });
-      h += '<div class="cns-sec">Cuánto cuesta cada tipo de búsqueda (desde el lanzamiento)</div><div class="cns-box">'
-        + fk.map(function(k){
-            var t = LOG.por_fuente[k];
-            return barra((FUENTES[k] || k), fs ? 100*t.n/fs : 0,
-              t.n + ' · US$ ' + (t.costo || 0).toFixed(2), k !== 'corpus');
-          }).join('')
-        + '<div class="cns-pq"><span class="t">Para qué sirve — y por qué no cuadra con la tabla de arriba</span>'
-        + 'Aquí cada barra es un tipo de búsqueda, con cuántas respuestas dio y cuánto costaron en dólares. '
-        + 'Sale de otro cuaderno: el de costos, que guarda <b>todo desde el lanzamiento</b> pero <b>no sabe de quién</b> fue cada respuesta. '
-        + 'La tabla de arriba sabe de quién, pero solo desde el ' + fday(DESDE_MODS) + '. '
-        + 'Por eso los números no coinciden todavía; en unos días se van a parecer.</div></div>';
-    }
     return h;
   }
 
