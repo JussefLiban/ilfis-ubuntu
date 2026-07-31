@@ -11,7 +11,8 @@
   var LS = 'ilfis_admin_key';
   // Cuentas del equipo: se excluyen de las metricas para no inflar los numeros.
   var CUENTAS_PRUEBA = ['grupo3speru@gmail.com', 'contacto@ilfislatinoamerica.com'];
-  var MODS = {consultas:'Chat IA', experto:'Experto', nfpa:'NFPA', fm:'FM', videos:'Videos'};
+  var MODS = {consultas:'Chat IA', experto:'Experto', nfpa:'NFPA', fm:'FM', videos:'Videos',
+              calculador:'Calculador'};
   var FUENTES = {corpus:'Chat IA / Experto', youtube:'Videos', nfpa:'NFPA', fm:'FM', biblioteca:'Biblioteca'};
   // Fecha desde la que el servidor anota el modulo de cada pregunta.
   var DESDE_MODS = '2026-07-30';
@@ -28,7 +29,7 @@
                    'plataforma-educativa':'Plataforma Educativa', admin:'Panel Intranet',
                    plataforma:'Sin ubicar'};
 
-  var USO = null, LOG = null, TIEMPO = null, cargadoUna = false, cargandoAhora = false;
+  var USO = null, LOG = null, TIEMPO = null, CALC = null, cargadoUna = false, cargandoAhora = false;
   var periodo = 30;            // dias; 0 = todo
   var sinPrueba = true;        // excluir cuentas del equipo
   var vista = 'resumen';
@@ -156,6 +157,15 @@
     for(var f in pd){ if(f >= de) t += pd[f]; }
     return t;
   }
+  function calculosDe(a){
+    // Expedientes del Calculador en el periodo (no son preguntas: son cálculos).
+    if(!CALC || !CALC.por_uid) return 0;
+    var r = CALC.por_uid[a.uid];
+    if(!r) return 0;
+    var de = desdeStr(), t = 0, pd = r.por_dia || {};
+    for(var f in pd){ if(f >= de) t += pd[f]; }
+    return t;
+  }
   function hayTiempo(){
     return !!(TIEMPO && TIEMPO.por_uid && Object.keys(TIEMPO.por_uid).length);
   }
@@ -203,6 +213,7 @@
       +   '<button type="button" class="cns-subtab" data-v="crecimiento">Crecimiento</button>'
       +   '<button type="button" class="cns-subtab" data-v="alumnos">Por suscriptor</button>'
       +   '<button type="button" class="cns-subtab" data-v="modulos">Por módulo</button>'
+      +   '<button type="button" class="cns-subtab" data-v="calculador">Calculador</button>'
       +   '<button type="button" class="cns-subtab" data-v="temas">Qué preguntan</button>'
       + '</div>'
       + '<div id="cns-cuerpo"><div class="cns-no">Cargando…</div></div>';
@@ -245,9 +256,10 @@
     Promise.all([
       fetch(API + '/admin/uso', h).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }),
       fetch(API + '/admin/consumo-log?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch(API + '/admin/tiempo?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      fetch(API + '/admin/tiempo?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch(API + '/admin/calculos-uso?desde=' + LANZAMIENTO, h).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(res){
-      USO = res[0]; LOG = res[1]; TIEMPO = res[2];
+      USO = res[0]; LOG = res[1]; TIEMPO = res[2]; CALC = res[3];
       hoyStr = (USO.resumen && USO.resumen.hoy) || null;
       cargadoUna = true; cargandoAhora = false; render();
     }).catch(function(e){
@@ -264,6 +276,7 @@
     if(vista === 'crecimiento') cuerpo.innerHTML = vCrecimiento();
     if(vista === 'alumnos'){ cuerpo.innerHTML = vAlumnos(); wireTabla(); }
     if(vista === 'modulos')  cuerpo.innerHTML = vModulos();
+    if(vista === 'calculador') cuerpo.innerHTML = vCalculador();
     if(vista === 'temas')    cuerpo.innerHTML = vTemas();
   }
 
@@ -556,7 +569,7 @@
       + '<div class="cns-pq"><span class="t">Cómo leer la columna Módulos</span>'
       + 'Cada etiqueta es <b>módulo + preguntas hechas ahí</b>. Ejemplo: <span class="cns-chip">Experto 21</span> = 21 preguntas en Pregúntale al Experto. '
       + '<span class="cns-chip">Chat IA</span> Consultas · <span class="cns-chip">Experto</span> Pregúntale al Experto · '
-      + '<span class="cns-chip">NFPA</span> interpreta NFPA · <span class="cns-chip">FM</span> interpreta FM · <span class="cns-chip">Videos</span> momentos en videos. '
+      + '<span class="cns-chip">NFPA</span> interpreta NFPA · <span class="cns-chip">FM</span> interpreta FM · <span class="cns-chip">Videos</span> momentos en videos · <span class="cns-chip">Calculador</span> expedientes generados (no son preguntas). '
       + '<b>El servidor anota el módulo desde el ' + fday(DESDE_MODS) + '</b>: lo preguntado antes cuenta en el total pero sin módulo.</div>'
       + '<div class="cns-pq"><span class="t">Para qué sirve cada columna</span>'
       + '<b>Última vez</b>: el orden de la tabla — arriba lo que pasa ahora, abajo quién se está yendo. '
@@ -619,7 +632,10 @@
       var rows = items.map(function(it){
         var a = it.a;
         var chips = Object.keys(a.mods || {}).sort(function(m, n){ return a.mods[n] - a.mods[m]; })
-          .map(function(m){ return '<span class="cns-chip">' + (MODS[m] || m) + ' ' + a.mods[m] + '</span>'; }).join('') || '—';
+          .map(function(m){ return '<span class="cns-chip">' + (MODS[m] || m) + ' ' + a.mods[m] + '</span>'; }).join('');
+        var exp = calculosDe(a);
+        if(exp) chips += '<span class="cns-chip" title="expedientes generados en el Calculador">Calculador ' + exp + '</span>';
+        if(!chips) chips = '—';
         var avisos = '';
         if(!it.ultima) avisos += '<span class="cns-flag">no activó</span>';
         else if(it.preg > 0 && a.dias_desde_ultima != null && a.dias_desde_ultima > 14) avisos += '<span class="cns-flag">se enfrió</span>';
@@ -692,6 +708,75 @@
           }).join('')
         + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
         + 'El log guarda cada respuesta con su costo real en dólares. Aquí se ve qué parte del gasto de IA se lleva cada tipo de búsqueda.</div></div>';
+    }
+    return h;
+  }
+
+  function vCalculador(){
+    var de = desdeStr();
+    if(!CALC || !CALC.por_uid || !Object.keys(CALC.por_uid).length){
+      return '<div class="cns-box"><div class="cns-no">Todavía no hay expedientes registrados. '
+        + 'La medición del Calculador se acaba de instalar: se llena conforme la gente genere expedientes.</div>'
+        + '<div class="cns-pq"><span class="t">Qué se va a ver aquí</span>'
+        + 'Cuántos expedientes genera cada suscriptor, cuántos son de plan ilimitado (que antes no dejaban rastro) '
+        + 'y a quién se le está acabando el saldo.</div></div>';
+    }
+    // Cruce con el padrón para poner nombre y respetar el filtro de públicos.
+    var porUid = {};
+    alumnos().forEach(function(a){ porUid[a.uid] = a; });
+    var filas = [], totExp = 0, totIlim = 0, totCob = 0, usuarios = 0;
+    Object.keys(CALC.por_uid).forEach(function(uid){
+      var a = porUid[uid];
+      if(sinPrueba && !a) return;              // interno o fuera del padrón público
+      var r = CALC.por_uid[uid], n = 0;
+      for(var f in (r.por_dia || {})){ if(f >= de) n += r.por_dia[f]; }
+      if(n <= 0) return;
+      totExp += n; totIlim += r.ilimitado || 0; totCob += r.cobrados || 0; usuarios++;
+      filas.push({nombre: a ? a.nombre : '(fuera del padrón)', email: a ? a.email : uid,
+                  n: n, ilim: r.ilimitado || 0, proyectos: r.proyectos || 0, saldo: r.saldo});
+    });
+    filas.sort(function(x, y){ return y.n - x.n; });
+
+    var h = '<div class="cns-stats">'
+      + stat(totExp, 'Expedientes', 'en el periodo',
+             'el uso real del Calculador: cada expediente es un cálculo entregado.')
+      + stat(usuarios, 'Suscriptores que calculan', '',
+             'cuántos usan de verdad el producto que se cobra.')
+      + stat(totIlim, 'De plan ilimitado', totCob + ' descontaron saldo',
+             'los de plan por tiempo no descuentan nada: antes eran invisibles y son tus clientes más valiosos.')
+      + '</div>';
+
+    h += '<div class="cns-sec">Quién calcula</div><div class="cns-box"><div class="cns-tw">'
+      + '<table><tr><th class="l">Suscriptor</th><th>Expedientes</th><th>Ilimitados</th><th>Obras distintas</th><th>Saldo</th></tr>'
+      + filas.map(function(f){
+          var alerta = (f.saldo != null && f.saldo <= 3 && f.ilim === 0)
+            ? '<span class="cns-flag">sin saldo pronto</span>' : '';
+          return '<tr><td class="l"><div class="cns-name">' + esc(f.nombre) + alerta + '</div>'
+            + '<div class="cns-mail">' + esc(f.email) + '</div></td>'
+            + '<td>' + f.n + '</td><td>' + (f.ilim || '—') + '</td>'
+            + '<td>' + (f.proyectos || '—') + '</td>'
+            + '<td>' + (f.saldo == null ? '—' : f.saldo) + '</td></tr>';
+        }).join('')
+      + '</table></div>'
+      + '<div class="cns-pq"><span class="t">Para qué sirve cada columna</span>'
+      + '<b>Expedientes</b>: cuántos cálculos entregó en el periodo. '
+      + '<b>Ilimitados</b>: cuántos hizo con plan por tiempo — si es alto, ese plan le está rindiendo y va a renovar. '
+      + '<b>Obras distintas</b>: si usa el Calculador en varios proyectos o solo en uno. '
+      + '<b>Saldo</b>: cálculos que le quedan del paquete; el aviso rojo marca a quien está por quedarse sin nada '
+      + '(momento exacto para ofrecerle recarga). '
+      + 'Regenerar un expediente ya pagado no vuelve a cobrar, pero sí cuenta como uso.</div></div>';
+
+    // Expedientes por dia
+    var dias = Object.keys(CALC.por_dia || {}).filter(function(f){ return f >= de; }).sort();
+    if(dias.length){
+      var mx = 1; dias.forEach(function(f){ if(CALC.por_dia[f] > mx) mx = CALC.por_dia[f]; });
+      h += '<div class="cns-sec">Expedientes por día</div><div class="cns-box">'
+        + dias.slice(-30).reverse().map(function(f){
+            return barra(fday(f), 100*CALC.por_dia[f]/mx, String(CALC.por_dia[f]));
+          }).join('')
+        + '<div class="cns-pq"><span class="t">Para qué sirve</span>'
+        + 'El pulso del producto que sí se cobra. Si sube mientras las preguntas del asistente están planas, '
+        + 'el Calculador es lo que sostiene la plataforma.</div></div>';
     }
     return h;
   }
