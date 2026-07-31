@@ -197,7 +197,7 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
   <div class="kpis" id="kpis">
     <div class="kpi"><div class="num" id="kAct">0</div><div class="lbl">Alumnos activos</div></div>
     <div class="kpi pend click" onclick="verTab('cola')"><div class="num" id="kPend">0</div><div class="lbl">Pendientes de calificar</div></div>
-    <div class="kpi"><div class="num" id="kAvance">0%</div><div class="lbl">Avance promedio</div></div>
+    <div class="kpi"><div class="num" id="kAvance">0%</div><div class="lbl">Avance promedio<br><span style="font-size:.62rem;opacity:.7;">videos de clase vistos</span></div></div>
     <div class="kpi alerta click" onclick="verTab('a')"><div class="num" id="kRez">0</div><div class="lbl">Alumnos rezagados</div></div>
   </div>
   <div class="ayuda" id="ayudaTab"></div>
@@ -347,7 +347,7 @@ function verTab(t){
   // Instructivo corto de cada pestaña (para que cualquiera entienda qué hace)
   const AYUDAS = {
     q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
-    a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El botón <b>Exportar notas</b> baja este resumen a Excel.",
+    a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El <b>avance</b> son los <b>videos de clase vistos</b>: el manual, las tareas y los cuestionarios no cuentan ahí (se ven en sus propias pestañas). El botón <b>Exportar notas</b> baja este resumen a Excel.",
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
     e: "📤 <b>Entregas de tareas:</b> aquí <b>descargas</b> los archivos (uno por uno, todo del alumno, o todo en un ZIP) y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
