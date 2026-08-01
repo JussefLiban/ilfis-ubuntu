@@ -819,7 +819,10 @@ function lecTarea(w, l, c){
         : `<span class="chip static">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))}</span>`).join("<br>")
     : '<div class="aviso">Esta semana no tiene archivos de tarea.</div>';
   const nota = descargable
-    ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo. Los PDF de evaluación son las preguntas: respóndelas en el cuestionario de esta misma semana (el número de cada pregunta del cuestionario corresponde al PDF).</div>'
+    ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo.<br>'
+      + 'El PDF de evaluación trae <b>dos tipos de preguntas</b>:<br>'
+      + '• <b>Para marcar</b> → las respondes en el cuestionario de esta semana (el número de cada pregunta del cuestionario corresponde al PDF).<br>'
+      + '• <b>Para desarrollar</b> → las resuelves por tu cuenta y subes el archivo aquí abajo, en <b>Tu entrega</b>.</div>'
     : '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
   const btnZip = (descargable && archivos.length)
     ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar Todo el Material de la Semana</button>`
@@ -929,7 +932,7 @@ async function cargarEntrega(sem){
     : "";
   // Mismo orden que en la vista sellada: la respuesta del profesor va ANTES de
   // la caja de escribirle (o del aviso de Telegram).
-  box.innerHTML = `<div class="ent-title">📤 Tu entrega</div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}${notaProf}${btnBorrarTodo}${btnFinalizar}`;
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega <span style="font-weight:400;color:var(--texto2);">· una sola entrega por todas las tareas</span></div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}${notaProf}${btnBorrarTodo}${btnFinalizar}`;
 }
 
 // OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.
