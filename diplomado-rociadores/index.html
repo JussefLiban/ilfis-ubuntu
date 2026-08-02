@@ -1076,6 +1076,15 @@ async function abrirPerfil(){
   const fotoSrc = p.tiene_foto ? `${API}/api/cursos/perfil/foto?token=${_tokFoto}&t=${Date.now()}` : "";
   c.innerHTML = `<h2>📋 Mis datos para el certificado</h2>
     <div class="meta">Estos datos se usan solo para emitir tu diploma. No son obligatorios para entrar al aula; complétalos cuando quieras.</div>
+    <div style="border:2px solid var(--ambar);border-radius:9px;background:#2a1f06;padding:11px 14px;margin:10px 0 14px;font-size:.84rem;line-height:1.5;">
+      <b style="color:var(--ambar);">⚠ Tu nombre es el nombre OFICIAL que se imprime en el diploma.</b><br>
+      Escríbelo tal cual figura en tu documento de identidad, con sus tildes y con mayúscula
+      solo al inicio de cada nombre y apellido. <b>No lo escribas todo en mayúsculas ni todo
+      en minúsculas.</b><br>
+      Así: <b style="color:var(--verde);">Juan Carlos Pérez Rojas</b> &nbsp;·&nbsp;
+      así no: <span style="color:var(--rojoTxt);">JUAN CARLOS PEREZ ROJAS</span> ni
+      <span style="color:var(--rojoTxt);">juan carlos perez rojas</span>
+    </div>
     <div style="display:flex;align-items:center;gap:16px;margin:6px 0 16px;flex-wrap:wrap;">
       <img id="pfFotoImg" src="${fotoSrc}" alt="" style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:2px solid var(--borde);background:var(--campo);${fotoSrc?"":"display:none;"}">
       <div id="pfFotoPh" style="width:88px;height:88px;border-radius:50%;${fotoSrc?"display:none;":"display:flex;"}align-items:center;justify-content:center;background:var(--campo);border:2px dashed var(--borde);font-size:1.8rem;">🧑</div>
