@@ -360,7 +360,7 @@ function verTab(t){
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
     e: "📤 <b>Entregas de tareas:</b> aquí <b>descargas</b> los archivos (uno por uno, todo del alumno, o todo en un ZIP) y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
-    prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que el <b>Promedio Total</b> coincide con tu Excel.",
+    prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que la <b>nota final</b> coincide con tu Excel. Cada curso calcula con SU propia regla.",
     prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
@@ -815,8 +815,13 @@ function _colNota(v, ap){
   return `<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`;
 }
 // abreviatura corta para el encabezado de columna (EV-12, MITOS 1, EX-1, PS1…)
+// 5 → "5", 2.5 → "2.5" (sin decimales inútiles)
+function _pctTxt(n){ return (Math.round(n*10)/10).toString(); }
 function _colLbl(c){
   if(c.grupo==="diagnostico") return "EV-0";
+  // "Evaluación 12" no cabe en la casilla y se cortaba en "Evaluaci…"
+  const m = /^Evaluaci[óo]n\s+(\d+)/i.exec(c.nombre || "");
+  if(m) return "Ev " + m[1];
   if(c.grupo==="prom_sem") return "PS"+c.semana;
   return (c.nombre||c.codigo).replace("PROM SEM ","PS").replace("Examen Final","EX Final");
 }
@@ -1186,10 +1191,17 @@ function renderPrueba(){
   const manuales = new Set(P.codigos_manuales || []);
   // el diagnóstico de entrada no entra al simulador: no suma a la nota
   const evals = P.columnas.filter(c => c.grupo !== "prom_sem" && c.grupo !== "diagnostico");
+  // ¿Qué modelo de notas usa ESTE curso? "ponderado_plano" (Cálculos Hidráulicos):
+  // la nota final es la suma de cada evaluación por su peso, y punto — no hay
+  // promedio semanal, ni descarte de la más baja, ni exámenes aparte, ni concepto.
+  // Mostrarle al profesor las casillas de Rociadores en ese curso es mentirle.
+  const PLANO = (P.modelo === "ponderado_plano");
   const box = (c) => {
     const auto = !manuales.has(c.codigo);
-    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"%t" : "");
-    return `<label class="pev${auto?' pev-auto':''}" title="${esc(c.nombre)}${auto?' · automática (cuestionario)':''}"><span class="pevh"><span class="pevn">${esc(_colLbl(c))}</span><b>${pct}</b></span>
+    const pct = PLANO
+      ? (c.peso_global!=null ? _pctTxt(c.peso_global*100)+"%" : "")
+      : (c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"%t" : ""));
+    return `<label class="pev${auto?' pev-auto':''}" title="${esc(c.nombre)}${pct?" · pesa "+pct+" de la nota final":""}${auto?' · automática (cuestionario)':''}"><span class="pevh"><span class="pevn">${esc(_colLbl(c))}</span><b>${pct}</b></span>
       <input type="number" min="0" max="100" data-cod="${esc(c.codigo)}" class="prinp" oninput="calcularPrueba()"></label>`;
   };
   // agrupar por semana (crítica = piso 0; exámenes en su semana)
@@ -1198,12 +1210,14 @@ function renderPrueba(){
   const semanas = Object.keys(porSem).map(Number).sort((a,b)=>a-b);
   const pisosArr = semanas.map(w => {
     const etq = w===0 ? "Sem 0" : (w===13 ? "Ex. final" : "Sem "+w);
-    const prom = (w>=0 && w<=12)
+    // Prom./Peso de la semana solo existen donde HAY promedio semanal
+    const prom = (!PLANO && w>=0 && w<=12)
       ? `<div class="pfprom" id="prPS-${w}">Prom.<br><b>—</b></div><div class="pfpeso" id="prPeso-${w}">Peso<br><b>—</b></div>`
       : "";
     return `<div class="pfloor"><div class="pflabel">${etq}</div><div class="pfevs">${porSem[w].map(box).join("")}</div>${prom}</div>`;
   });
-  pisosArr.push(`<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
+  // La nota concepto es del modelo de Rociadores: en el ponderado plano no existe.
+  if(!PLANO) pisosArr.push(`<div class="pfloor"><div class="pflabel">Concepto</div><div class="pfevs">
       <label class="pev" style="border-color:var(--azul);"><span>Concepto <b>10%</b></span>
         <input type="number" min="0" max="100" id="prConcepto" class="prinp" oninput="calcularPrueba()"></label></div></div>`);
   const mitad = Math.ceil(pisosArr.length / 2);
@@ -1211,6 +1225,7 @@ function renderPrueba(){
   tb.querySelector("tbody").innerHTML = `<tr><td style="padding:0;border:none;">
     <div class="pruebaWrap">
       <div class="aviso" style="margin-bottom:10px;">🧪 <b>Alumno de prueba</b> — calculadora de práctica (no toca datos). Cada piso es una semana. Borde azul = automática (cuestionario).
+      ${PLANO ? '<br><b>Este curso:</b> la nota final es la suma de cada evaluación por su peso (los pesos suman 100). No hay promedio semanal, no se descarta ninguna nota, no hay exámenes aparte ni nota de concepto.' : ''}
       <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <input id="prVal" type="number" min="0" max="100" placeholder="valor" style="width:78px;" onkeydown="if(event.key==='Enter')pruebaTodas()">
         <button class="btn mini rojo" onclick="pruebaTodas()">Poner en TODAS</button>
@@ -1239,7 +1254,8 @@ function calcularPrueba(){
 async function _calcularPrueba(){
   const out = $("prResultado");
   const campos = [...document.querySelectorAll(".prinp[data-cod]")];
-  const cVal = $("prConcepto").value;
+  const elC = $("prConcepto");            // no existe en el modelo ponderado plano
+  const cVal = elC ? elC.value : "";
   const algo = campos.some(i => i.value !== "") || cVal !== "";
   if(!algo){ out.innerHTML = "Ingresa notas para ver el cálculo…"; return; }
   // SIMULADOR = como tu Excel: una casilla VACÍA cuenta como 0 (no como "pendiente").
@@ -1249,6 +1265,16 @@ async function _calcularPrueba(){
   try{
     const r = await postJSON(`/api/cursos/${CURSO}/admin/planilla/calcular`, body);
     const ap = r.aprobatoria || 60;
+    const resCol0 = r.resultado==="APROBADO" ? "var(--verde)" : (r.resultado==="DESAPROBADO" ? "var(--rojoTxt)" : "var(--azul)");
+    // Modelo ponderado plano: el cierre es UNA línea. Nada de notas semanales,
+    // descarte, exámenes ni concepto — este curso no tiene nada de eso.
+    if(r.modelo === "ponderado_plano" || P.modelo === "ponderado_plano"){
+      out.innerHTML =
+          `<div class="prline prtot"><span>NOTA FINAL (cada nota × su peso)</span><span><b style="color:${resCol0};font-size:1.2em;">${r.promedio_total!=null?fmtN(r.promedio_total):'—'}</b></span></div>`
+        + `<div class="prline"><span>RESULTADO FINAL</span><span style="color:${resCol0};font-weight:700;">${r.resultado||'En curso'}</span></div>`
+        + `<div style="color:var(--texto2);font-size:.72rem;margin-top:6px;">Las casillas vacías cuentan como <b>0</b>. Llena todas para reproducir la nota final exacta.</div>`;
+      return;
+    }
     // Las 13 notas semanales: Sem 0 (Crítica Lecturas) + Semanas 1..12
     const vals = [{sem:0, v:(r.critica ? r.critica.nota : null)}];
     (r.semanas||[]).forEach(s => vals.push({sem:s.sem, v:s.prom_sem}));
