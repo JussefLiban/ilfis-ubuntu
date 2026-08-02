@@ -190,7 +190,9 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <span class="tab" id="tabT" onclick="verTab('prueba')">🧪 Alumno de prueba</span>
     <span class="tab" id="tabPr" onclick="verTab('prorroga')">⏱ Prórrogas</span>
     <select id="selQuiz" onchange="renderQuiz()" style="display:none;"></select>
-    <span class="stat">Alumnos con avance: <b id="stAlumnos">0</b> · Intentos recibidos: <b id="stIntentos">0</b></span>
+    <!-- Son totales DEL CURSO (todos los cuestionarios juntos): se dice, porque al
+         estar junto al selector se leían como si fueran del cuestionario elegido. -->
+    <span class="stat" title="Totales de todo el curso, sumando todos los cuestionarios.">En todo el curso · alumnos con avance: <b id="stAlumnos">0</b> · intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" id="btnExport" onclick="exportarNotas()" style="display:none;">⬇ Exportar notas (Excel)</button>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
   </div>
@@ -201,6 +203,10 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
     <div class="kpi alerta click" onclick="verTab('a')"><div class="num" id="kRez">0</div><div class="lbl">Alumnos rezagados</div></div>
   </div>
   <div class="ayuda" id="ayudaTab"></div>
+  <!-- Título de la tabla: sin esto no se sabe QUÉ cuestionario se está viendo
+       (el contador de arriba es del curso entero, no del cuestionario elegido). -->
+  <div id="tablaCap" style="display:none;margin:0 0 8px;padding:9px 13px;border:1px solid var(--borde);
+       border-left:4px solid var(--azul);border-radius:8px;background:var(--panel);font-size:.86rem;"></div>
   <div class="tabla-wrap"><table id="tabla"><thead></thead><tbody></tbody></table></div>
 </div>
 
@@ -339,6 +345,7 @@ function verTab(t){
   $("tabT").classList.toggle("sel", t === "prueba");
   $("tabPr").classList.toggle("sel", t === "prorroga");
   $("selQuiz").style.display = t === "q" ? "inline-block" : "none";
+  $("tablaCap").style.display = t === "q" ? "block" : "none";
   // El botón exportar sirve en "Por alumno" (resumen) y en la Planilla (libro completo)
   $("btnExport").style.display = (t === "a" || t === "planilla") ? "inline-block" : "none";
   $("btnExport").textContent = (t === "planilla") ? "⬇ Exportar planilla (Excel)" : "⬇ Exportar notas (Excel)";
@@ -519,8 +526,19 @@ function actualizarKPIs(){
 }
 
 function renderQuiz(){
-  const qid = $("selQuiz").value;
+  const sel = $("selQuiz");
+  const qid = sel.value;
   const rows = R.intentos.filter(x => x.quiz_id === qid);
+  // Qué cuestionario se está viendo y CUÁNTOS intentos tiene ESTE (el contador de
+  // la barra de arriba es del curso completo y no cuadra con esta tabla).
+  const nomQuiz = (sel.options[sel.selectedIndex] || {}).textContent || qid || "—";
+  // matriculados vigentes (mismo criterio que el KPI "Alumnos activos"), NO los
+  // "alumnos con avance": si no, el "faltan" sale mal.
+  const activos = computeAlumnos().filter(a => a.estado_matricula !== "pausado").length;
+  $("tablaCap").innerHTML = `<b>Cuestionario:</b> ${esc(nomQuiz)}<br>`
+    + `<span style="color:var(--texto2);">Lo respondieron <b style="color:var(--texto);">${rows.length}</b> alumno(s)`
+    + (activos ? ` · faltan <b style="color:var(--texto);">${Math.max(0, activos - rows.length)}</b>` : "")
+    + `. Un solo intento por alumno.</span>`;
   $("tabla").querySelector("thead").innerHTML =
     `<tr><th>Alumno</th><th style="text-align:right;">Nota auto</th><th>Texto manual</th><th>Enviado (Lima)</th><th></th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = rows.map(x => `
