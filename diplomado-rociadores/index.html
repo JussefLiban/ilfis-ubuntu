@@ -1099,7 +1099,8 @@ async function abrirPerfil(){
     </div>
     <div class="perfil-form">
       <label>Nombre completo <span class="req">(tal cual irá en el certificado)</span>
-        <input id="pfNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos"></label>
+        <input id="pfNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos" onblur="corregirNombrePerfil()">
+        <span id="pfNomMsg" class="ent-msg ok" style="display:none;"></span></label>
       <label>Fecha de nacimiento
         <input id="pfNac" type="date" value="${esc(p.fecha_nacimiento||"")}"></label>
       <label>País de nacimiento
@@ -1118,10 +1119,47 @@ async function abrirPerfil(){
     <button class="btn" id="pfBtn" onclick="guardarPerfilForm()">Guardar mis datos</button>`;
 }
 
+// El nombre del diploma se imprime TAL CUAL: si el alumno lo escribió todo en
+// mayúsculas o todo en minúsculas, se corrige solo. Si ya viene con mayúsculas y
+// minúsculas mezcladas NO se toca (puede ser "de la Cruz", "McDonald", etc.).
+// "de/del/y…" siempre en minúscula dentro del nombre. "la/las/los" SOLO cuando
+// siguen a otra partícula ("Juan de la Cruz"): si van solas son apellido y llevan
+// mayúscula ("Fernando La Rocca").
+const _PARTICULAS = ["de","del","y","e","da","das","do","dos","van","von","di","der"];
+const _PART_SEG = ["la","las","los"];
+function nombreOficial(s){
+  s = (s || "").trim().replace(/\s+/g, " ");
+  if(!s) return s;
+  const hayMin = /[a-záéíóúüñ]/.test(s), hayMay = /[A-ZÁÉÍÓÚÜÑ]/.test(s);
+  if(hayMin && hayMay) return s;                 // ya está mezclado: lo respeto
+  const ws = s.toLowerCase().split(" ");
+  return ws.map((w, i) => {
+    if(i > 0 && _PARTICULAS.indexOf(w) >= 0) return w;          // Juan de la Cruz
+    if(i > 0 && _PART_SEG.indexOf(w) >= 0
+       && _PARTICULAS.indexOf(ws[i-1]) >= 0) return w;          // …de LA cruz → de la Cruz
+    if(/^o'.{2,}/.test(w)) return "O'" + w.charAt(2).toUpperCase() + w.slice(3);
+    if(/^mc.{3,}/.test(w)) return "Mc" + w.charAt(2).toUpperCase() + w.slice(3);
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(" ");
+}
+// Se corrige al salir del campo, para que el alumno VEA cómo va a quedar y pueda
+// retocarlo (las tildes que no escribió no las podemos adivinar).
+function corregirNombrePerfil(){
+  const el = $("pfNombre"); if(!el) return;
+  const antes = el.value, ahora = nombreOficial(antes);
+  if(ahora !== antes.trim().replace(/\s+/g, " ")){
+    el.value = ahora;
+    const m = $("pfNomMsg");
+    if(m){ m.textContent = "Ajustamos el formato del nombre. Revísalo: así saldrá en tu diploma."; m.style.display = "block"; }
+  }else{
+    el.value = ahora;
+  }
+}
 async function guardarPerfilForm(){
   const msg = $("pfMsg"), btn = $("pfBtn");
+  corregirNombrePerfil();
   const body = {
-    nombre_certificado: $("pfNombre").value.trim(),
+    nombre_certificado: nombreOficial($("pfNombre").value),
     fecha_nacimiento: $("pfNac").value || null,
     pais_nacimiento: $("pfNacimiento").value,
     pais_residencia: $("pfResid").value,
