@@ -64,6 +64,8 @@ th .pct{font-weight:400;color:var(--texto2);font-size:.6rem;letter-spacing:0;}
 th.colman,td.colman{background:rgba(251,191,36,.06);}
 th.colcalc,td.colcalc{background:rgba(59,130,246,.06);}
 th.colcierre,td.colcierre{background:rgba(74,222,128,.05);}
+/* Diagnóstico de entrada: gris, para que se lea "esto no es del curso". */
+th.coldiag,td.coldiag{background:rgba(148,163,184,.10);}
 td.colman{cursor:pointer;} td.colman:hover{background:rgba(251,191,36,.18);}
 .calpend{color:var(--ambar);font-weight:700;}
 /* ── Celda calificable estilo Excel: se escribe dentro de la tabla ── */
@@ -814,6 +816,7 @@ function _colNota(v, ap){
 }
 // abreviatura corta para el encabezado de columna (EV-12, MITOS 1, EX-1, PS1…)
 function _colLbl(c){
+  if(c.grupo==="diagnostico") return "EV-0";
   if(c.grupo==="prom_sem") return "PS"+c.semana;
   return (c.nombre||c.codigo).replace("PROM SEM ","PS").replace("Examen Final","EX Final");
 }
@@ -829,9 +832,15 @@ function renderPlanilla(){
   // Encabezado: Alumno (fijo) + cada columna + cierre
   let th = `<th class="stick">Alumno</th>`;
   P.columnas.forEach(c => {
-    const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem." : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% total" : "");
-    const cls = c.grupo==="prom_sem" ? "colcalc" : (manuales.has(c.codigo) ? "colman" : "");
-    th += `<th class="${cls}" title="${esc(c.nombre)}${pct?" · "+pct:""}">${esc(_colLbl(c))}<div class="pct">${pct}</div></th>`;
+    // El diagnóstico de entrada NO tiene peso: se rotula "no suma" para que nadie
+    // lo confunda con una evaluación del curso.
+    const pct = c.grupo==="diagnostico" ? "no suma"
+      : (c.peso_semana!=null ? Math.round(c.peso_semana*100)+"% sem." : (c.peso_global!=null ? Math.round(c.peso_global*100)+"% total" : ""));
+    const cls = c.grupo==="prom_sem" ? "colcalc" : (c.grupo==="diagnostico" ? "coldiag" : (manuales.has(c.codigo) ? "colman" : ""));
+    const tit = c.grupo==="diagnostico"
+      ? `Cuestionario de entrada (diagnóstico): ${c.titulo || c.nombre}. No cuenta para la nota; en blanco = no lo resolvió en la plataforma.`
+      : `${c.nombre}${pct?" · "+pct:""}`;
+    th += `<th class="${cls}" title="${esc(tit)}">${esc(_colLbl(c))}<div class="pct">${pct}</div></th>`;
   });
   th += `<th class="colcierre">SEMANAL<br>60%</th><th class="colcierre">EXÁM.<br>30%</th><th class="colcierre colman">CONCEPTO<br>10%</th><th class="colcierre">TOTAL</th><th class="colcierre">RESULTADO</th><th class="colcierre">#</th>`;
   tb.querySelector("thead").innerHTML = `<tr>${th}</tr>`;
@@ -844,7 +853,11 @@ function renderPlanilla(){
     P.columnas.forEach(c => {
       const v = a.celdas ? a.celdas[c.codigo] : null;
       const est = a.estados ? a.estados[c.codigo] : null;
-      if(c.grupo==="prom_sem"){
+      if(c.grupo==="diagnostico"){
+        // Diagnóstico: sin verde/rojo (no se aprueba ni se desaprueba) y en blanco
+        // si no lo resolvió en la plataforma.
+        tds += `<td class="num coldiag">${v==null?'<span style="color:var(--texto2);">—</span>':`<b>${fmtN(v)}</b>`}</td>`;
+      } else if(c.grupo==="prom_sem"){
         tds += `<td class="num colcalc">${v==null?'—':`<b style="color:${v>=ap?'var(--verde)':'var(--rojoTxt)'};">${fmtN(v)}</b>`}</td>`;
       } else if(manuales.has(c.codigo)){
         // celda calificable a mano → se escribe DENTRO de la tabla, como en Excel.
@@ -1111,7 +1124,7 @@ function renderProrrogas(){
   // no como "Semana 13". Una semana normal siempre gana el rótulo "Semana N".
   PR_SEMLBL = {};
   (P.columnas || []).forEach(c => {
-    if (c.grupo === "prom_sem" || c.semana == null) return;
+    if (c.grupo === "prom_sem" || c.grupo === "diagnostico" || c.semana == null) return;
     if (c.tipo === "examen") { if (PR_SEMLBL[c.semana] == null) PR_SEMLBL[c.semana] = c.nombre || ("Examen (sem " + c.semana + ")"); }
     else { PR_SEMLBL[c.semana] = "Semana " + c.semana; }
   });
@@ -1171,7 +1184,8 @@ function renderPrueba(){
   // "Edificio": un PISO por semana. Cada evaluación es una casilla chica dentro
   // de su piso. Las automáticas (cuestionarios) van marcadas con borde azul.
   const manuales = new Set(P.codigos_manuales || []);
-  const evals = P.columnas.filter(c => c.grupo !== "prom_sem");
+  // el diagnóstico de entrada no entra al simulador: no suma a la nota
+  const evals = P.columnas.filter(c => c.grupo !== "prom_sem" && c.grupo !== "diagnostico");
   const box = (c) => {
     const auto = !manuales.has(c.codigo);
     const pct = c.peso_semana!=null ? Math.round(c.peso_semana*100)+"%" : (c.peso_global!=null ? Math.round(c.peso_global*100)+"%t" : "");
