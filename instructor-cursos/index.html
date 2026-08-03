@@ -772,6 +772,10 @@ async function verIntento(uid, quizId, email){
         cuerpo += `<div style="margin-top:6px;padding:8px 10px;border:1px dashed var(--borde);border-radius:7px;font-size:.75rem;color:var(--texto2);"><b>Respuesta modelo / notas del solucionario:</b><br>${esc(p.respuesta_modelo).replace(/\n/g,"<br>")}</div>`;
       }
     }
+    // La correcta, para revisar la pregunta sin abrir el solucionario.
+    if(p.correcta_txt && r.correcta !== true){
+      cuerpo += `<div style="font-size:.78rem;color:var(--verde);margin-top:3px;">Correcta: <b>${esc(p.correcta_txt)}</b></div>`;
+    }
     const num = (p.num !== undefined && p.num !== null) ? p.num : (p.i + 1);
     // Sin enunciado propio (está en el PDF de la semana) no se repite el número.
     const enun = (p.enunciado || "").trim()

@@ -1229,6 +1229,9 @@ async function verMisRespuestas(quizId){
     else marca = `<span style="color:var(--texto2);">La califica tu profesor</span>`;
     const pts = (p.obtenidos !== null && p.obtenidos !== undefined)
       ? ` · ${p.obtenidos} de ${p.puntos} pts` : (p.puntos ? ` · ${p.puntos} pts` : "");
+    // Solo en las que falló: la correcta, para que sepa dónde estuvo el error.
+    const corr = (p.correcta !== true && p.correcta_txt)
+      ? `<div style="font-size:.83rem;color:var(--verde);margin-top:3px;">Correcta: <b>${esc(p.correcta_txt)}</b></div>` : "";
     // Los enunciados están en el PDF de la semana, no aquí: sin esto salía "1. 1".
     const enun = (p.enunciado || "").trim()
       ? `${p.num}. ${esc(p.enunciado)}`
@@ -1237,7 +1240,7 @@ async function verMisRespuestas(quizId){
     return `<div style="border:1px solid var(--borde);border-radius:9px;padding:10px 13px;margin-bottom:8px;background:var(--panel);">
       <div style="font-weight:600;margin-bottom:5px;">${enun}</div>
       <div style="font-size:.83rem;color:var(--texto2);margin-bottom:4px;">Marcaste: <b style="color:var(--texto);">${esc(marcada)}</b></div>
-      <div style="font-size:.83rem;">${marca}${pts}</div>
+      <div style="font-size:.83rem;">${marca}${pts}</div>${corr}
     </div>`;
   }).join("");
   const msg = (r.mensaje_docente || "").trim()
@@ -1246,7 +1249,7 @@ async function verMisRespuestas(quizId){
     <div class="meta">${esc(r.titulo || quizId)} · Semana ${r.semana}</div>
     <div class="aviso okv">Tu nota: <b>${r.nota}</b> / 100${r.puntaje!=null&&r.sobre?` (${r.puntaje} de ${r.sobre} puntos)`:""}</div>
     ${msg}
-    <div class="aviso">Aquí ves lo que marcaste y en qué acertaste o fallaste. La respuesta correcta no se publica: las preguntas se siguen usando. Si crees que una pregunta está mal, escríbele a tu profesor.</div>
+    <div class="aviso">Aquí ves lo que marcaste y en qué acertaste o fallaste. En las que fallaste aparece cuál era la correcta. Si crees que una pregunta está mal, escríbele a tu profesor.</div>
     ${filas}${volver}`;
 }
 
