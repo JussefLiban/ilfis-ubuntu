@@ -1229,9 +1229,14 @@ async function verMisRespuestas(quizId){
     else marca = `<span style="color:var(--texto2);">La califica tu profesor</span>`;
     const pts = (p.obtenidos !== null && p.obtenidos !== undefined)
       ? ` · ${p.obtenidos} de ${p.puntos} pts` : (p.puntos ? ` · ${p.puntos} pts` : "");
+    // Los enunciados están en el PDF de la semana, no aquí: sin esto salía "1. 1".
+    const enun = (p.enunciado || "").trim()
+      ? `${p.num}. ${esc(p.enunciado)}`
+      : `Pregunta ${p.num} <span style="font-weight:400;color:var(--texto2);font-size:.78rem;">· el enunciado está en el PDF de la semana</span>`;
+    const marcada = (p.respuesta_txt != null && p.respuesta_txt !== "") ? p.respuesta_txt : _txtResp(p.respuesta);
     return `<div style="border:1px solid var(--borde);border-radius:9px;padding:10px 13px;margin-bottom:8px;background:var(--panel);">
-      <div style="font-weight:600;margin-bottom:5px;">${p.num}. ${esc(p.enunciado || "")}</div>
-      <div style="font-size:.83rem;color:var(--texto2);margin-bottom:4px;">Tu respuesta: <b style="color:var(--texto);">${esc(_txtResp(p.respuesta))}</b></div>
+      <div style="font-weight:600;margin-bottom:5px;">${enun}</div>
+      <div style="font-size:.83rem;color:var(--texto2);margin-bottom:4px;">Marcaste: <b style="color:var(--texto);">${esc(marcada)}</b></div>
       <div style="font-size:.83rem;">${marca}${pts}</div>
     </div>`;
   }).join("");

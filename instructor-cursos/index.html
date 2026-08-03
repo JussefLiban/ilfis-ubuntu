@@ -755,12 +755,16 @@ async function verIntento(uid, quizId, email){
   $("detCuerpo").innerHTML = d.preguntas.map(p => {
     const r = det.find(x => x.i === p.i) || {};
     let cuerpo = "";
+    // Lo marcado se muestra como la ALTERNATIVA del PDF ("b."), no como el índice
+    // interno: "respuesta marcada: 1" no le dice nada al profesor.
+    const marcada = (p.respuesta_txt != null && p.respuesta_txt !== "")
+      ? p.respuesta_txt : JSON.stringify(r.respuesta);
     if(p.tipo === "opcion_multiple" || p.tipo === "seleccion_multiple"){
-      cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Correcta</span>' : '<span class="c-mal">✗ Incorrecta</span>'} · respuesta marcada: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span> · ${p.puntos} pts</div>`;
+      cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Correcta</span>' : '<span class="c-mal">✗ Incorrecta</span>'} · marcó: <span class="mono">${esc(marcada)}</span> · ${p.puntos} pts</div>`;
     } else if(p.tipo === "vf_filas" || p.tipo === "emparejar" || p.tipo === "clasificar"){
-      cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Completa</span>' : `<span class="${(r.aciertos||0)>0 ? 'c-ok' : 'c-mal'}">${r.aciertos||0} de ${r.de||"?"} filas correctas</span>`} · ${r.obtenidos!==undefined && r.obtenidos!==null ? r.obtenidos : 0} de ${p.puntos} pts (proporcional) · respuesta: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span></div>`;
+      cuerpo = `<div>${r.correcta ? '<span class="c-ok">✓ Completa</span>' : `<span class="${(r.aciertos||0)>0 ? 'c-ok' : 'c-mal'}">${r.aciertos||0} de ${r.de||"?"} filas correctas</span>`} · ${r.obtenidos!==undefined && r.obtenidos!==null ? r.obtenidos : 0} de ${p.puntos} pts (proporcional) · respuesta: <span class="mono">${esc(marcada)}</span></div>`;
     } else if(p.tipo === "cuadricula"){
-      cuerpo = `<div style="color:var(--texto2);font-size:.75rem;">Encuesta · respuesta: <span class="mono">${esc(JSON.stringify(r.respuesta))}</span></div>`;
+      cuerpo = `<div style="color:var(--texto2);font-size:.75rem;">Encuesta · respuesta: <span class="mono">${esc(marcada)}</span></div>`;
     } else {
       cuerpo = `<div style="margin-bottom:5px;color:var(--ambar);font-size:.72rem;">📝 Calificación manual · ${p.puntos} pts</div>
                 <div class="resp-texto">${esc(r.respuesta || "(sin respuesta)")}</div>`;
@@ -769,7 +773,11 @@ async function verIntento(uid, quizId, email){
       }
     }
     const num = (p.num !== undefined && p.num !== null) ? p.num : (p.i + 1);
-    return `<div class="preg-det"><div class="en">${num}. ${esc(p.enunciado)}</div>${cuerpo}</div>`;
+    // Sin enunciado propio (está en el PDF de la semana) no se repite el número.
+    const enun = (p.enunciado || "").trim()
+      ? `${num}. ${esc(p.enunciado)}`
+      : `Pregunta ${num} <span style="font-weight:400;color:var(--texto2);font-size:.75rem;">· enunciado en el PDF de la semana</span>`;
+    return `<div class="preg-det"><div class="en">${enun}</div>${cuerpo}</div>`;
   }).join("");
   const gm = `<div class="calif-box">
     <div class="calif-tit">✍ Calificar / mensaje al alumno</div>
