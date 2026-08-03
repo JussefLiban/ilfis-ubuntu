@@ -1198,6 +1198,53 @@ async function subirFotoPerfil(){
   }finally{ if(btn){ btn.disabled = false; btn.textContent = "Subir foto"; } }
 }
 
+// ── Revisión del propio cuestionario ──
+// El alumno ve QUÉ marcó y si acertó, nunca cuál era la correcta: el banco de
+// preguntas se reutiliza con los grupos siguientes.
+function _txtResp(r){
+  if(r === null || r === undefined || r === "") return "(sin responder)";
+  if(Array.isArray(r)) return r.join(", ");
+  if(typeof r === "object"){
+    return Object.keys(r).map(k => `${k}: ${Array.isArray(r[k]) ? r[k].join("/") : r[k]}`).join(" · ");
+  }
+  return String(r);
+}
+// Vuelve a la lección desde la que se abrió la revisión (lecActiva no cambia).
+function volverALeccion(){
+  if(lecActiva && lecActiva.semana && lecActiva.leccion) abrirLeccion(lecActiva.semana, lecActiva.leccion);
+}
+async function verMisRespuestas(quizId){
+  const c = $("contenido");
+  const volver = `<button class="btn btn-sec" onclick="volverALeccion()">← Volver</button>`;
+  c.innerHTML = `<h2>🔎 Mis respuestas</h2><div class="aviso">Cargando…</div>`;
+  let r;
+  try{ r = await api(`/api/cursos/${CURSO}/mi-intento/${encodeURIComponent(quizId)}`); }
+  catch(e){ c.innerHTML = `<h2>🔎 Mis respuestas</h2><div class="aviso err">⚠ ${esc(e.message)}</div>${volver}`; return; }
+  const filas = (r.preguntas || []).map(p => {
+    let marca = "";
+    if(p.correcta === true)       marca = `<span style="color:var(--verde);font-weight:700;">✓ Correcta</span>`;
+    else if(p.correcta === false) marca = `<span style="color:var(--rojoTxt);font-weight:700;">✗ Incorrecta</span>`;
+    else if(p.aciertos !== null && p.aciertos !== undefined)
+      marca = `<span style="color:var(--ambar);font-weight:700;">${p.aciertos} de ${p.de} filas correctas</span>`;
+    else marca = `<span style="color:var(--texto2);">La califica tu profesor</span>`;
+    const pts = (p.obtenidos !== null && p.obtenidos !== undefined)
+      ? ` · ${p.obtenidos} de ${p.puntos} pts` : (p.puntos ? ` · ${p.puntos} pts` : "");
+    return `<div style="border:1px solid var(--borde);border-radius:9px;padding:10px 13px;margin-bottom:8px;background:var(--panel);">
+      <div style="font-weight:600;margin-bottom:5px;">${p.num}. ${esc(p.enunciado || "")}</div>
+      <div style="font-size:.83rem;color:var(--texto2);margin-bottom:4px;">Tu respuesta: <b style="color:var(--texto);">${esc(_txtResp(p.respuesta))}</b></div>
+      <div style="font-size:.83rem;">${marca}${pts}</div>
+    </div>`;
+  }).join("");
+  const msg = (r.mensaje_docente || "").trim()
+    ? `<div class="aviso">💬 <b>Tu profesor:</b> ${esc(r.mensaje_docente)}</div>` : "";
+  c.innerHTML = `<h2>🔎 Mis respuestas</h2>
+    <div class="meta">${esc(r.titulo || quizId)} · Semana ${r.semana}</div>
+    <div class="aviso okv">Tu nota: <b>${r.nota}</b> / 100${r.puntaje!=null&&r.sobre?` (${r.puntaje} de ${r.sobre} puntos)`:""}</div>
+    ${msg}
+    <div class="aviso">Aquí ves lo que marcaste y en qué acertaste o fallaste. La respuesta correcta no se publica: las preguntas se siguen usando. Si crees que una pregunta está mal, escríbele a tu profesor.</div>
+    ${filas}${volver}`;
+}
+
 // ── Quiz ──
 async function lecQuiz(w, l, c){
   c.innerHTML = cab(w, l) + '<div class="aviso">Cargando cuestionario…</div>';
@@ -1211,12 +1258,18 @@ async function lecQuiz(w, l, c){
 
   if(q.ya_respondido){
     const enviado = q.intento && q.intento.enviado ? " el " + fmtLima(q.intento.enviado, true) : "";
+    // Revisión del propio cuestionario: solo desde que su nota está publicada.
+    const pubOk = q.diagnostico || (q.publicacion_notas && new Date() >= new Date(q.publicacion_notas));
+    const btnRev = pubOk
+      ? `<button class="btn btn-sec" onclick="verMisRespuestas('${esc(l.quizId)}')">🔎 Ver mis respuestas</button>`
+      : `<div class="aviso">Podrás revisar tus respuestas cuando se publique tu nota.</div>`;
     const cierre = q.diagnostico
       ? `<div class="aviso">Es un cuestionario de diagnóstico: <b>no cuenta para tu nota</b>. ¡Gracias por responderlo!</div>`
       : `<div class="aviso">Tu nota se publica el lunes ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
          <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`;
     c.innerHTML = cab(w, l) + `
-      <div class="aviso okv">✓ Respuestas registradas${enviado}. Se permite un solo intento.</div>` + cierre;
+      <div class="aviso okv">✓ Respuestas registradas${enviado}. Se permite un solo intento.</div>`
+      + cierre + `<div style="margin-top:10px;">${btnRev}</div>`;
     marcarCompletada(l.id);
     return;
   }
