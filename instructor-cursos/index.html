@@ -1168,6 +1168,7 @@ function renderProrrogas(){
           </select></label>
         <label style="font-size:.74rem;color:var(--texto2);" id="prLblHoras">Horas extra<br><input id="prHoras" type="number" min="1" step="1" value="6" style="width:92px;"></label>
         <label style="font-size:.74rem;color:var(--texto2);display:none;" id="prLblFecha">Entrega hasta el<br><input id="prFecha" type="date" style="width:160px;"></label>
+        <label style="font-size:.74rem;color:var(--texto2);display:none;" id="prLblHora">a las (Lima)<br><input id="prHora" type="time" value="23:59" style="width:110px;"></label>
         <button class="btn rojo" onclick="darProrroga()">Dar prórroga</button>
         <span class="ent-save" id="prOut"></span>
       </div>
@@ -1183,6 +1184,7 @@ function prCambiarModo(){
   const porFecha = $("prModo").value === "fecha";
   $("prLblHoras").style.display = porFecha ? "none" : "";
   $("prLblFecha").style.display = porFecha ? "" : "none";
+  $("prLblHora").style.display  = porFecha ? "" : "none";
 }
 async function darProrroga(){
   const out = $("prOut");
@@ -1190,7 +1192,10 @@ async function darProrroga(){
   const sem = parseInt($("prSemana").value, 10);
   const porFecha = $("prModo").value === "fecha";
   const horas = parseFloat($("prHoras").value);
-  const hasta = ($("prFecha").value || "").trim();
+  // fecha + hora de Lima; sin hora, cierra al terminar el día
+  const _f = ($("prFecha").value || "").trim();
+  const _h = ($("prHora").value || "").trim();
+  const hasta = _f ? (_h ? `${_f}T${_h}` : _f) : "";
   if(!uid){ if(out){ out.textContent = "Elige un alumno."; out.className = "ent-save err"; } return; }
   if(porFecha && !hasta){ if(out){ out.textContent = "Elige la fecha límite."; out.className = "ent-save err"; } return; }
   if(!porFecha && !(horas > 0)){ if(out){ out.textContent = "Pon las horas (mayor que 0)."; out.className = "ent-save err"; } return; }
