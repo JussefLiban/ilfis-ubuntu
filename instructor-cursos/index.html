@@ -1100,7 +1100,15 @@ function exportarPlanilla(){
 // ── ⏱ PRÓRROGAS (solo tareas): dar unas horas extra a un alumno en una semana ──
 let PR = { prorrogas: [] };
 let PR_SEMLBL = {};   // semana -> rótulo ("Semana 3", "Examen Final"…)
-function _fmtHoras(h){ h = Number(h) || 0; return (h % 1 === 0) ? (h + " h") : (h.toFixed(1) + " h"); }
+// "+204 h" no se entiende; a partir de dos días se dice en días.
+function _fmtHoras(h){
+  h = Number(h) || 0;
+  if(h >= 48){
+    const d = Math.floor(h / 24), r = Math.round(h - d * 24);
+    return d + " días" + (r ? " " + r + " h" : "");
+  }
+  return (h % 1 === 0) ? (h + " h") : (h.toFixed(1) + " h");
+}
 
 async function cargarProrrogas(){
   try{ PR = await api(`/api/cursos/${CURSO}/admin/prorrogas`); }
@@ -1153,27 +1161,43 @@ function renderProrrogas(){
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
         <label style="font-size:.74rem;color:var(--texto2);">Alumno<br><select id="prAlumno" style="min-width:220px;">${optAl}</select></label>
         <label style="font-size:.74rem;color:var(--texto2);">Semana<br><select id="prSemana" style="min-width:130px;">${optSem}</select></label>
-        <label style="font-size:.74rem;color:var(--texto2);">Horas extra<br><input id="prHoras" type="number" min="1" max="240" step="1" value="6" style="width:92px;"></label>
+        <label style="font-size:.74rem;color:var(--texto2);">Cómo<br>
+          <select id="prModo" onchange="prCambiarModo()" style="min-width:150px;">
+            <option value="horas">Horas extra</option>
+            <option value="fecha">Hasta una fecha</option>
+          </select></label>
+        <label style="font-size:.74rem;color:var(--texto2);" id="prLblHoras">Horas extra<br><input id="prHoras" type="number" min="1" step="1" value="6" style="width:92px;"></label>
+        <label style="font-size:.74rem;color:var(--texto2);display:none;" id="prLblFecha">Entrega hasta el<br><input id="prFecha" type="date" style="width:160px;"></label>
         <button class="btn rojo" onclick="darProrroga()">Dar prórroga</button>
         <span class="ent-save" id="prOut"></span>
       </div>
-      <div style="color:var(--texto2);font-size:.72rem;margin-top:9px;line-height:1.5;">Le da a ese alumno esas horas extra para subir su <b>tarea</b> de esa semana. Solo extiende el plazo; los cuestionarios no se tocan.</div>
+      <div style="color:var(--texto2);font-size:.72rem;margin-top:9px;line-height:1.5;">Le amplía a ese alumno el plazo para subir su <b>tarea</b> de esa semana: unas horas extra, o directamente hasta la fecha que elijas (cierra al terminar ese día, hora de Lima). Solo extiende el plazo; los cuestionarios no se tocan.</div>
     </div>
     <div style="font-weight:600;color:var(--texto);margin:18px 2px 7px;">Prórrogas activas</div>
     <div id="prLista"><div style="color:var(--texto2);font-size:.85rem;padding:10px 2px;">Cargando…</div></div>
   </div></td></tr>`;
   cargarProrrogas();
 }
+// Alterna entre "unas horas más" y "hasta tal día".
+function prCambiarModo(){
+  const porFecha = $("prModo").value === "fecha";
+  $("prLblHoras").style.display = porFecha ? "none" : "";
+  $("prLblFecha").style.display = porFecha ? "" : "none";
+}
 async function darProrroga(){
   const out = $("prOut");
   const uid = $("prAlumno").value;
   const sem = parseInt($("prSemana").value, 10);
+  const porFecha = $("prModo").value === "fecha";
   const horas = parseFloat($("prHoras").value);
+  const hasta = ($("prFecha").value || "").trim();
   if(!uid){ if(out){ out.textContent = "Elige un alumno."; out.className = "ent-save err"; } return; }
-  if(!(horas > 0)){ if(out){ out.textContent = "Pon las horas (mayor que 0)."; out.className = "ent-save err"; } return; }
+  if(porFecha && !hasta){ if(out){ out.textContent = "Elige la fecha límite."; out.className = "ent-save err"; } return; }
+  if(!porFecha && !(horas > 0)){ if(out){ out.textContent = "Pon las horas (mayor que 0)."; out.className = "ent-save err"; } return; }
   if(out){ out.textContent = "…"; out.className = "ent-save"; }
   try{
-    await postJSON(`/api/cursos/${CURSO}/admin/prorroga`, { uid, sem, horas });
+    await postJSON(`/api/cursos/${CURSO}/admin/prorroga`,
+                   porFecha ? { uid, sem, hasta } : { uid, sem, horas });
     if(out){ out.textContent = "✓ prórroga guardada"; out.className = "ent-save ok"; }
     cargarProrrogas();
   }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
