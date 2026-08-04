@@ -96,6 +96,26 @@ td.celed.errorcel{background:rgba(239,68,68,.25);}
   background:#0d1117;color:var(--texto);border:1px solid var(--borde);border-radius:8px;}
 .ent-ta:focus{outline:none;border-color:var(--azul);}
 .ficha-pie{display:flex;align-items:center;gap:10px;}
+/* Sugerencia del pre-calificador. Morado a proposito: que NUNCA se confunda con
+   una nota puesta por el profesor. Es una propuesta, no una calificacion. */
+.sug{background:#1c1730;border:1px solid #4c3a7a;border-radius:9px;overflow:hidden;}
+.sug-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#251d3d;padding:8px 13px;font-size:.8rem;color:#cbb9f5;}
+.sug-nota{font-size:1.15rem;font-weight:700;color:#c4b5fd;}
+.sug-cf{font-size:.68rem;padding:2px 7px;border-radius:9px;border:1px solid;}
+.sug-cf.alta{color:var(--verde);border-color:var(--verde);}
+.sug-cf.media{color:var(--ambar);border-color:var(--ambar);}
+.sug-cf.baja{color:var(--rojoTxt);border-color:var(--rojoTxt);}
+.sug-cuerpo{padding:11px 13px;display:flex;flex-direction:column;gap:9px;}
+.sug-txt{font-size:.85rem;line-height:1.55;color:#ded5f5;white-space:pre-wrap;}
+.sug-band{background:#3a2410;border-left:3px solid var(--ambar);border-radius:6px;
+  padding:7px 11px;font-size:.78rem;line-height:1.5;color:#f5d9a8;}
+.sug-desg{width:100%;border-collapse:collapse;font-size:.76rem;}
+.sug-desg td{padding:5px 8px;border-bottom:1px solid #33294f;vertical-align:top;}
+.sug-desg td.p{text-align:right;white-space:nowrap;font-weight:700;color:#c4b5fd;width:1%;}
+.sug-desg td.c{color:var(--texto2);}
+.sug-mas{background:none;border:none;color:#a78bfa;cursor:pointer;font-family:inherit;
+  font-size:.76rem;padding:0;text-decoration:underline;align-self:flex-start;}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
 .pedificios{display:flex;gap:10px;align-items:flex-start;}
@@ -263,6 +283,15 @@ let _fotoTok = ""; // token (login docente) para mostrar las fotos de los alumno
 function nomDe(uid, email){ return NOMBRES[uid] || email || uid || "—"; }
 // N° del roster como prefijo "4. " (o "" si el uid no está matriculado, p. ej. una prueba).
 function numPref(uid){ return NUMEROS[uid] != null ? `<b style="color:var(--texto2);">${NUMEROS[uid]}.</b> ` : ""; }
+// Orden UNICO de alumnos en todo el sistema: el N° del roster, el mismo que usan
+// la intranet y la planilla. Los sin numero (pruebas, bajas) van al final.
+function porNumero(a, b){
+  const na = NUMEROS[a.uid], nb = NUMEROS[b.uid];
+  if(na != null && nb != null) return na - nb;
+  if(na != null) return -1;
+  if(nb != null) return 1;
+  return nomDe(a.uid, a.email).localeCompare(nomDe(b.uid, b.email), "es");
+}
 let tab = "q";
 let _autoIntentado = false;
 
@@ -530,7 +559,7 @@ function actualizarKPIs(){
 function renderQuiz(){
   const sel = $("selQuiz");
   const qid = sel.value;
-  const rows = R.intentos.filter(x => x.quiz_id === qid);
+  const rows = R.intentos.filter(x => x.quiz_id === qid).sort(porNumero);
   // Qué cuestionario se está viendo y CUÁNTOS intentos tiene ESTE (el contador de
   // la barra de arriba es del curso completo y no cuadra con esta tabla).
   const nomQuiz = (sel.options[sel.selectedIndex] || {}).textContent || qid || "—";
@@ -627,6 +656,71 @@ function exportarNotas(){
 // ── Entregas de tareas ──
 function fmtSize(n){ n=n||0; if(n<1024) return n+" B"; if(n<1048576) return (n/1024).toFixed(0)+" KB"; return (n/1048576).toFixed(1)+" MB"; }
 
+// ── Sugerencia del pre-calificador ──
+// El motor deja su propuesta en la entrega (sugerencia_ia, o sugerencias_ia por
+// codigo cuando la semana tiene varias evaluaciones). Aqui SOLO se muestra: la
+// nota oficial la sigue poniendo el profesor. Por eso no hay boton de "aprobar".
+const _SUG = {};   // clave -> sugerencia, para los botones
+
+function _sugsDe(x){
+  const out = [];
+  if(x.sugerencias_ia && typeof x.sugerencias_ia === "object"){
+    Object.keys(x.sugerencias_ia).sort().forEach(c => {
+      const s = x.sugerencias_ia[c];
+      if(s) out.push(Object.assign({ codigo: c }, s));
+    });
+  }
+  if(x.sugerencia_ia) out.push(x.sugerencia_ia);
+  return out;
+}
+
+function _bloqueSug(x, key){
+  const sugs = _sugsDe(x);
+  if(!sugs.length) return "";
+  return sugs.map((s, i) => {
+    const k = `${key}-${i}`;
+    _SUG[k] = s;
+    const cf = String(s.confianza || "").toLowerCase();
+    const cfTxt = cf ? `<span class="sug-cf ${cf === "alta" || cf === "media" || cf === "baja" ? cf : ""}">confianza ${esc(cf)}</span>` : "";
+    const nota = (s.nota == null) ? "sin nota" : `${fmtN(s.nota)} / 100`;
+    const cod = s.codigo ? `<b>${esc(s.codigo)}</b>` : "";
+    const desg = (s.desglose || []).length
+      ? `<details><summary class="sug-mas">Ver desglose (${s.desglose.length} ${s.desglose.length === 1 ? "punto" : "puntos"})</summary>
+           <table class="sug-desg">${s.desglose.map(d => `
+             <tr><td>${esc(d.item || "")}</td>
+                 <td class="p">${d.puntos == null ? "—" : fmtN(d.puntos)}${d.max == null ? "" : " / " + fmtN(d.max)}</td>
+                 <td class="c">${esc(d.comentario || "")}</td></tr>`).join("")}</table>
+         </details>`
+      : "";
+    const band = (s.banderas || []).length
+      ? `<div class="sug-band">⚠ <b>Revisar:</b><br>${s.banderas.map(b => "• " + esc(b)).join("<br>")}</div>`
+      : "";
+    const retro = s.comentario
+      ? `<div class="sug-txt">${esc(s.comentario)}</div>
+         <button class="btn mini gris" onclick="sugUsarRetro('${k}','${key}')">📋 Copiar esta retro a mi respuesta</button>`
+      : "";
+    return `<div class="sug">
+      <div class="sug-cab">🤖 <b>Sugerencia del pre-calificador</b> ${cod}
+        <span class="sug-nota">${nota}</span> ${cfTxt}
+        <span style="margin-left:auto;color:var(--texto2);font-size:.72rem;">Propuesta — la nota la pones tú</span>
+      </div>
+      <div class="sug-cuerpo">${retro}${band}${desg}</div>
+    </div>`;
+  }).join("");
+}
+
+// Pasa la retro sugerida a la caja de respuesta del profesor, para que la edite
+// antes de mandarla. No la envia: eso lo sigue haciendo "Responder al alumno".
+function sugUsarRetro(k, key){
+  const s = _SUG[k], ta = $("entC-" + key);
+  if(!s || !ta) return;
+  if(ta.value.trim() && !confirm("Ya escribiste algo en tu respuesta. ¿La reemplazo con la retro sugerida?")) return;
+  ta.value = s.comentario || "";
+  ta.style.height = "auto";
+  ta.style.height = Math.max(120, ta.scrollHeight + 4) + "px";
+  ta.focus();
+}
+
 function renderEntregas(){
   const tb = $("tabla");
   tb.querySelector("thead").innerHTML =
@@ -636,7 +730,8 @@ function renderEntregas(){
      `;
   // Una FICHA por entrega, a todo el ancho: el mensaje del alumno y la respuesta
   // del profesor necesitan espacio para varios párrafos, no una columna estrecha.
-  const rows = (E && E.entregas) ? E.entregas : [];
+  const rows = ((E && E.entregas) ? E.entregas : []).slice()
+    .sort((a, b) => porNumero(a, b) || (a.semana || 0) - (b.semana || 0));
   tb.querySelector("tbody").innerHTML = rows.map(x => {
     const files = (x.archivos||[]).length
       ? x.archivos.map(a => `<button class="btn mini" onclick="descargarEntrega('${esc(x.uid)}',${x.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)} <span style="color:var(--texto2);">(${fmtSize(a.size)})</span></button>`).join(" ")
@@ -648,12 +743,13 @@ function renderEntregas(){
     return `<tr><td colspan="9" style="padding:0 0 14px;border:none;">
       <div class="ficha">
         <div class="ficha-cab">
-          <span><b>${esc(nomDe(x.uid, x.email))}</b>${x.email ? ` <span style="color:var(--texto2);">· ${esc(x.email)}</span>` : ""} <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
+          <span>${numPref(x.uid)}<b>${esc(nomDe(x.uid, x.email))}</b>${x.email ? ` <span style="color:var(--texto2);">· ${esc(x.email)}</span>` : ""} <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
           <button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button>
         </div>
         <div class="ficha-cuerpo">
           <div class="ficha-arch">${files}</div>
           ${msgAl}
+          ${_bloqueSug(x, key)}
           <label class="ficha-lab" for="entC-${key}">✍ Tu respuesta al alumno <span style="color:var(--texto2);font-weight:400;">— le aparece en su tarea. Escribe lo que necesites; la caja crece sola.</span></label>
           <textarea id="entC-${key}" class="ent-ta" placeholder="Contéstale sobre su tarea: qué estuvo bien, qué corregir, la duda que te preguntó…"
             oninput="this.style.height='auto';this.style.height=Math.max(120,this.scrollHeight+4)+'px'">${esc(x.comentario||"")}</textarea>
