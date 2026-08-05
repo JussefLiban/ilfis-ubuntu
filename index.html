@@ -597,7 +597,9 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       </button>
       <div class="lat-separador"></div>
       <div class="lat-titulo">Equipo ILFIS</div>
-      <button class="tab-btn" onclick="showTab('profesores', this)" title="Sala de Profesores — Biblioteca Técnica ILFIS">
+      <!-- Oculta de entrada. Solo se muestra si /biblioteca/acceso dice que este
+           correo es docente o administración. Antes la veía cualquier suscriptor. -->
+      <button class="tab-btn" id="tab-btn-profesores" style="display:none;" onclick="showTab('profesores', this)" title="Sala de Profesores — Biblioteca Técnica ILFIS">
         <i class="ti ti-users" aria-hidden="true"></i><span class="lat-txt"><span class="lat-l1">Sala de Profesores</span><span class="lat-l2">Biblioteca Técnica</span></span>
       </button>
       <button class="tab-btn" onclick="showTab('admin', this)" title="Intranet Panel Admin">
@@ -1898,6 +1900,7 @@ auth.onAuthStateChanged(function (user) {
   _verificarPendientesFm(user.uid);
   renderMiCuenta();
   _adminRestaurarSesion();
+  _mostrarSalaProfesoresSiDocente(user);
 
   // ── EN SEGUNDO PLANO (nunca bloquea ni cierra la entrada de un usuario válido) ──
   // Claims + paywall: en periodo gratis _puedeEntrarPlataforma() siempre es true.
@@ -2134,7 +2137,9 @@ function _restaurarTab() {
   const tab = localStorage.getItem('ilfis_tab_activa');
   if (!tab) return;
   const btn = document.querySelector(`.tab-btn[onclick="showTab('${tab}', this)"]`);
-  if (btn) showTab(tab, btn);
+  // Una pestaña escondida (ej. Sala de Profesores para quien no es docente) no
+  // se restaura: el botón existe en el HTML, pero no es suyo.
+  if (btn && btn.style.display !== 'none') showTab(tab, btn);
 }
 
 function setEjemplo(el) { document.getElementById('pregunta').value = el.textContent; }
@@ -5404,6 +5409,24 @@ async function actualizarCuenta() {
 }
 
 // ── SALA DE PROFESORES · BIBLIOTECA TÉCNICA ──────────────────────────────
+// La pestaña nace escondida en el HTML. Aquí se le pregunta al servidor si
+// este correo es docente y solo entonces se muestra. Es un adorno de la
+// interfaz, no la cerradura: la cerradura está en el backend, que responde 403
+// al catálogo y al buscador de quien no sea instructor. Si esta llamada falla,
+// la pestaña se queda escondida — mejor pecar de cerrado.
+async function _mostrarSalaProfesoresSiDocente(user) {
+  const btn = document.getElementById('tab-btn-profesores');
+  if (!btn) return;
+  try {
+    const t = await user.getIdToken();
+    const r = await fetch(BACKEND_BIBLIOTECA + '/biblioteca/acceso',
+                          { headers: { 'Authorization': 'Bearer ' + t } });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j && j.puede) btn.style.display = '';
+  } catch (_) { /* sin acceso o sin red: se queda escondida */ }
+}
+
 // Pregunta -> /biblioteca/buscar -> redacción con citas + libros con sus
 // párrafos y páginas. Herramienta interna: el backend responde 403 a quien no
 // sea instructor, y aquí se muestra ese mensaje tal cual en vez de un error
@@ -5562,11 +5585,13 @@ async function bibCatCargar() {
   const grid = document.getElementById('bib-cat-grid');
   grid.innerHTML = '<div class="no-results">Cargando el catálogo...</div>';
   try {
-    // OJO: nada de cache:'force-cache' aquí. Lo estuvo, y al publicar una
-    // versión nueva del catálogo el navegador seguía sirviendo la vieja: la
-    // página nueva leía datos viejos y marcaba TODOS los libros como "solo
-    // lectura". El número de versión fuerza a traerlo cuando cambia el formato.
-    const r = await fetch('biblioteca_catalogo.json?v=7');
+    // El catálogo YA NO es un archivo junto a la página. Lo era hasta agosto de
+    // 2026 y cualquiera lo bajaba sin iniciar sesión; como cada ficha lleva el
+    // id de Drive del libro, con ese archivo se descargaba la biblioteca
+    // entera. Ahora lo entrega el servidor y solo a docentes.
+    const r = await _authFetch(BACKEND_BIBLIOTECA + '/biblioteca/catalogo');
+    if (r.status === 403) throw new Error('La biblioteca es una herramienta '
+      + 'interna para instructores de ILFIS.');
     if (!r.ok) throw new Error('no se pudo leer el catálogo');
     _bibCat = await r.json();
   } catch (e) {
