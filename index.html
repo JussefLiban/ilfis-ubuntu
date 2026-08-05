@@ -5420,12 +5420,38 @@ async function _mostrarSalaProfesoresSiDocente(user) {
   try {
     const t = await user.getIdToken();
     const r = await fetch(BACKEND_BIBLIOTECA + '/biblioteca/acceso',
-                          { headers: { 'Authorization': 'Bearer ' + t } });
+                          { cache: 'no-store',
+                            headers: { 'Authorization': 'Bearer ' + t } });
     if (!r.ok) return;
     const j = await r.json();
-    if (j && j.puede) btn.style.display = '';
+    if (j && j.puede) { btn.style.display = ''; return; }
+    _bibCerrarSala();
   } catch (_) { /* sin acceso o sin red: se queda escondida */ }
 }
+
+// Quita la pestaña, borra el catálogo que quedó en memoria y saca al usuario
+// del cuarto si estaba dentro. Es lo que faltaba: la comprobación se hacía UNA
+// sola vez al cargar la página, así que a quien le daban de baja con la
+// pestaña abierta le seguía apareciendo hasta que recargara.
+function _bibCerrarSala() {
+  const btn = document.getElementById('tab-btn-profesores');
+  if (btn) btn.style.display = 'none';
+  _bibCat = null;
+  const grid = document.getElementById('bib-cat-grid');
+  if (grid) grid.innerHTML = '';
+  const panel = document.getElementById('panel-profesores');
+  if (panel && panel.classList.contains('active')) {
+    const inicio = document.querySelector('.tab-btn[onclick*="showTab(\'consulta\'"]');
+    if (inicio) showTab('consulta', inicio);
+  }
+}
+
+// Revisa el permiso cada 5 minutos mientras la sesión esté abierta. Una baja
+// deja de tener efecto "cuando recargue" y pasa a tenerlo casi en el acto.
+setInterval(function () {
+  const u = (typeof auth !== 'undefined') ? auth.currentUser : null;
+  if (u) _mostrarSalaProfesoresSiDocente(u);
+}, 5 * 60 * 1000);
 
 // Pregunta -> /biblioteca/buscar -> redacción con citas + libros con sus
 // párrafos y páginas. Herramienta interna: el backend responde 403 a quien no
@@ -5589,9 +5615,15 @@ async function bibCatCargar() {
     // 2026 y cualquiera lo bajaba sin iniciar sesión; como cada ficha lleva el
     // id de Drive del libro, con ese archivo se descargaba la biblioteca
     // entera. Ahora lo entrega el servidor y solo a docentes.
-    const r = await _authFetch(BACKEND_BIBLIOTECA + '/biblioteca/catalogo');
-    if (r.status === 403) throw new Error('La biblioteca es una herramienta '
-      + 'interna para instructores de ILFIS.');
+    const r = await _authFetch(BACKEND_BIBLIOTECA + '/biblioteca/catalogo',
+                               { cache: 'no-store' });
+    if (r.status === 403) {
+      // Le dieron de baja mientras tenía la página abierta: se le quita la
+      // pestaña en el acto y se le saca del cuarto, sin esperar a que recargue.
+      _bibCerrarSala();
+      throw new Error('La biblioteca es una herramienta interna para '
+        + 'instructores de ILFIS.');
+    }
     if (!r.ok) throw new Error('no se pudo leer el catálogo');
     _bibCat = await r.json();
   } catch (e) {
