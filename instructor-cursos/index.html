@@ -116,6 +116,13 @@ td.celed.errorcel{background:rgba(239,68,68,.25);}
 .sug-desg td.c{color:var(--texto2);}
 .sug-mas{background:none;border:none;color:#a78bfa;cursor:pointer;font-family:inherit;
   font-size:.76rem;padding:0;text-decoration:underline;align-self:flex-start;}
+.sug-pub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border-top:1px solid #33294f;padding-top:10px;margin-top:2px;}
+.sug-pub label{font-size:.76rem;color:var(--texto2);display:flex;align-items:center;gap:6px;}
+.sug-pub input{width:78px;background:var(--campo);border:1px solid var(--borde);border-radius:6px;
+  color:var(--texto);font-family:inherit;font-size:.9rem;font-weight:700;padding:5px 7px;text-align:center;}
+.sug-ya{font-size:.72rem;color:var(--verde);}
+.sug-hint{flex:1 1 100%;font-size:.7rem;color:var(--texto2);}
 /* Alumno de prueba */
 .pruebaWrap{padding:14px;}
 .pedificios{display:flex;gap:10px;align-items:flex-start;}
@@ -699,14 +706,72 @@ function _bloqueSug(x, key){
       ? `<div class="sug-txt">${esc(s.comentario)}</div>
          <button class="btn mini gris" onclick="sugUsarRetro('${k}','${key}')">📋 Copiar esta retro a mi respuesta</button>`
       : "";
+    const codEval = _evalDeSug(s, x);
+    const ya = codEval ? _notaPublicada(x.uid, codEval) : null;
+    const pub = !codEval
+      ? `<div class="sug-hint">⚠ Esta sugerencia no dice a qué evaluación corresponde y la semana tiene
+           varias, así que no puedo publicarla desde aquí. Ponla desde el Libro de notas.</div>`
+      : `<div class="sug-pub">
+           <label>Nota final <input id="sugN-${k}" type="number" min="0" max="100" step="1"
+             value="${s.nota == null ? "" : esc(s.nota)}"></label>
+           <button class="btn mini rojo" onclick="sugPublicar('${k}','${key}','${esc(x.uid)}','${esc(codEval)}')">Publicar nota</button>
+           ${ya == null ? "" : `<span class="sug-ya">✓ ya publicada: ${fmtN(ya)}</span>`}
+           <span class="ent-save" id="sugS-${k}"></span>
+           <div class="sug-hint">Se registra como la nota de ${esc(codEval)} en el Libro de notas. Corrige el
+             número si no estás de acuerdo. La retro que se manda es la de tu caja de respuesta; si la dejas
+             vacía, va la sugerida.</div>
+         </div>`;
     return `<div class="sug">
       <div class="sug-cab">🤖 <b>Sugerencia del pre-calificador</b> ${cod}
         <span class="sug-nota">${nota}</span> ${cfTxt}
         <span style="margin-left:auto;color:var(--texto2);font-size:.72rem;">Propuesta — la nota la pones tú</span>
       </div>
-      <div class="sug-cuerpo">${retro}${band}${desg}</div>
+      <div class="sug-cuerpo">${retro}${band}${desg}${pub}</div>
     </div>`;
   }).join("");
+}
+
+// A que evaluacion corresponde la sugerencia. El motor manda el codigo (EV-1); si
+// no viene, se deduce de la semana, pero SOLO si esa semana tiene una sola
+// evaluacion de las que califica el profesor. Con dos, adivinar seria ponerle la
+// nota a la evaluacion equivocada, asi que se prefiere no ofrecer el boton.
+function _evalDeSug(s, x){
+  if(s.codigo) return s.codigo;
+  const cols = ((P && P.columnas) || []).filter(c =>
+    c.semana === x.semana && (c.tipo === "desarrollo" || c.tipo === "manual"));
+  return cols.length === 1 ? cols[0].codigo : null;
+}
+
+// La nota oficial que ya tiene ese alumno en esa evaluacion (null si aun no tiene).
+function _notaPublicada(uid, codigo){
+  const a = ((P && P.alumnos) || []).find(v => v.uid === uid);
+  const n = a && a.celdas ? a.celdas[codigo] : null;
+  return (n == null || n === "") ? null : n;
+}
+
+// Publicar: la nota que el profesor confirma pasa a ser la oficial del alumno.
+// Es el MISMO endpoint que usa "Guardar nota" del Libro de notas; aqui solo se
+// llega con un clic menos y con la propuesta ya escrita.
+async function sugPublicar(k, key, uid, codigo){
+  const s = _SUG[k], out = $("sugS-" + k), inp = $("sugN-" + k);
+  if(!s || !inp) return;
+  const txt = (inp.value || "").trim();
+  if(txt === ""){ alert("Pon una nota antes de publicar."); inp.focus(); return; }
+  const nota = Number(txt);
+  if(!(nota >= 0 && nota <= 100)){ alert("La nota va de 0 a 100."); inp.focus(); return; }
+  const ta = $("entC-" + key);
+  const com = ((ta && ta.value.trim()) || s.comentario || "").trim();
+  const ya = _notaPublicada(uid, codigo);
+  const aviso = ya == null ? "" : `\n\nOJO: este alumno ya tiene ${fmtN(ya)} en ${codigo}. Se reemplaza.`;
+  if(!confirm(`Publicar ${nota} / 100 como nota de ${codigo}.\n\nQueda en el Libro de notas y el alumno la ve.${aviso}`)) return;
+  if(out){ out.textContent = "…"; out.className = "ent-save"; }
+  try{
+    await postJSON(`/api/cursos/${CURSO}/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`,
+                   { nota, comentario: com });
+    if(out){ out.textContent = "✓ publicada"; out.className = "ent-save ok"; }
+    P = await api(`/api/cursos/${CURSO}/admin/planilla`);   // refresca la matriz
+    actualizarKPIs();
+  }catch(e){ if(out){ out.textContent = "⚠ " + e.message; out.className = "ent-save err"; } }
 }
 
 // Pasa la retro sugerida a la caja de respuesta del profesor, para que la edite
