@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -81,11 +81,23 @@ td.celed .celcom.tiene{opacity:1;filter:saturate(1.4);}
 td.celed.guardando{background:rgba(251,191,36,.28);}
 td.celed.guardada{background:rgba(74,222,128,.22);transition:background .8s;}
 td.celed.errorcel{background:rgba(239,68,68,.25);}
-/* ── Entregas separadas por semana: barra de atajos y cabecera de cada bloque ── */
-.sem-barra{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:var(--navy);
-  border:1px solid var(--borde);border-radius:10px;padding:9px 12px;}
-.sem-barra-tit{font-size:.8rem;font-weight:700;margin-right:4px;}
-.sem-barra-nota{font-size:.7rem;color:var(--texto2);font-weight:400;flex-basis:100%;}
+/* ── Entregas por semana: el selector se queda pegado arriba, para no tener que
+      desplazarse de vuelta cada vez que se cambia de semana. ── */
+.sem-sel{position:sticky;top:0;z-index:6;display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+  background:var(--navy);border:1px solid var(--borde);border-radius:12px;padding:12px 14px;
+  box-shadow:0 6px 16px rgba(0,0,0,.35);}
+.sem-sel-tit{font-size:.95rem;font-weight:800;margin-right:3px;}
+.sem-sel-nota{font-size:.74rem;color:var(--texto2);font-weight:400;flex-basis:100%;}
+.sem-chip{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  background:var(--panel);color:var(--texto);border:1px solid var(--borde);
+  border-radius:9px;padding:9px 15px;font-size:.95rem;font-weight:700;font-family:inherit;
+  transition:background .15s,border-color .15s;}
+.sem-chip:hover{border-color:var(--rojo);}
+.sem-chip.activa{background:var(--rojo);border-color:var(--rojo);color:#fff;}
+.sem-chip-n{background:rgba(255,255,255,.14);border-radius:20px;padding:1px 8px;
+  font-size:.72rem;font-weight:700;}
+.sem-chip.activa .sem-chip-n{background:rgba(0,0,0,.28);}
+.sem-baja{margin-left:auto;}
 .sem-cab{display:flex;align-items:center;gap:11px;flex-wrap:wrap;
   border-top:2px solid var(--borde);padding-top:12px;}
 .sem-cab-tit{font-size:1.02rem;font-weight:800;letter-spacing:.3px;}
@@ -795,37 +807,60 @@ function sugUsarRetro(k, key){
   ta.focus();
 }
 
+// Semana que se está mirando en Entregas. null = todavía no elegida (se elige
+// sola la última con entregas); "T" = ver todas de corrido.
+let SEM_VISTA = null;
+
+// El número de semana tal como viene de Firestore. La Semana 0 EXISTE y se
+// califica igual que las demás, así que 0 es un valor válido, no un hueco.
+function _semDe(x){ const n = parseInt(x && x.semana, 10); return (isNaN(n) || n < 0) ? 0 : n; }
+function _rotuloSem(s){ return "Semana " + s; }
+
+function verSemana(s){ SEM_VISTA = s; renderEntregas(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+
 function renderEntregas(){
   const tb = $("tabla");
-  // El profesor corrige SEMANA POR SEMANA, no alumno por alumno: las entregas van
-  // agrupadas por semana y cada semana se baja con su propio botón (06-ago-26).
+  // El profesor corrige SEMANA POR SEMANA, no alumno por alumno. Y no quiere
+  // desplazarse: elige la semana arriba y solo ve esa (06-ago-26).
   const todas = ((E && E.entregas) ? E.entregas : []).slice();
-  const semanas = [...new Set(todas.map(x => +x.semana || 0))].sort((a,b) => a-b);
+  const semanas = [...new Set(todas.map(_semDe))].sort((a, b) => a - b);
+  if(SEM_VISTA === null && semanas.length) SEM_VISTA = semanas[semanas.length - 1];
+  const verTodas = (SEM_VISTA === "T") || !semanas.length;
+  const cuenta = s => todas.filter(x => _semDe(x) === s).length;
+
   tb.querySelector("thead").innerHTML =
     `<tr><th colspan="9" style="background:transparent;border:none;padding:0 0 12px;">
-       ${semanas.length ? `<div class="sem-barra"><span class="sem-barra-tit">⬇ Bajar entregas de:</span>
-         ${semanas.map(s => `<button class="btn mini" onclick="descargarSemanaZip(${s},this)">Semana ${s}</button>`).join(" ")}
-         <span class="sem-barra-nota">Una carpeta por alumno, y los ZIP que suban vienen ya descomprimidos.</span></div>` : ""}
+       ${semanas.length ? `<div class="sem-sel">
+         <span class="sem-sel-tit">Ver la semana:</span>
+         ${semanas.map(s => `<button class="sem-chip${!verTodas && SEM_VISTA === s ? " activa" : ""}"
+             onclick="verSemana(${s})">${_rotuloSem(s)}<span class="sem-chip-n">${cuenta(s)}</span></button>`).join("")}
+         <button class="sem-chip${verTodas ? " activa" : ""}" onclick="verSemana('T')">Todas<span class="sem-chip-n">${todas.length}</span></button>
+         ${verTodas ? "" : `<button class="btn sem-baja" onclick="descargarSemanaZip(${SEM_VISTA},this)">⬇ Bajar la ${_rotuloSem(SEM_VISTA)}</button>`}
+         <span class="sem-sel-nota">La descarga trae una carpeta por alumno, y los ZIP que ellos suban ya vienen descomprimidos.</span>
+       </div>` : ""}
      </th></tr>`;
+
   // Una FICHA por entrega, a todo el ancho: el mensaje del alumno y la respuesta
   // del profesor necesitan espacio para varios párrafos, no una columna estrecha.
-  const rows = todas.sort((a, b) => (a.semana || 0) - (b.semana || 0) || porNumero(a, b));
+  const rows = todas.filter(x => verTodas || _semDe(x) === SEM_VISTA)
+                    .sort((a, b) => _semDe(a) - _semDe(b) || porNumero(a, b));
   let semActual = null;
   tb.querySelector("tbody").innerHTML = rows.map(x => {
     let cabSem = "";
-    if((+x.semana || 0) !== semActual){
-      semActual = +x.semana || 0;
-      const n = rows.filter(y => (+y.semana||0) === semActual).length;
+    if(verTodas && _semDe(x) !== semActual){
+      semActual = _semDe(x);
       cabSem = `<tr><td colspan="9" style="padding:6px 0 10px;border:none;">
         <div class="sem-cab">
-          <span class="sem-cab-tit">Semana ${semActual}</span>
-          <span class="sem-cab-n">${n} entrega${n===1?"":"s"}</span>
-          <button class="btn mini" onclick="descargarSemanaZip(${semActual},this)">⬇ Bajar la Semana ${semActual}</button>
+          <span class="sem-cab-tit">${_rotuloSem(semActual)}</span>
+          <span class="sem-cab-n">${cuenta(semActual)} entrega${cuenta(semActual)===1?"":"s"}</span>
+          <button class="btn mini" onclick="descargarSemanaZip(${semActual},this)">⬇ Bajar la ${_rotuloSem(semActual)}</button>
         </div></td></tr>`;
     }
     return cabSem + _fichaEntrega(x);
   }).join("") ||
-    `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
+    `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">${
+      semanas.length ? `Nadie entregó nada en la ${_rotuloSem(SEM_VISTA)}.`
+                     : "Aún no hay entregas subidas por los alumnos"}</td></tr>`;
 }
 
 // Una ficha (un alumno, una semana). La saqué de renderEntregas para poder
