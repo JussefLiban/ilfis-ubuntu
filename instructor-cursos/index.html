@@ -81,6 +81,15 @@ td.celed .celcom.tiene{opacity:1;filter:saturate(1.4);}
 td.celed.guardando{background:rgba(251,191,36,.28);}
 td.celed.guardada{background:rgba(74,222,128,.22);transition:background .8s;}
 td.celed.errorcel{background:rgba(239,68,68,.25);}
+/* ── Entregas separadas por semana: barra de atajos y cabecera de cada bloque ── */
+.sem-barra{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:var(--navy);
+  border:1px solid var(--borde);border-radius:10px;padding:9px 12px;}
+.sem-barra-tit{font-size:.8rem;font-weight:700;margin-right:4px;}
+.sem-barra-nota{font-size:.7rem;color:var(--texto2);font-weight:400;flex-basis:100%;}
+.sem-cab{display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+  border-top:2px solid var(--borde);padding-top:12px;}
+.sem-cab-tit{font-size:1.02rem;font-weight:800;letter-spacing:.3px;}
+.sem-cab-n{font-size:.72rem;color:var(--texto2);}
 /* ── Ficha de entrega: a todo el ancho, para poder escribir de verdad ── */
 .ficha{border:1px solid var(--borde);border-radius:11px;background:var(--panel);overflow:hidden;}
 .ficha-cab{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
@@ -394,7 +403,7 @@ function verTab(t){
     q: "📄 <b>Por cuestionario:</b> elige un cuestionario arriba y revisa el intento de cada alumno (su nota automática y si tiene preguntas de texto por calificar). Clic en <b>Ver respuestas</b> para revisarlas y ponerle nota a mano.",
     a: "👥 <b>Por alumno:</b> resumen de cada alumno — avance, último acceso, promedio y estado (Al día ≤3 días · Atención 4–7 · Rezagado >7). El <b>avance</b> son los <b>videos de clase vistos</b>: el manual, las tareas y los cuestionarios no cuentan ahí (se ven en sus propias pestañas). El botón <b>Exportar notas</b> baja este resumen a Excel.",
     cola: "✍ <b>Cola de calificación:</b> aquí se junta TODO lo que hay que calificar a mano — preguntas de texto y cada evaluación de desarrollo que ya tiene entrega. Clic en <b>Calificar</b> para ponerle nota y comentario. Las evaluaciones con cuestionario se califican solas.",
-    e: "📤 <b>Entregas de tareas:</b> aquí <b>descargas</b> los archivos (uno por uno, todo del alumno, o todo en un ZIP) y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
+    e: "📤 <b>Entregas de tareas:</b> están <b>separadas por semana</b>. Cada semana tiene su botón <b>⬇ Bajar la Semana N</b>: te llega un ZIP con <b>una carpeta por alumno</b>, y si el alumno subió su trabajo comprimido, adentro te lo entregamos <b>ya descomprimido</b>. También puedes bajar un archivo suelto o todo lo de un alumno. Y <b>le contestas</b> sobre su tarea: tu respuesta le aparece al alumno en esa misma tarea. Las <b>notas</b> no van aquí — se escriben en la <b>Planilla</b>.",
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que la <b>nota final</b> coincide con tu Excel. Cada curso calcula con SU propia regla.",
     prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas."
@@ -788,16 +797,40 @@ function sugUsarRetro(k, key){
 
 function renderEntregas(){
   const tb = $("tabla");
+  // El profesor corrige SEMANA POR SEMANA, no alumno por alumno: las entregas van
+  // agrupadas por semana y cada semana se baja con su propio botón (06-ago-26).
+  const todas = ((E && E.entregas) ? E.entregas : []).slice();
+  const semanas = [...new Set(todas.map(x => +x.semana || 0))].sort((a,b) => a-b);
   tb.querySelector("thead").innerHTML =
-    `<tr><th colspan="6" style="background:transparent;border:none;padding:0 0 12px;text-align:right;">
-       <button class="btn" onclick="descargarTodoZip(this)">⬇ Descargar TODAS las entregas (ZIP por carpetas)</button>
-     </th></tr>
-     `;
+    `<tr><th colspan="9" style="background:transparent;border:none;padding:0 0 12px;">
+       ${semanas.length ? `<div class="sem-barra"><span class="sem-barra-tit">⬇ Bajar entregas de:</span>
+         ${semanas.map(s => `<button class="btn mini" onclick="descargarSemanaZip(${s},this)">Semana ${s}</button>`).join(" ")}
+         <span class="sem-barra-nota">Una carpeta por alumno, y los ZIP que suban vienen ya descomprimidos.</span></div>` : ""}
+     </th></tr>`;
   // Una FICHA por entrega, a todo el ancho: el mensaje del alumno y la respuesta
   // del profesor necesitan espacio para varios párrafos, no una columna estrecha.
-  const rows = ((E && E.entregas) ? E.entregas : []).slice()
-    .sort((a, b) => porNumero(a, b) || (a.semana || 0) - (b.semana || 0));
+  const rows = todas.sort((a, b) => (a.semana || 0) - (b.semana || 0) || porNumero(a, b));
+  let semActual = null;
   tb.querySelector("tbody").innerHTML = rows.map(x => {
+    let cabSem = "";
+    if((+x.semana || 0) !== semActual){
+      semActual = +x.semana || 0;
+      const n = rows.filter(y => (+y.semana||0) === semActual).length;
+      cabSem = `<tr><td colspan="9" style="padding:6px 0 10px;border:none;">
+        <div class="sem-cab">
+          <span class="sem-cab-tit">Semana ${semActual}</span>
+          <span class="sem-cab-n">${n} entrega${n===1?"":"s"}</span>
+          <button class="btn mini" onclick="descargarSemanaZip(${semActual},this)">⬇ Bajar la Semana ${semActual}</button>
+        </div></td></tr>`;
+    }
+    return cabSem + _fichaEntrega(x);
+  }).join("") ||
+    `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
+}
+
+// Una ficha (un alumno, una semana). La saqué de renderEntregas para poder
+// intercalar la cabecera de cada semana sin duplicar el HTML.
+function _fichaEntrega(x){
     const files = (x.archivos||[]).length
       ? x.archivos.map(a => `<button class="btn mini" onclick="descargarEntrega('${esc(x.uid)}',${x.semana},'${esc(a.nombre).replace(/'/g,"&#39;")}')">⬇ ${esc(a.nombre)} <span style="color:var(--texto2);">(${fmtSize(a.size)})</span></button>`).join(" ")
       : '<span style="color:var(--texto2);">— sin archivos —</span>';
@@ -825,8 +858,6 @@ function renderEntregas(){
         </div>
       </div>
     </td></tr>`;
-  }).join("") ||
-    `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay entregas subidas por los alumnos</td></tr>`;
 }
 
 async function descargarEntrega(uid, sem, nombre){
@@ -871,8 +902,11 @@ async function _bajarZip(url, nombreZip, btn){
   }catch(e){ alert("No pude preparar el ZIP: " + e.message); }
   finally{ if(btn){ btn.disabled = false; if(txt) btn.textContent = txt; } }
 }
-function descargarTodoZip(btn){
-  _bajarZip(`${API}/api/cursos/${CURSO}/admin/entregas/zip`, "entregas_todos.zip", btn);
+// Se baja UNA semana: llega una carpeta por alumno con sus archivos, y si el
+// alumno subió un .zip viene ya descomprimido (el .zip no se incluye).
+function descargarSemanaZip(sem, btn){
+  _bajarZip(`${API}/api/cursos/${CURSO}/admin/entregas/${sem}/zip`,
+            `Semana ${sem} - entregas.zip`, btn);
 }
 function descargarAlumnoZip(uid, btn){
   _bajarZip(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/zip`, "entregas_alumno.zip", btn);
