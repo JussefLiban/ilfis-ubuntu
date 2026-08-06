@@ -248,6 +248,11 @@ header { background: #16213e; border-bottom: 3px solid #c0392b; padding: 12px 30
 textarea { width: 100%; height: 110px; background: #0f3460; border: 1px solid #2a5a9a; border-radius: 8px; color: #e0e0e0; font-size: 1rem; padding: 14px; resize: vertical; outline: none; transition: border 0.2s; }
 textarea:focus { border-color: #c0392b; }
 textarea::placeholder { color: #5a7a9a; }
+/* País de la consulta: viene de la ficha del suscriptor, pero se puede cambiar
+   cuando la pregunta es de un proyecto en otro país. */
+.fila-pais { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.fila-pais span { font-size: 0.82rem; color: #8899aa; }
+.sel-pais { flex: 1; min-width: 160px; max-width: 260px; padding: 8px 10px; border: 1px solid #2a2a5a; border-radius: 8px; background: #0f1729; color: #e6ecf7; font-size: 0.88rem; }
 .btn-consultar { margin-top: 14px; width: 100%; padding: 14px; background: #c0392b; color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
 .btn-consultar:hover { background: #a93226; }
 .btn-consultar:disabled { background: #555; cursor: not-allowed; }
@@ -504,6 +509,14 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <input class="auth-input" type="text" id="reg-name" placeholder="Ing. Juan Pérez" autocomplete="off" name="reg-nombre-nofill">
       </div>
       <div class="auth-input-group">
+        <label>País</label>
+        <select class="auth-input" id="reg-pais"></select>
+      </div>
+      <div class="auth-input-group">
+        <label>Teléfono (con código de país)</label>
+        <input class="auth-input" type="tel" id="reg-telefono" placeholder="+51 999 888 777" autocomplete="off" name="reg-tel-nofill">
+      </div>
+      <div class="auth-input-group">
         <label>Correo electrónico</label>
         <input class="auth-input" type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email">
       </div>
@@ -525,6 +538,37 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
       <div class="auth-success" id="register-success"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── FICHA DEL SUSCRIPTOR (nombre, país, teléfono) ───────────
+     Sale una sola vez: al crear la cuenta o, si ya estaba registrado de antes,
+     la primera vez que quiere consultar. Sin ficha no hay consulta — el país es
+     lo que permite al asistente y al instructor responder con criterio local. -->
+<div id="ficha-overlay" style="position:fixed;inset:0;background:rgba(10,14,26,0.88);display:none;align-items:center;justify-content:center;z-index:1200;padding:20px;overflow-y:auto;">
+  <div class="auth-card" style="max-width:440px;">
+    <h2 style="margin:0 0 6px;font-size:1.25rem;color:#e6ecf7;">Completa tu ficha</h2>
+    <p style="margin:0 0 18px;font-size:0.86rem;color:#8899aa;line-height:1.5;">
+      Nos permite responderte según las normas y la realidad de tu país. Es una sola vez.
+    </p>
+    <div class="auth-input-group">
+      <label>Nombre completo</label>
+      <input class="auth-input" type="text" id="ficha-nombre" placeholder="Ing. Juan Pérez" autocomplete="off">
+    </div>
+    <div class="auth-input-group">
+      <label>País</label>
+      <select class="auth-input" id="ficha-pais"></select>
+    </div>
+    <div class="auth-input-group">
+      <label>Teléfono (con código de país)</label>
+      <input class="auth-input" type="tel" id="ficha-telefono" placeholder="+51 999 888 777" autocomplete="off">
+    </div>
+    <button class="btn-auth-primary" id="btn-ficha" onclick="guardarFicha()">Guardar y continuar</button>
+    <div class="auth-error" id="ficha-error"></div>
+    <div style="text-align:center;margin-top:10px;">
+      <a href="javascript:void(0)" id="ficha-cerrar" onclick="cerrarFicha()"
+         style="display:none;color:#8899aa;font-size:0.8rem;text-decoration:underline;cursor:pointer;">Cancelar</a>
+    </div>
   </div>
 </div>
 
@@ -616,6 +660,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="consulta-box">
       <label>Tu pregunta técnica</label>
       <textarea id="pregunta" placeholder="Ej: ¿Cuál es la clasificación de riesgo para un hangar de aeronaves según NFPA 13?"></textarea>
+      <div class="fila-pais"><span>Esta consulta aplica a</span><select class="sel-pais" id="pais-corpus"></select></div>
       <button class="btn-consultar" id="btn" onclick="consultar()">Consultar corpus ILFIS</button>
     </div>
     <div class="estado" id="estado"></div>
@@ -641,6 +686,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="consulta-box">
       <label>Tu pregunta técnica</label>
       <textarea id="exp-pregunta" placeholder="Ej: ¿Cuál es la presión mínima de diseño para rociadores ESFR en un almacén de alto rack?"></textarea>
+      <div class="fila-pais"><span>Esta consulta aplica a</span><select class="sel-pais" id="pais-experto"></select></div>
       <button class="btn-consultar" id="btn-experto" onclick="preguntarExperto()">Enviar al experto</button>
     </div>
     <div class="estado" id="estado-experto"></div>
@@ -660,6 +706,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="consulta-box">
       <label>Tu consulta NFPA</label>
       <textarea id="nfpa-pregunta" placeholder="Ej: ¿cada cuánto debe inspeccionarse un sistema de rociadores según NFPA 25?"></textarea>
+      <div class="fila-pais"><span>Esta consulta aplica a</span><select class="sel-pais" id="pais-nfpa"></select></div>
       <button class="btn-consultar" id="btn-nfpa" onclick="preguntarNFPA()">Enviar al instructor</button>
     </div>
     <div class="estado" id="estado-nfpa"></div>
@@ -679,6 +726,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <div class="consulta-box">
       <label>Tu consulta FM</label>
       <textarea id="fm-pregunta" placeholder="Ej: ¿cada cuánto debe inspeccionarse un sistema de rociadores según FM 25?"></textarea>
+      <div class="fila-pais"><span>Esta consulta aplica a</span><select class="sel-pais" id="pais-fm"></select></div>
       <button class="btn-consultar" id="btn-fm" onclick="preguntarFM()">Enviar al instructor</button>
     </div>
     <div class="estado" id="estado-fm"></div>
@@ -1171,7 +1219,11 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         <div class="cuenta-user-info">
           <div class="cuenta-user-name" id="cuenta-nombre-crm">—</div>
           <div class="cuenta-user-email" id="cuenta-email-crm">—</div>
+          <div class="cuenta-user-email" id="cuenta-pais-crm" style="color:#8899aa;"></div>
         </div>
+        <button class="btn-refresh-cuenta" onclick="abrirFicha(true)" style="align-self:center;">
+          <i class="ti ti-edit"></i> Editar ficha
+        </button>
       </div>
     </div>
     <div class="cuenta-section">
@@ -1899,6 +1951,7 @@ auth.onAuthStateChanged(function (user) {
   _renderHistFm(user.uid);
   _verificarPendientesFm(user.uid);
   renderMiCuenta();
+  cargarFicha();          // trae nombre/país/teléfono del servidor (no bloquea)
   _adminRestaurarSesion();
   _mostrarSalaProfesoresSiDocente(user);
 
@@ -1973,16 +2026,32 @@ async function registerEmail() {
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-password').value;
   const pass2 = document.getElementById('reg-password2').value;
+  const pais  = document.getElementById('reg-pais').value;
+  const tel   = document.getElementById('reg-telefono').value.trim();
   const btn   = document.getElementById('btn-register');
   const errEl = document.getElementById('register-error');
   const okEl  = document.getElementById('register-success');
   if (!name || !email || !pass || !pass2) { showErr(errEl, 'Completa todos los campos.'); return; }
+  if (!pais) { showErr(errEl, 'Elige tu país: nos permite responderte según tu normativa local.'); return; }
+  if ((tel.match(/\d/g) || []).length < 8) {
+    showErr(errEl, 'Escribe tu teléfono con el código de tu país (ej. +51 999 888 777).'); return;
+  }
   if (pass.length < 6) { showErr(errEl, 'La contraseña debe tener al menos 6 caracteres.'); return; }
   if (pass !== pass2)  { showErr(errEl, 'Las dos contraseñas no coinciden. Vuelve a escribirlas.'); return; }
   btn.disabled = true; btn.textContent = 'Creando cuenta...'; errEl.style.display = 'none';
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     if (name) await cred.user.updateProfile({ displayName: name });
+    // Guardar la ficha AHORA, mientras la sesión existe: en cuanto se cierra
+    // (verificación de correo) ya no habría token para escribirla.
+    try {
+      const _tk = await cred.user.getIdToken();
+      await fetch(API + '/api/perfil', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _tk },
+        body: JSON.stringify({ nombre: name, pais: pais, telefono: tel })
+      });
+    } catch (e) { console.warn('ficha:', e); }  // si falla, se la pedimos al entrar
     // Le mandamos el correo de verificación y lo SACAMOS de la sesión: no entra
     // hasta que abra el correo y confirme. Así nadie se registra con un correo
     // que no es suyo y empieza a usar la plataforma sin más.
@@ -2233,6 +2302,15 @@ async function _authFetch(url, init = {}) {
     err.code = 'EXPIRED';
     throw err;
   }
+  // 428 → el servidor exige la ficha (nombre, país, teléfono). No es un fallo de
+  // sesión: se abre la ventanita y el usuario sigue donde estaba.
+  if (res.status === 428) {
+    _ficha.completo = false;
+    abrirFicha(false);
+    const err = new Error('Completa tu ficha para poder consultar: nombre, país y teléfono.');
+    err.code = 'FICHA';
+    throw err;
+  }
   if (res.status === 429) {
     let msg = 'Llegaste al tope diario de consultas. Vuelve mañana.';
     try { const j = await res.clone().json(); if (j && j.detail) msg = j.detail; } catch (_) {}
@@ -2243,6 +2321,115 @@ async function _authFetch(url, init = {}) {
   return res;
 }
 
+// ── FICHA DEL SUSCRIPTOR (nombre, país, teléfono) ─────────
+// Antes la plataforma no guardaba nada del suscriptor y el asistente respondía
+// sin saber bajo qué normativa se pregunta. La ficha vive en el servidor
+// (colección "perfiles"), no en la cuenta de Firebase, para poder pedírsela
+// también a quien se registró antes de que esto existiera.
+
+const PAISES = ['Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Ecuador',
+  'El Salvador','España','Estados Unidos','Guatemala','Honduras','México','Nicaragua','Panamá',
+  'Paraguay','Perú','Puerto Rico','República Dominicana','Uruguay','Venezuela','Otro país'];
+
+let _ficha = { nombre: '', pais: '', telefono: '', completo: false };
+
+function _llenarPaises(sel, seleccionado, conNoAplica) {
+  if (!sel) return;
+  let html = '<option value="">— Elige tu país —</option>';
+  if (conNoAplica) html = '';
+  html += PAISES.map(p => `<option value="${p}">${p}</option>`).join('');
+  if (conNoAplica) html += '<option value="No aplica">No aplica a un país</option>';
+  sel.innerHTML = html;
+  if (seleccionado) sel.value = seleccionado;
+}
+
+// País elegido para ESTA consulta ('' = que el servidor use el de la ficha)
+function _paisDe(id) {
+  const s = document.getElementById(id);
+  return s ? (s.value || '') : '';
+}
+
+async function cargarFicha() {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    const tk  = await user.getIdToken();
+    const res = await fetch(API + '/api/perfil', { headers: { 'Authorization': 'Bearer ' + tk } });
+    if (!res.ok) return;
+    _ficha = await res.json();
+  } catch (e) { /* si falla, la puerta del servidor (428) lo resuelve igual */ }
+  ['pais-corpus','pais-experto','pais-nfpa','pais-fm'].forEach(function (id) {
+    _llenarPaises(document.getElementById(id), _ficha.pais || '', true);
+  });
+  const c = document.getElementById('cuenta-pais-crm');
+  if (c) c.textContent = _ficha.pais ? (_ficha.pais + (_ficha.telefono ? ' · ' + _ficha.telefono : '')) : '';
+}
+
+// Devuelve true si puede seguir; si no, abre la ficha y corta la consulta.
+function exigirFicha() {
+  if (_ficha && _ficha.completo) return true;
+  abrirFicha(false);
+  return false;
+}
+
+function abrirFicha(opcional) {
+  const user = auth.currentUser;
+  _llenarPaises(document.getElementById('ficha-pais'), _ficha.pais || '', false);
+  document.getElementById('ficha-nombre').value   = _ficha.nombre || (user ? (user.displayName || '') : '');
+  document.getElementById('ficha-telefono').value = _ficha.telefono || '';
+  const err = document.getElementById('ficha-error');
+  err.style.display = 'none'; err.textContent = '';
+  document.getElementById('ficha-cerrar').style.display = opcional ? 'inline' : 'none';
+  document.getElementById('ficha-overlay').style.display = 'flex';
+}
+
+function cerrarFicha() { document.getElementById('ficha-overlay').style.display = 'none'; }
+
+async function guardarFicha() {
+  const btn = document.getElementById('btn-ficha');
+  const err = document.getElementById('ficha-error');
+  const datos = {
+    nombre:   document.getElementById('ficha-nombre').value.trim(),
+    pais:     document.getElementById('ficha-pais').value,
+    telefono: document.getElementById('ficha-telefono').value.trim()
+  };
+  const mostrar = function (m) { err.textContent = m; err.style.display = 'block'; };
+  if (datos.nombre.length < 3) return mostrar('Escribe tu nombre completo.');
+  if (!datos.pais)             return mostrar('Elige tu país.');
+  if ((datos.telefono.match(/\d/g) || []).length < 8)
+    return mostrar('Escribe tu teléfono con el código de tu país (ej. +51 999 888 777).');
+  btn.disabled = true; btn.textContent = 'Guardando...'; err.style.display = 'none';
+  try {
+    const user = auth.currentUser;
+    const tk = await user.getIdToken();
+    const res = await fetch(API + '/api/perfil', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk },
+      body: JSON.stringify(datos)
+    });
+    if (!res.ok) {
+      let m = 'No se pudo guardar. Intenta otra vez.';
+      try { const j = await res.json(); if (j && j.detail) m = j.detail; } catch (_) {}
+      throw new Error(m);
+    }
+    _ficha = await res.json();
+    // El nombre de la ficha manda: es el que verá el instructor en el ticket.
+    try { if (user.displayName !== datos.nombre) await user.updateProfile({ displayName: datos.nombre }); } catch (_) {}
+    const nEl = document.getElementById('user-name-el');
+    if (nEl) nEl.textContent = datos.nombre;
+    cerrarFicha();
+    await cargarFicha();
+    if (typeof renderMiCuenta === 'function') renderMiCuenta();
+  } catch (e) {
+    mostrar(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar y continuar';
+  }
+}
+
+// El formulario de registro comparte la misma lista de países.
+try { _llenarPaises(document.getElementById('reg-pais'), '', false); } catch (e) {}
+
 // ── MÓDULO PREGÚNTALE AL EXPERTO ──────────────────────────
 let _expertoQid    = null;
 let _expertoPoller = null;
@@ -2250,6 +2437,7 @@ let _expertoPoller = null;
 async function preguntarExperto() {
   const pregunta = document.getElementById('exp-pregunta').value.trim();
   if (!pregunta) return;
+  if (!exigirFicha()) return;
 
   const btn    = document.getElementById('btn-experto');
   const estado = document.getElementById('estado-experto');
@@ -2426,6 +2614,7 @@ function _renderHistNfpa(uid) {
 async function preguntarNFPA() {
   const pregunta = document.getElementById('nfpa-pregunta').value.trim();
   if (!pregunta) return;
+  if (!exigirFicha()) return;
   const btn    = document.getElementById('btn-nfpa');
   const estado = document.getElementById('estado-nfpa');
   const box    = document.getElementById('respuesta-nfpa-box');
@@ -2439,7 +2628,7 @@ async function preguntarNFPA() {
     const res = await _authFetch(API + '/preguntar_nfpa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto: pregunta, nombre: _nombre })
+      body: JSON.stringify({ texto: pregunta, nombre: _nombre, pais: _paisDe('pais-nfpa') })
     });
     if (!res.ok) throw new Error('Error ' + res.status);
     const data = await res.json();
@@ -2556,6 +2745,7 @@ function _renderHistFm(uid) {
 async function preguntarFM() {
   const pregunta = document.getElementById('fm-pregunta').value.trim();
   if (!pregunta) return;
+  if (!exigirFicha()) return;
   const btn    = document.getElementById('btn-fm');
   const estado = document.getElementById('estado-fm');
   const box    = document.getElementById('respuesta-fm-box');
@@ -2569,7 +2759,7 @@ async function preguntarFM() {
     const res = await _authFetch(API + '/preguntar_fm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto: pregunta, nombre: _nombre })
+      body: JSON.stringify({ texto: pregunta, nombre: _nombre, pais: _paisDe('pais-fm') })
     });
     if (!res.ok) throw new Error('Error ' + res.status);
     const data = await res.json();
@@ -2643,6 +2833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function consultar() {
   const pregunta = document.getElementById('pregunta').value.trim();
   if (!pregunta) return;
+  if (!exigirFicha()) return;
   const btn = document.getElementById('btn');
   const estado = document.getElementById('estado');
   const box = document.getElementById('respuesta-box');
@@ -2653,7 +2844,7 @@ async function consultar() {
     const t = setTimeout(() => ctrl.abort(), 120000);
     const res = await _authFetch(API + '/consulta', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ texto: pregunta }), signal: ctrl.signal
+      body: JSON.stringify({ texto: pregunta, pais: _paisDe('pais-corpus') }), signal: ctrl.signal
     });
     clearTimeout(t);
     if (!res.ok) throw new Error('Error del servidor: ' + res.status);
@@ -4785,7 +4976,10 @@ function adminRenderSuscriptores() {
   }
   const _f = (_adminSuscFiltro || '').toLowerCase();
   const _fuente = (_f
-    ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_f) || (u.email || '').toLowerCase().includes(_f))
+    ? _adminAlumnos.filter(u => (u.nombre || '').toLowerCase().includes(_f)
+                             || (u.email || '').toLowerCase().includes(_f)
+                             || (u.pais || '').toLowerCase().includes(_f)
+                             || (u.telefono || '').includes(_f))
     : _adminAlumnos.slice())
     // Primero los que tienen el acceso quitado (para verlos de un vistazo) y,
     // dentro de cada grupo, en orden alfabético por nombre (o correo si no hay nombre).
@@ -4825,15 +5019,19 @@ function adminRenderSuscriptores() {
     // "Borrar" elimina la cuenta por completo y libera el correo (distinto de suspender).
     const nom = (u.nombre||u.email||'').replace(/'/g,"\\'");
     const accBorrar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" onclick="adminBorrarCuenta('${u.uid}','${_em}','${nom}')">Borrar</button>`;
+    // Ficha: país y teléfono. Vacío = se registró antes de que se pidiera.
+    const _pais = u.pais ? _adminEsc(u.pais) : '<span style="color:#6b7280;">— sin ficha —</span>';
+    const _tel  = u.telefono ? `<div class="a-email">${_adminEsc(u.telefono)}</div>` : '';
     return `<tr>
       <td><div class="a-name">${u.nombre||'—'}</div><div class="a-email">${u.email}</div></td>
+      <td><div class="a-name" style="font-weight:normal;">${_pais}</div>${_tel}</td>
       <td>${memBadge}${estado}</td>
       <td style="white-space:nowrap;min-width:320px;">${accMem} <span style="display:inline-block;width:10px;"></span> ${accAcceso} ${accBorrar}</td>
     </tr>`;
   }).join('');
   box.innerHTML = filas
     ? `<table class="admin-table">
-      <thead><tr><th>Suscriptor</th><th>Membresía</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Suscriptor</th><th>País</th><th>Membresía</th><th>Acciones</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`
     : `<div class="admin-loading">— ningún resultado para "${_adminEsc(_adminSuscFiltro || '')}" —</div>`;
