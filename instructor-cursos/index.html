@@ -808,7 +808,7 @@ function renderEntregas(){
     return `<tr><td colspan="9" style="padding:0 0 14px;border:none;">
       <div class="ficha">
         <div class="ficha-cab">
-          <span>${numPref(x.uid)}<b>${esc(nomDe(x.uid, x.email))}</b>${x.email ? ` <span style="color:var(--texto2);">· ${esc(x.email)}</span>` : ""} <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
+          <span>${numPref(x.uid)}<b>${esc(nomDe(x.uid, x.email))}</b>${x.email ? ` <span style="color:var(--texto2);">· ${esc(x.email)}</span>` : ""}${x.es_prueba ? ` <span title="Entrega de ensayo del propio docente: no es de un alumno y no cuenta en las estadísticas." style="background:#3b2f0b;border:1px solid #8a6d1f;color:#e8b872;border-radius:6px;padding:1px 7px;font-size:.62rem;margin-left:8px;">🧪 ENSAYO</span>` : ""} <span style="color:var(--texto2);">· Semana ${x.semana}</span></span>
           <button class="btn mini" title="Descargar TODO de este alumno (todas las semanas) en un ZIP" onclick="descargarAlumnoZip('${esc(x.uid)}',this)">⬇ Todo del alumno</button>
         </div>
         <div class="ficha-cuerpo">
