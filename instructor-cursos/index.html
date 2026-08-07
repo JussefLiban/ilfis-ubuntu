@@ -1438,7 +1438,12 @@ function renderCalendario(){
   const cal = (R && R.calendario) || [];
   if(!cal.length){
     tb.querySelector("thead").innerHTML = "";
-    tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">Este diplomado todavía no tiene fecha de inicio de cohorte, así que no hay calendario. Se define en la Intranet.</td></tr>`;
+    // Dos causas distintas, y conviene no confundirlas: o el curso no tiene
+    // cohorte puesta, o el servidor todavía no manda el calendario.
+    const msg = (R && R.calendario)
+      ? "Este diplomado todavía no tiene fecha de inicio de cohorte, así que no hay calendario. Se define en la Intranet → Cohorte."
+      : "Todavía no puedo leer el calendario del servidor. Prueba con ↻ Recargar en unos minutos.";
+    tb.querySelector("tbody").innerHTML = `<tr><td style="text-align:center;color:var(--texto2);padding:26px;">${msg}</td></tr>`;
     return;
   }
   const ahora = new Date((R && R.ahora) || Date.now());
