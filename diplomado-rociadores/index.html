@@ -304,6 +304,7 @@ let hechas = new Set();         // ids de lecciones completadas (Firestore)
 let totalLecs = 0;
 let lecActiva = null;           // {sem, leccion}
 let sincronicas = [];           // clases EN VIVO grabadas (carpeta de Drive del curso)
+let sincDisponible = false;     // el curso tiene el módulo (aunque aún no haya grabaciones)
 let sincActiva = null;          // clase sincrónica que se está viendo
 let notasCache = null;
 let boletinCache = null;
@@ -632,12 +633,12 @@ function renderTemario(){
   // Clases EN VIVO grabadas: bloque propio ARRIBA del temario. No pertenecen a
   // ninguna semana (el que faltó a la clase de anoche la busca hoy) y no cuentan
   // para el avance: son un respaldo, no una lección del temario.
-  if(sincronicas.length){
+  if(sincDisponible){
     const sb = document.createElement("div");
     sb.className = "sem sem-abierta sinc-bloque" + (sincActiva !== null ? " sinc-sel" : "");
     sb.innerHTML = `<div class="sem-cab">
         <span class="st">🔴 Clases en vivo (grabadas)</span>
-        <span class="fechas">${sincronicas.length}</span>
+        <span class="fechas">${sincronicas.length || "—"}</span>
         <span class="flecha">▶</span>
       </div>`;
     sb.querySelector(".sem-cab").onclick = () => abrirSincronicas();
@@ -784,8 +785,11 @@ async function cargarSincronicas(){
   try{
     const r = await api(`/api/cursos/${CURSO}/sincronicas`);
     sincronicas = (r && r.clases) || [];
+    // El bloque se muestra AUNQUE no haya ninguna grabada todavía: el alumno
+    // tiene que saber que sus clases en vivo se van a publicar ahí.
+    sincDisponible = true;
   }catch(e){
-    sincronicas = [];      // sin clases en vivo el bloque simplemente no aparece
+    sincronicas = []; sincDisponible = false;
     console.warn("Clases en vivo:", e.message);
   }
 }
@@ -802,6 +806,13 @@ function abrirSincronicas(){
 
 function renderSincronicas(){
   const sel = sincronicas.find(c => c.id === sincActiva);
+  if(!sincronicas.length){
+    $("contenido").innerHTML = `
+      <h2>🔴 Clases en vivo (grabadas)</h2>
+      <div class="meta">Para quien no pudo asistir a una clase sincrónica.</div>
+      <div class="aviso">Todavía no hay ninguna clase grabada. En cuanto se dicte la primera clase en vivo, su grabación aparecerá aquí y podrás verla cuando quieras, durante todo el diplomado.</div>`;
+    return;
+  }
   $("contenido").innerHTML = `
     <h2>🔴 Clases en vivo (grabadas)</h2>
     <div class="meta">Las clases sincrónicas quedan grabadas aquí para quien no pudo asistir. Están disponibles todo el diplomado y no cuentan para tu avance.</div>
