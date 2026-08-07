@@ -948,6 +948,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <button class="btn-a" style="padding:7px 14px;font-size:0.8rem;" onclick="cohorteEnlazarVideos()">🎬 Enlazar Videos con Drive</button>
           <span id="admin-videos-msg" style="font-size:0.78rem;color:#7a8a9a;"></span>
         </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px;border-top:1px dashed #2a3450;padding-top:12px;">
+          <span style="font-size:0.75rem;color:#8899aa;">Clases en vivo (grabadas):</span>
+          <button class="btn-a" style="padding:7px 14px;font-size:0.8rem;" onclick="refrescarSincronicas()">🔴 Publicar ya las nuevas</button>
+          <span id="admin-sinc-msg" style="font-size:0.78rem;color:#7a8a9a;"></span>
+          <div style="flex-basis:100%;font-size:0.72rem;color:#66788a;">Aparecen solas al cabo de 10 minutos de dejarlas en la carpeta «Videos Clases Sincrónicas» del diplomado. Este botón las publica al instante.</div>
+        </div>
         <div style="font-size:0.74rem;color:#66788a;letter-spacing:0.02em;margin-bottom:8px;">Vistazo Rápido · Todos los Cursos</div>
         <div id="admin-cohorte-lista"><div class="admin-loading">Cargando...</div></div>
       </div>
@@ -4144,6 +4150,29 @@ async function cohorteEnlazarVideos() {
     if (fall) console.warn('Videos no encontrados:', d.fallidos);
   } catch(e) {
     if (msg) { msg.textContent = 'No pude enlazarlos: ' + e.message; msg.style.color = '#e87272'; }
+  }
+}
+
+// Relee AHORA la carpeta "Videos Clases Sincrónicas" del diplomado y publica las
+// grabaciones nuevas en el aula. Sin esto también aparecen: el aula relee la
+// carpeta cada 10 minutos. Esto es solo para no esperar.
+async function refrescarSincronicas() {
+  const curso = _adminCohorteCurso();
+  const msg = document.getElementById('admin-sinc-msg');
+  if (msg) { msg.textContent = 'Leyendo la carpeta de Drive…'; msg.style.color = '#8899aa'; }
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + curso + '/admin/sincronicas/refrescar', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    if (msg) {
+      msg.textContent = '✓ ' + d.encontradas + ' clase(s) publicada(s)'
+        + (d.encontradas ? ' · última: ' + d.clases[d.clases.length - 1] : '');
+      msg.style.color = d.encontradas ? '#5fd08a' : '#e0b64f';
+    }
+  } catch(e) {
+    if (msg) { msg.textContent = 'No pude publicarlas: ' + e.message; msg.style.color = '#e87272'; }
   }
 }
 

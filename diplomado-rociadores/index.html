@@ -106,6 +106,18 @@ video{width:100%;max-height:62vh;display:block;background:#000;}
 /* Tapa el botón "abrir en ventana nueva" (↗) del reproductor de Drive (esquina sup. der.):
    evita que el alumno salte a Drive y vea/copie el enlace directo del video. */
 .vcover{position:absolute;top:0;right:0;width:66px;height:54px;background:#000;z-index:6;cursor:default;}
+/* Clases sincrónicas (en vivo, grabadas) */
+.sinc-bloque .sem-cab .st::before{content:"";}
+.sinc-bloque.sinc-sel{border-color:var(--rojo);}
+.sinc-buscar{width:100%;margin:14px 0 10px;padding:10px 12px;border-radius:8px;border:1px solid var(--borde);background:var(--campo);color:var(--texto);font-size:.85rem;font-family:inherit;}
+.sinc-buscar:focus{outline:none;border-color:var(--azul);}
+.sinc-lista{border:1px solid var(--borde);border-radius:10px;overflow:hidden;}
+.sinc-fila{display:flex;align-items:center;gap:10px;padding:11px 13px;font-size:.85rem;cursor:pointer;border-bottom:1px solid #222839;background:var(--campo);}
+.sinc-fila:last-child{border-bottom:none;}
+.sinc-fila:hover{background:#232a3d;}
+.sinc-fila.activa{background:#26314d;border-left:3px solid var(--rojo);padding-left:10px;}
+.sinc-fila .sinc-nom{flex:1;line-height:1.3;}
+.sinc-fila .sinc-play{font-size:.72rem;color:var(--texto2);}
 .aviso{background:var(--campo);border:1px solid var(--borde);border-radius:8px;padding:12px 14px;font-size:.82rem;color:var(--texto2);line-height:1.5;margin:10px 0;}
 .aviso.err{border-color:#7f1d1d;color:var(--rojoTxt);}
 .aviso.okv{border-color:#14532d;color:var(--verde);}
@@ -291,6 +303,8 @@ let estructura = null;          // respuesta de GET /estructura
 let hechas = new Set();         // ids de lecciones completadas (Firestore)
 let totalLecs = 0;
 let lecActiva = null;           // {sem, leccion}
+let sincronicas = [];           // clases EN VIVO grabadas (carpeta de Drive del curso)
+let sincActiva = null;          // clase sincrónica que se está viendo
 let notasCache = null;
 let boletinCache = null;
 let _entregaSem = null, _entregaLecId = null;   // tarea abierta (para finalizar / completar)
@@ -525,6 +539,7 @@ async function cargarAula(){
     }
     hechas = new Set(Object.keys(prog.lecciones || {}));
     totalLecs = est.semanas.reduce((a,w) => a + w.lecciones.length, 0);
+    await cargarSincronicas();     // clases en vivo grabadas (bloque propio del temario)
     renderTemario();
     renderProgreso();
     if(est.modo_prueba){
@@ -614,6 +629,21 @@ function renderTemario(){
   }
   if(lecActiva) _semExp.add(lecActiva.sem);   // la semana de la lección activa queda abierta
 
+  // Clases EN VIVO grabadas: bloque propio ARRIBA del temario. No pertenecen a
+  // ninguna semana (el que faltó a la clase de anoche la busca hoy) y no cuentan
+  // para el avance: son un respaldo, no una lección del temario.
+  if(sincronicas.length){
+    const sb = document.createElement("div");
+    sb.className = "sem sem-abierta sinc-bloque" + (sincActiva !== null ? " sinc-sel" : "");
+    sb.innerHTML = `<div class="sem-cab">
+        <span class="st">🔴 Clases en vivo (grabadas)</span>
+        <span class="fechas">${sincronicas.length}</span>
+        <span class="flecha">▶</span>
+      </div>`;
+    sb.querySelector(".sem-cab").onclick = () => abrirSincronicas();
+    cont.appendChild(sb);
+  }
+
   estructura.semanas.forEach(w => {
     const abiertaW = _semAbiertaVista(w);   // docente: todo; "ver como alumno": según fecha
     const d = document.createElement("div");
@@ -675,6 +705,7 @@ async function marcarCompletada(leccionId){
 // ═══════════════ LECCIONES ═══════════════
 function abrirLeccion(w, l){
   if(typeof _quizClearTimer === "function") _quizClearTimer();   // corta cronómetro de un quiz anterior
+  sincActiva = null;
   lecActiva = { sem: w.sem, leccion: l, semana: w };
   renderTemario();
   actualizarLecNav();
@@ -742,6 +773,71 @@ function lecVideo(w, l, c){
 function videoVisto(btn, id){
   marcarCompletada(id);
   btn.parentNode.innerHTML = '<span class="ok90">✓ Lección completada</span>';
+}
+
+// ── Clases SINCRÓNICAS (las clases en vivo, grabadas) ──
+// Para el alumno que no pudo asistir. El título es el NOMBRE DEL ARCHIVO que el
+// instituto sube a la carpeta de Drive del diplomado ("Clase Presencial 1
+// (06Ago2026)"), así que el alumno busca por ese mismo texto.
+// No cuentan para el avance: no son lecciones del temario.
+async function cargarSincronicas(){
+  try{
+    const r = await api(`/api/cursos/${CURSO}/sincronicas`);
+    sincronicas = (r && r.clases) || [];
+  }catch(e){
+    sincronicas = [];      // sin clases en vivo el bloque simplemente no aparece
+    console.warn("Clases en vivo:", e.message);
+  }
+}
+
+function abrirSincronicas(){
+  if(typeof _quizClearTimer === "function") _quizClearTimer();
+  lecActiva = null;
+  sincActiva = sincActiva === null ? "" : sincActiva;   // "" = lista, sin video elegido
+  renderTemario();
+  ocultarLecNav();
+  renderSincronicas();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderSincronicas(){
+  const sel = sincronicas.find(c => c.id === sincActiva);
+  $("contenido").innerHTML = `
+    <h2>🔴 Clases en vivo (grabadas)</h2>
+    <div class="meta">Las clases sincrónicas quedan grabadas aquí para quien no pudo asistir. Están disponibles todo el diplomado y no cuentan para tu avance.</div>
+    ${sel ? `<div class="video-wrap">
+        <iframe id="player" src="https://drive.google.com/file/d/${esc(sel.drive_id)}/preview"
+          allow="autoplay; encrypted-media" allowfullscreen
+          style="width:100%;height:62vh;border:0;display:block;background:#000;"></iframe>
+        <div class="vcover" aria-hidden="true" title=""></div>
+      </div>
+      <div class="meta" style="margin-top:8px;">Estás viendo: <b>${esc(sel.titulo)}</b></div>` : ""}
+    <input id="sincBuscar" class="sinc-buscar" type="search" placeholder="Buscar una clase por nombre o fecha…"
+      oninput="filtrarSincronicas()">
+    <div class="sinc-lista" id="sincLista"></div>`;
+  filtrarSincronicas();
+}
+
+// Solo repinta la LISTA: el buscador no se vuelve a crear y no pierde el foco.
+function filtrarSincronicas(){
+  const caja = $("sincLista"); if(!caja) return;
+  const b = $("sincBuscar");
+  const q = ((b && b.value) || "").trim().toLowerCase();
+  const lista = q ? sincronicas.filter(c => c.titulo.toLowerCase().includes(q)) : sincronicas;
+  caja.innerHTML = lista.length
+    ? lista.map(c => `<div class="sinc-fila${c.id === sincActiva ? " activa" : ""}" onclick="verSincronica('${esc(c.id)}')">
+          <span class="sinc-ico">🎥</span><span class="sinc-nom">${esc(c.titulo)}</span><span class="sinc-play">Ver ▶</span>
+        </div>`).join("")
+    : `<div class="aviso" style="margin:0;">No hay ninguna clase con ese nombre. Prueba con el número de clase o con la fecha.</div>`;
+}
+
+function verSincronica(id){
+  const q = ($("sincBuscar") || {}).value || "";
+  sincActiva = id;
+  renderSincronicas();
+  const b = $("sincBuscar");
+  if(b && q){ b.value = q; filtrarSincronicas(); }
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // ── Manual (PDF) ──
