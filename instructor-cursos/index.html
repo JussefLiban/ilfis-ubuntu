@@ -148,6 +148,15 @@ td.celed.errorcel{background:rgba(239,68,68,.25);}
 .sug-pub label{font-size:.76rem;color:var(--texto2);display:flex;align-items:center;gap:6px;}
 .sug-pub input{width:78px;background:var(--campo);border:1px solid var(--borde);border-radius:6px;
   color:var(--texto);font-family:inherit;font-size:.9rem;font-weight:700;padding:5px 7px;text-align:center;}
+.sug-desg td.p input{width:56px;background:var(--campo);border:1px solid var(--borde);border-radius:5px;
+  color:#c4b5fd;font-family:inherit;font-size:.78rem;font-weight:700;padding:3px 5px;text-align:center;}
+.sug-ci{width:100%;box-sizing:border-box;background:transparent;border:1px solid transparent;
+  border-radius:5px;color:var(--texto2);font-family:inherit;font-size:.76rem;padding:3px 5px;}
+.sug-ci:hover{border-color:#33294f;}
+.sug-ci:focus{outline:none;background:var(--campo);border-color:var(--azul);color:var(--texto);}
+.sug-suma{font-size:.74rem;color:var(--texto2);padding:6px 8px 0;}
+.sug-suma b{color:#c4b5fd;}
+.sug-suma.ojo b{color:var(--ambar);}
 .sug-ya{font-size:.72rem;color:var(--verde);}
 .sug-hint{flex:1 1 100%;font-size:.7rem;color:var(--texto2);}
 /* Alumno de prueba */
@@ -726,12 +735,20 @@ function _bloqueSug(x, key){
     const cfTxt = cf ? `<span class="sug-cf ${cf === "alta" || cf === "media" || cf === "baja" ? cf : ""}">confianza ${esc(cf)}</span>` : "";
     const nota = (s.nota == null) ? "sin nota" : `${fmtN(s.nota)} / 100`;
     const cod = s.codigo ? `<b>${esc(s.codigo)}</b>` : "";
+    // El desglose es EDITABLE. Casi nunca se discute todo: se discute un rubro.
+    // Al corregirlo, la nota final se recalcula sola con la suma, y lo que se
+    // publica es el desglose corregido — asi queda por escrito que se cambio y
+    // por que, en vez de un numero final distinto sin explicacion.
     const desg = (s.desglose || []).length
-      ? `<details><summary class="sug-mas">Ver desglose (${s.desglose.length} ${s.desglose.length === 1 ? "punto" : "puntos"})</summary>
-           <table class="sug-desg">${s.desglose.map(d => `
+      ? `<details><summary class="sug-mas">Ver y ajustar desglose (${s.desglose.length} ${s.desglose.length === 1 ? "rubro" : "rubros"})</summary>
+           <table class="sug-desg">${s.desglose.map((d, j) => `
              <tr><td>${esc(d.item || "")}</td>
-                 <td class="p">${d.puntos == null ? "—" : fmtN(d.puntos)}${d.max == null ? "" : " / " + fmtN(d.max)}</td>
-                 <td class="c">${esc(d.comentario || "")}</td></tr>`).join("")}</table>
+                 <td class="p"><input id="sugD-${k}-${j}" type="number" min="0" step="0.5"
+                     value="${d.puntos == null ? "" : esc(d.puntos)}" oninput="sugRecalc('${k}')"
+                     >${d.max == null ? "" : ` <span style="color:var(--texto2);font-weight:400;">/ ${fmtN(d.max)}</span>`}</td>
+                 <td class="c"><input id="sugC-${k}-${j}" type="text" class="sug-ci"
+                     value="${esc(d.comentario || "")}" placeholder="por qué"></td></tr>`).join("")}</table>
+           <div class="sug-suma" id="sugSum-${k}"></div>
          </details>`
       : "";
     const band = (s.banderas || []).length
@@ -784,6 +801,43 @@ function _notaPublicada(uid, codigo){
   return (n == null || n === "") ? null : n;
 }
 
+// El desglose que quedo en pantalla, con las correcciones del profesor.
+function _desgloseEditado(k){
+  const s = _SUG[k];
+  if(!s || !(s.desglose || []).length) return null;
+  return s.desglose.map((d, j) => {
+    const p = $(`sugD-${k}-${j}`), c = $(`sugC-${k}-${j}`);
+    const txt = p ? (p.value || "").trim() : "";
+    return { item: d.item, max: d.max,
+             puntos: txt === "" ? null : Number(txt),
+             comentario: c ? c.value : d.comentario };
+  });
+}
+
+// Al corregir un rubro, la nota final se rehace con la suma. Si los rubros no
+// suman 100 se lleva a base 100 y se dice, para que nadie publique un 43 creyendo
+// que es sobre 100.
+function sugRecalc(k){
+  const filas = _desgloseEditado(k);
+  if(!filas) return;
+  let pts = 0, tope = 0, hay = false;
+  filas.forEach(f => {
+    if(f.puntos != null && !isNaN(f.puntos)){ pts += f.puntos; hay = true; }
+    if(f.max != null) tope += Number(f.max);
+  });
+  const cajaSum = $("sugSum-" + k), inp = $("sugN-" + k);
+  if(!hay){ if(cajaSum) cajaSum.textContent = ""; return; }
+  const sobre100 = (tope > 0 && Math.round(tope) !== 100);
+  const nota = sobre100 ? Math.round(pts / tope * 100) : Math.round(pts * 10) / 10;
+  if(inp) inp.value = nota;
+  if(cajaSum){
+    cajaSum.className = "sug-suma" + (sobre100 ? " ojo" : "");
+    cajaSum.innerHTML = sobre100
+      ? `Los rubros suman <b>${fmtN(pts)} de ${fmtN(tope)}</b>, no de 100. Nota final llevada a base 100: <b>${nota}</b>.`
+      : `Suma de los rubros: <b>${fmtN(pts)} / ${fmtN(tope)}</b> → es la nota final.`;
+  }
+}
+
 // Publicar: la nota que el profesor confirma pasa a ser la oficial del alumno.
 // Es el MISMO endpoint que usa "Guardar nota" del Libro de notas; aqui solo se
 // llega con un clic menos y con la propuesta ya escrita.
@@ -802,7 +856,7 @@ async function sugPublicar(k, key, uid, codigo){
   if(out){ out.textContent = "…"; out.className = "ent-save"; }
   try{
     await postJSON(`/api/cursos/${CURSO}/admin/evalnota/${encodeURIComponent(uid)}/${encodeURIComponent(codigo)}`,
-                   { nota, comentario: com });
+                   { nota, comentario: com, desglose: _desgloseEditado(k) });
     if(out){ out.textContent = "✓ publicada"; out.className = "ent-save ok"; }
     P = await api(`/api/cursos/${CURSO}/admin/planilla`);   // refresca la matriz
     actualizarKPIs();
@@ -875,6 +929,9 @@ function renderEntregas(){
     `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">${
       semanas.length ? `Nadie entregó nada en la ${_rotuloSem(SEM_VISTA)}.`
                      : "Aún no hay entregas subidas por los alumnos"}</td></tr>`;
+  // Deja escrita la suma de cada desglose desde el principio, sin esperar a que
+  // el profesor toque un rubro.
+  tb.querySelectorAll('[id^="sugSum-"]').forEach(el => sugRecalc(el.id.slice(7)));
 }
 
 // Una ficha (un alumno, una semana). La saqué de renderEntregas para poder
