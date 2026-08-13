@@ -438,7 +438,7 @@ function verTab(t){
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que la <b>nota final</b> coincide con tu Excel. Cada curso calcula con SU propia regla.",
     prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas.",
-    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. La columna <b>Evaluaciones y su cierre</b> muestra CADA evaluación con la fecha en que cierra su entrega (la de la bitácora del curso): cuando una vence más allá del domingo de su semana —porque tiene más días de plazo— su fecha va en <b>ámbar</b>. Sirve para cotejar de un vistazo contra la bitácora. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
+    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. Ojo con los DOS cierres, que son distintos: <b>Cierran clases</b> es hasta cuándo están las clases y el material de la semana (esa fecha la editas aquí); <b>Cierre de evaluaciones</b> es hasta cuándo el alumno entrega CADA evaluación, según su plazo propio (el de la bitácora del curso). Por eso una evaluación puede vencer DESPUÉS de que cierran sus clases —tiene más días de plazo— y en ese caso su fecha va en <b>ámbar</b>. El estado de la izquierda (clases en curso / cerradas / por abrir) es el de las clases, no el de las evaluaciones. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
     sincronicas: "🔴 <b>Clases en vivo:</b> las grabaciones de tus clases sincrónicas, tal como las ve el alumno que no pudo asistir. <b>Aquí no hay nada que hacer:</b> dejas el video en la carpeta <b>Videos Clases Sincrónicas</b> de tu diplomado (en Drive) y en unos minutos aparece solo en el aula. El <b>nombre del archivo</b> es el título que ve el alumno — si quieres cambiarlo, le cambias el nombre al archivo en Drive."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
@@ -1495,7 +1495,7 @@ function _calDia(iso){
   if(!iso) return "—";
   const d = new Date(iso);
   return new Intl.DateTimeFormat("es-PE", { timeZone:"America/Lima", weekday:"short",
-           day:"2-digit", month:"short" }).format(d).replace(/\./g, "");
+           day:"2-digit", month:"short" }).format(d).replace(/[.,]/g, "");
 }
 // Las fechas se EDITAN aquí mismo: se cambia la casilla y se guarda sola (sin
 // botón de guardar). La fecha de inicio de la cohorte NO se toca desde aquí:
@@ -1558,20 +1558,24 @@ function renderCalendario(){
     return;
   }
   const ahora = new Date((R && R.ahora) || Date.now());
+  const _sub = 'display:block;font-size:.62rem;font-weight:400;color:var(--texto2);text-transform:none;letter-spacing:0;margin-top:2px;';
   tb.querySelector("thead").innerHTML = `<tr>
       <th style="width:34px;">Sem</th><th>Semana</th>
-      <th style="width:140px;">Abre</th>
-      <th style="width:140px;">Cierra</th>
+      <th style="width:140px;">Abre semana</th>
+      <th style="width:140px;">Cierran clases<span style="${_sub}">clases y material de la semana</span></th>
       <th style="width:74px;">Notas</th>
       <th style="width:56px;">Clases</th>
-      <th>Evaluaciones y su cierre</th></tr>`;
+      <th>Cierre de evaluaciones<span style="${_sub}">plazo de entrega de cada una</span></th></tr>`;
   tb.querySelector("tbody").innerHTML = cal.map(w => {
     const abre = w.abre ? new Date(w.abre) : null;
     const cie  = w.cierre ? new Date(w.cierre) : null;
+    // El estado es el de las CLASES de la semana (no el de las evaluaciones, que
+    // tienen su propio plazo): por eso se dice "clases ...".
     let est = "", color = "";
-    if(cie && cie < ahora){ est = "cerrada"; color = "var(--texto2)"; }
-    else if(abre && abre <= ahora){ est = "EN CURSO"; color = "var(--verde)"; }
-    else { est = "por abrir"; color = "var(--ambar)"; }
+    if(cie && cie < ahora){ est = "clases cerradas"; color = "var(--texto2)"; }
+    else if(abre && abre <= ahora){ est = "clases en curso"; color = "var(--verde)"; }
+    else { est = "clases por abrir"; color = "var(--ambar)"; }
+    const enCurso = abre && abre <= ahora && cie && cie >= ahora;
     // Cada evaluación con SU cierre (el de la bitácora). Cuando vence más allá
     // del domingo de su semana (`propio`), el dato va en ámbar: así se ve de un
     // vistazo que esa evaluación tiene más plazo que sus clases.
@@ -1581,9 +1585,12 @@ function renderCalendario(){
         const et = ev.tipo === "objetivo" ? "📝" : "📤";
         const f = ev.cierre ? _calDia(ev.cierre) : "—";
         const col = ev.propio ? "var(--ambar)" : "var(--texto)";
-        const nom = [ev.codigo, ev.nombre].filter(Boolean).join(" · ");
+        const nom = (ev.nombre && ev.nombre !== ev.codigo)
+          ? [ev.codigo, ev.nombre].filter(Boolean).join(" · ")
+          : (ev.codigo || ev.nombre || "");
         return `${et} ${esc(nom)} — <b style="color:${col};">cierra ${f}</b>`
-             + (ev.plazo ? ` <span style="color:var(--texto2);">(${esc(ev.plazo)})</span>` : "");
+             + (ev.propio ? ` <span style="color:var(--ambar);font-size:.66rem;">(más plazo que sus clases)</span>` : "")
+             + (ev.plazo ? ` <span style="color:var(--texto2);">· ${esc(ev.plazo)}</span>` : "");
       }).join("<br>");
     } else {
       // Rociadores u otro curso sin evaluaciones parametrizadas: como antes.
@@ -1593,7 +1600,7 @@ function renderCalendario(){
       );
       venceHtml = vence.length ? vence.map(esc).join("<br>") : '<span style="color:var(--texto2);">—</span>';
     }
-    return `<tr${est === "EN CURSO" ? ' style="background:#16281c;"' : ''}>
+    return `<tr${enCurso ? ' style="background:#16281c;"' : ''}>
       <td style="text-align:center;font-weight:700;">${w.sem}</td>
       <td>${esc(w.titulo)}<div style="font-size:.68rem;color:${color};text-transform:uppercase;letter-spacing:.04em;">${est}</div></td>
       <td>${_calInput(w, "abre")}</td>
@@ -1604,7 +1611,9 @@ function renderCalendario(){
     </tr>`;
   }).join("");
   $("tablaCap").style.display = "block";
-  $("tablaCap").innerHTML = `📅 <b>Calendario del diplomado</b> · inicio de cohorte: <b>${esc(R.fecha_inicio_cohorte || "sin definir")}</b> · las semanas abren el lunes 00:00 y cierran al terminar el domingo (23:59), hora de Lima.`;
+  $("tablaCap").innerHTML = `📅 <b>Calendario del diplomado</b> · inicio de cohorte: <b>${esc(R.fecha_inicio_cohorte || "sin definir")}</b>.<br>`
+    + `<span style="color:var(--texto2);font-size:.8rem;">Dos cierres distintos: <b style="color:var(--texto);">Cierran clases</b> = hasta cuándo están las clases y el material de esa semana (esta fecha la editas tú). `
+    + `<b style="color:var(--texto);">Cierre de evaluaciones</b> = hasta cuándo el alumno entrega cada evaluación, según su plazo propio (por eso una puede vencer después de que cierran sus clases; esas van en <b style="color:var(--ambar);">ámbar</b>).</span>`;
 }
 
 // ── Clases en vivo (sincrónicas) ──
