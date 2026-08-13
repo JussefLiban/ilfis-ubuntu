@@ -438,7 +438,7 @@ function verTab(t){
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que la <b>nota final</b> coincide con tu Excel. Cada curso calcula con SU propia regla.",
     prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas.",
-    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
+    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. La columna <b>Evaluaciones y su cierre</b> muestra CADA evaluación con la fecha en que cierra su entrega (la de la bitácora del curso): cuando una vence más allá del domingo de su semana —porque tiene más días de plazo— su fecha va en <b>ámbar</b>. Sirve para cotejar de un vistazo contra la bitácora. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
     sincronicas: "🔴 <b>Clases en vivo:</b> las grabaciones de tus clases sincrónicas, tal como las ve el alumno que no pudo asistir. <b>Aquí no hay nada que hacer:</b> dejas el video en la carpeta <b>Videos Clases Sincrónicas</b> de tu diplomado (en Drive) y en unos minutos aparece solo en el aula. El <b>nombre del archivo</b> es el título que ve el alumno — si quieres cambiarlo, le cambias el nombre al archivo en Drive."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
@@ -1490,6 +1490,13 @@ function _calFecha(iso){
   return new Intl.DateTimeFormat("es-PE", { timeZone:"America/Lima", day:"2-digit",
            month:"2-digit", year:"2-digit" }).format(d);
 }
+// "dom 16 ago" — para comparar de un vistazo contra la bitácora del curso.
+function _calDia(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("es-PE", { timeZone:"America/Lima", weekday:"short",
+           day:"2-digit", month:"short" }).format(d).replace(/\./g, "");
+}
 // Las fechas se EDITAN aquí mismo: se cambia la casilla y se guarda sola (sin
 // botón de guardar). La fecha de inicio de la cohorte NO se toca desde aquí:
 // esa es del superadmin y mueve el diplomado entero.
@@ -1557,7 +1564,7 @@ function renderCalendario(){
       <th style="width:140px;">Cierra</th>
       <th style="width:74px;">Notas</th>
       <th style="width:56px;">Clases</th>
-      <th>Vence esa semana</th></tr>`;
+      <th>Evaluaciones y su cierre</th></tr>`;
   tb.querySelector("tbody").innerHTML = cal.map(w => {
     const abre = w.abre ? new Date(w.abre) : null;
     const cie  = w.cierre ? new Date(w.cierre) : null;
@@ -1565,10 +1572,27 @@ function renderCalendario(){
     if(cie && cie < ahora){ est = "cerrada"; color = "var(--texto2)"; }
     else if(abre && abre <= ahora){ est = "EN CURSO"; color = "var(--verde)"; }
     else { est = "por abrir"; color = "var(--ambar)"; }
-    const vence = [].concat(
-      (w.cuestionarios || []).map(t => "📝 " + t),
-      (w.tareas || []).map(t => "📤 " + t.replace(/\.(pdf|docx?|xlsx?)$/i, ""))
-    );
+    // Cada evaluación con SU cierre (el de la bitácora). Cuando vence más allá
+    // del domingo de su semana (`propio`), el dato va en ámbar: así se ve de un
+    // vistazo que esa evaluación tiene más plazo que sus clases.
+    let venceHtml;
+    if((w.evaluaciones || []).length){
+      venceHtml = w.evaluaciones.map(ev => {
+        const et = ev.tipo === "objetivo" ? "📝" : "📤";
+        const f = ev.cierre ? _calDia(ev.cierre) : "—";
+        const col = ev.propio ? "var(--ambar)" : "var(--texto)";
+        const nom = [ev.codigo, ev.nombre].filter(Boolean).join(" · ");
+        return `${et} ${esc(nom)} — <b style="color:${col};">cierra ${f}</b>`
+             + (ev.plazo ? ` <span style="color:var(--texto2);">(${esc(ev.plazo)})</span>` : "");
+      }).join("<br>");
+    } else {
+      // Rociadores u otro curso sin evaluaciones parametrizadas: como antes.
+      const vence = [].concat(
+        (w.cuestionarios || []).map(t => "📝 " + t),
+        (w.tareas || []).map(t => "📤 " + t.replace(/\.(pdf|docx?|xlsx?)$/i, ""))
+      );
+      venceHtml = vence.length ? vence.map(esc).join("<br>") : '<span style="color:var(--texto2);">—</span>';
+    }
     return `<tr${est === "EN CURSO" ? ' style="background:#16281c;"' : ''}>
       <td style="text-align:center;font-weight:700;">${w.sem}</td>
       <td>${esc(w.titulo)}<div style="font-size:.68rem;color:${color};text-transform:uppercase;letter-spacing:.04em;">${est}</div></td>
@@ -1576,7 +1600,7 @@ function renderCalendario(){
       <td>${_calInput(w, "cierre")}</td>
       <td style="white-space:nowrap;">${_calFecha(w.publicacion_notas)}</td>
       <td style="text-align:center;">${w.clases || "—"}</td>
-      <td style="font-size:.76rem;line-height:1.5;">${vence.length ? vence.map(esc).join("<br>") : '<span style="color:var(--texto2);">—</span>'}</td>
+      <td style="font-size:.76rem;line-height:1.6;">${venceHtml}</td>
     </tr>`;
   }).join("");
   $("tablaCap").style.display = "block";
