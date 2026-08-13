@@ -438,7 +438,7 @@ function verTab(t){
     planilla: "📋 <b>Planilla (Libro de notas):</b> el libro completo como tu Excel. Las <b>objetivas se llenan solas</b> del cuestionario. Las celdas con <b>✎</b> las escribes tú: clic en la casilla, tecleas la nota y <b>Enter</b> (baja sola a la siguiente). El <b>💬</b> de cada casilla es para dejarle un comentario al alumno. El botón <b>Exportar planilla</b> baja todo a Excel.",
     prueba: "🧪 <b>Alumno de prueba:</b> una calculadora de práctica (NO es un alumno real, no toca datos). Teclea notas y comprueba que la <b>nota final</b> coincide con tu Excel. Cada curso calcula con SU propia regla.",
     prorroga: "⏱ <b>Prórrogas:</b> dale a un alumno unas <b>horas extra</b> para subir la <b>tarea</b> de una semana. Solo <b>extiende</b> el plazo; los cuestionarios no se tocan. Abajo ves las prórrogas activas y puedes quitarlas.",
-    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. Ojo con los DOS cierres, que son distintos: <b>Cierran clases</b> es hasta cuándo están las clases y el material de la semana (esa fecha la editas aquí); <b>Cierre de evaluaciones</b> es hasta cuándo el alumno entrega CADA evaluación, según su plazo propio (el de la bitácora del curso). Por eso una evaluación puede vencer DESPUÉS de que cierran sus clases —tiene más días de plazo— y en ese caso su fecha va en <b>ámbar</b>. El estado de la izquierda (clases en curso / cerradas / por abrir) es el de las clases, no el de las evaluaciones. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
+    calendario: "📅 <b>Calendario:</b> todas las fechas del diplomado, y aquí las <b>cambias</b>. Toca la casilla de <b>Abre</b> o <b>Cierra</b> de una semana y se guarda sola — solo se mueve esa semana, las demás siguen igual. Si mueves un cierre, las notas de esa semana salen al día siguiente al mediodía. La semana movida queda marcada en ámbar y puedes devolverla a su fecha normal cuando quieras. Ojo con los DOS cierres, que son distintos y se editan por separado: <b>Cierran clases</b> es hasta cuándo están las clases y el material de la semana; <b>Cierre de evaluaciones</b> es hasta cuándo el alumno entrega CADA evaluación (su plazo propio). Cada evaluación tiene su casilla de fecha: la cambias y se guarda sola, sin tocar las clases; el aula respeta esa fecha. Si la mueves respecto del plan del curso, queda en <b>ámbar</b> con un enlace para <b>volver al plan</b>. Cuando una evaluación vence DESPUÉS de que cierran sus clases (tiene más días de plazo), se marca «más plazo que sus clases». El estado de la izquierda (clases en curso / cerradas / por abrir) es el de las clases, no el de las evaluaciones. La <b>fecha de inicio de la cohorte</b> no se toca desde aquí: esa mueve el diplomado entero y vive en la Intranet.",
     sincronicas: "🔴 <b>Clases en vivo:</b> las grabaciones de tus clases sincrónicas, tal como las ve el alumno que no pudo asistir. <b>Aquí no hay nada que hacer:</b> dejas el video en la carpeta <b>Videos Clases Sincrónicas</b> de tu diplomado (en Drive) y en unos minutos aparece solo en el aula. El <b>nombre del archivo</b> es el título que ve el alumno — si quieres cambiarlo, le cambias el nombre al archivo en Drive."
   };
   $("ayudaTab").innerHTML = AYUDAS[t] || "";
@@ -1532,6 +1532,27 @@ async function calGuardar(sem, campo, inp){
     renderCalendario();
   }
 }
+// Cierre de UNA evaluación (aparte del de clases). Se guarda solo; mandar vacío
+// = volver a la fecha del plan del curso.
+async function evalGuardar(codigo, inp){
+  inp.disabled = true;
+  try{
+    const d = await postJSON(`/api/cursos/${CURSO}/admin/evaluacion-cierre`, { codigo: codigo, cierre: inp.value || "" });
+    R.calendario = d.calendario;
+    renderCalendario();
+  }catch(e){
+    alert("No pude guardar el cierre de la evaluación: " + e.message);
+    inp.disabled = false;
+    renderCalendario();
+  }
+}
+async function evalDevolver(codigo){
+  try{
+    const d = await postJSON(`/api/cursos/${CURSO}/admin/evaluacion-cierre`, { codigo: codigo, cierre: "" });
+    R.calendario = d.calendario;
+    renderCalendario();
+  }catch(e){ alert("No pude devolver la evaluación a su fecha del plan: " + e.message); }
+}
 async function calDevolver(sem){
   if(!confirm("¿Devolver la Semana " + sem + " a las fechas normales de la cohorte?")) return;
   try{
@@ -1581,17 +1602,29 @@ function renderCalendario(){
     // vistazo que esa evaluación tiene más plazo que sus clases.
     let venceHtml;
     if((w.evaluaciones || []).length){
+      const editable = !!(R && R.evaluaciones_editables);
       venceHtml = w.evaluaciones.map(ev => {
         const et = ev.tipo === "objetivo" ? "📝" : "📤";
-        const f = ev.cierre ? _calDia(ev.cierre) : "—";
         const col = ev.propio ? "var(--ambar)" : "var(--texto)";
         const nom = (ev.nombre && ev.nombre !== ev.codigo)
           ? [ev.codigo, ev.nombre].filter(Boolean).join(" · ")
           : (ev.codigo || ev.nombre || "");
-        return `${et} ${esc(nom)} — <b style="color:${col};">cierra ${f}</b>`
-             + (ev.propio ? ` <span style="color:var(--ambar);font-size:.66rem;">(más plazo que sus clases)</span>` : "")
+        const tagProp = ev.propio ? ` <span style="color:var(--ambar);font-size:.66rem;">(más plazo que sus clases)</span>` : "";
+        if(editable){
+          // Casilla de fecha por evaluación: se cambia y se guarda sola. Ámbar si
+          // el docente ya la movió respecto del plan del curso.
+          const inp = `<input type="date" value="${_calISO(ev.cierre)}" onchange="evalGuardar('${esc(ev.codigo)}', this)"
+              style="width:130px;padding:3px 6px;border-radius:6px;font-size:.74rem;background:var(--campo);color:var(--texto);
+                     border:1px solid ${ev.movida ? "var(--ambar)" : "var(--borde)"};">`;
+          const dev = ev.movida
+            ? ` <a href="#" onclick="evalDevolver('${esc(ev.codigo)}');return false;" style="color:var(--azul);font-size:.66rem;">volver al plan (${_calDia(ev.cierre_normal)})</a>`
+            : "";
+          return `<div style="margin:0 0 7px;">${et} <b>${esc(nom)}</b> ${inp}${tagProp}${dev}</div>`;
+        }
+        const f = ev.cierre ? _calDia(ev.cierre) : "—";
+        return `${et} ${esc(nom)} — <b style="color:${col};">cierra ${f}</b>${tagProp}`
              + (ev.plazo ? ` <span style="color:var(--texto2);">· ${esc(ev.plazo)}</span>` : "");
-      }).join("<br>");
+      }).join(editable ? "" : "<br>");
     } else {
       // Rociadores u otro curso sin evaluaciones parametrizadas: como antes.
       const vence = [].concat(
@@ -1613,7 +1646,7 @@ function renderCalendario(){
   $("tablaCap").style.display = "block";
   $("tablaCap").innerHTML = `📅 <b>Calendario del diplomado</b> · inicio de cohorte: <b>${esc(R.fecha_inicio_cohorte || "sin definir")}</b>.<br>`
     + `<span style="color:var(--texto2);font-size:.8rem;">Dos cierres distintos: <b style="color:var(--texto);">Cierran clases</b> = hasta cuándo están las clases y el material de esa semana (esta fecha la editas tú). `
-    + `<b style="color:var(--texto);">Cierre de evaluaciones</b> = hasta cuándo el alumno entrega cada evaluación, según su plazo propio (por eso una puede vencer después de que cierran sus clases; esas van en <b style="color:var(--ambar);">ámbar</b>).</span>`;
+    + `<b style="color:var(--texto);">Cierre de evaluaciones</b> = hasta cuándo el alumno entrega cada evaluación (su plazo propio). ${(R && R.evaluaciones_editables) ? "Cada una tiene su casilla editable; se guarda sola. " : ""}Las que vencen después de que cierran sus clases van marcadas en <b style="color:var(--ambar);">ámbar</b>.</span>`;
 }
 
 // ── Clases en vivo (sincrónicas) ──
