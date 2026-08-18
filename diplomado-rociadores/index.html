@@ -1626,6 +1626,11 @@ async function verNotas(){
     return;
   }
   const AP = r.aprobatoria || 60;
+  // Hay dos modelos de nota: el de Rociadores (semanal + exámenes + concepto) y el
+  // "ponderado_plano" (Hidráulica): Σ nota×peso, sin crítica/concepto/semanal. La
+  // página debe dibujar AMBOS; si no, con datos del plano reventaba y se quedaba
+  // pegada en "Cargando…".
+  const plano = r.modelo === "ponderado_plano";
   const enc = r.encabezado || {};
   // exámenes agrupados por semana
   const exPorSem = {};
@@ -1675,7 +1680,7 @@ async function verNotas(){
   // Semana 0 (Crítica de lecturas) — solo si ya está abierta
   // La Semana 0 también lleva su Prom. y su Peso: la Crítica de Lecturas es una
   // de las 13 notas semanales, con el mismo 5% que cada semana.
-  const promS0 = est(r.critica.codigo) === "publicado"
+  const promS0 = (r.critica && est(r.critica.codigo) === "publicado")
     ? _prom(r, r.critica.nota)
     : `<span style="color:var(--texto2);font-size:.72rem;">Pendiente</span>`;
   // Leyenda: el color del borde le dice al alumno qué tipo de evaluación es.
@@ -1686,7 +1691,7 @@ async function verNotas(){
     <span class="it">💬<span>Tu profesor te dejó un comentario (pasa el ratón por el icono para leerlo)</span></span>
   </div>`;
 
-  let cuerpo = semVisible(0)
+  let cuerpo = (!plano && r.critica && semVisible(0))
     ? piso("Sem 0", box(r.critica.nombre, r.critica.codigo, r.critica.nota, 5), promS0)
     : "";
 
@@ -1694,9 +1699,11 @@ async function verNotas(){
   let _ocultas = 0;
   (r.semanas || []).forEach(s => {
     if(!semVisible(s.sem)){ _ocultas++; return; }
-    let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round((ev.peso_semana || 0) * 100), ev.quizId != null)).join("");
+    // Rociadores usa peso_semana; el plano usa peso_global. Se toma el que venga.
+    let boxes = (s.evals || []).map(ev => box(ev.nombre, ev.codigo, ev.nota, Math.round(((ev.peso_semana != null ? ev.peso_semana : ev.peso_global) || 0) * 100), ev.quizId != null)).join("");
     (exPorSem[s.sem] || []).forEach(ex => { boxes += box("🎯 " + ex.nombre, ex.codigo, ex.nota, Math.round((ex.peso_global || 0) * 100)); });
-    const prom = semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);font-size:.72rem;">Pendiente</span>`;
+    // El plano no tiene promedio semanal (cada evaluación pesa directo en el total).
+    const prom = plano ? null : (semPub(s.evals) ? _prom(r, s.prom_sem) : `<span style="color:var(--texto2);font-size:.72rem;">Pendiente</span>`);
     cuerpo += piso("Sem " + s.sem, boxes, prom);
   });
   // Examen Final — solo si su semana ya está abierta
@@ -1718,7 +1725,12 @@ async function verNotas(){
   const provi = r.provisional
     ? `<div class="aviso" style="margin-top:8px;"><b>En curso:</b> las evaluaciones que aún no realizas cuentan como 0, así que tu nota irá subiendo a medida que avances y te califiquen. La nota final se cierra al terminar el diplomado.</div>`
     : `<div class="aviso" style="margin-top:8px;">Nota final <b>${r.resultado}</b>.</div>`;
-  const cierre = `<div class="bolcierre">
+  // El plano no tiene desglose por categorías: la nota final es la suma ponderada
+  // directa. Se muestra solo Promedio Total y Resultado (no r.concepto, que no existe).
+  const cierre = plano ? `<div class="bolcierre">
+    <div class="bolrow bolprom" style="border-top:2px solid var(--azul);"><span>PROMEDIO TOTAL</span><span>${totalTxt}</span></div>
+    <div class="bolrow"><span>Resultado</span><span><b style="color:${resCol};">${r.resultado || "En curso"}</b></span></div>
+  </div>${provi}` : `<div class="bolcierre">
     <div class="bolrow"><span>Promedio Semanal <span class="pct">60%</span>${elim}</span><span>${_prom(r, r.promedio_semanal)}</span></div>
     <div class="bolrow"><span>Promedio Exámenes <span class="pct">30%</span></span><span>${_prom(r, r.promedio_examenes)}</span></div>
     <div class="bolrow"><span>Nota Concepto <span class="pct">10%</span></span><span>${_prom(r, r.concepto.nota)}</span></div>
@@ -1768,7 +1780,9 @@ async function verNotas(){
     ${leyenda}
     ${cuerpo}
     ${cierre}
-    <div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`;
+    ${plano
+      ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`
+      : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`}`;
 }
 </script>
 </body>
