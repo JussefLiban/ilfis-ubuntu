@@ -854,7 +854,7 @@ function verSincronica(id){
 // ── Manual (PDF) ──
 function lecManual(w, l, c){
   c.innerHTML = cab(w, l) + `
-    <span class="chip" onclick="abrirPDF()">📄 Abrir el manual completo (PDF protegido)</span>
+    <span class="chip" onclick="abrirPDF()">📄 Abrir el manual completo</span>
     <div class="aviso">El manual se abre en una pestaña nueva. Es el material oficial de estudio de todo el diplomado.</div>
     <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Marcado como leído'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
 }
