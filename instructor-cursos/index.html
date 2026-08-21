@@ -297,7 +297,8 @@ const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
 const CURSO = new URLSearchParams(location.search).get("curso") || "rociadores";
 const NOMBRE_CURSO = {
   "rociadores": "Diplomado de Rociadores Automáticos",
-  "calculos-hidraulicos": "Diplomado de Cálculos Hidráulicos"
+  "calculos-hidraulicos": "Diplomado de Cálculos Hidráulicos",
+  "hidraulica-basica": "Curso de Hidráulica Básica"
 }[CURSO] || "Diplomado";
 document.addEventListener("DOMContentLoaded", () => {
   const t = document.getElementById("panelTitulo");
