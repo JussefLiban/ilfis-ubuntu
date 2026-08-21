@@ -310,7 +310,7 @@ let notasCache = null;
 let boletinCache = null;
 let _entregaSem = null, _entregaLecId = null;   // tarea abierta (para finalizar / completar)
 
-const ICO = { video:"🎬", manual:"📄", quiz:"📝", tarea:"📤" };
+const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤" };
 const $ = id => document.getElementById(id);
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -713,6 +713,7 @@ function abrirLeccion(w, l){
   const c = $("contenido");
   if(l.tipo === "video")       return lecVideo(w, l, c);
   if(l.tipo === "manual")      return lecManual(w, l, c);
+  if(l.tipo === "docs")        return lecDocs(w, l, c);
   if(l.tipo === "tarea")       return lecTarea(w, l, c);
   if(l.tipo === "quiz")        return lecQuiz(w, l, c);
 }
@@ -864,6 +865,31 @@ async function abrirPDF(){
     const t = await usuario.getIdToken(true);
     window.open(`${API}/api/cursos/${CURSO}/pdf/stream?token=${t}`, "_blank");
   }catch(e){ alert("No pude abrir el PDF: " + e.message); }
+}
+
+// ── Documentos de la semana (un solo bloque con varios PDF) ──
+// El "manual" se ABRE en pestaña (stream protegido); el resto se descargan.
+function lecDocs(w, l, c){
+  const archivos = (l.archivos || []);
+  const descargable = !!(estructura && estructura.tareas_descargables);
+  const limpio = n => esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i, ""));
+  const lista = archivos.length
+    ? archivos.map(n => {
+        if(l.manual && n === l.manual)
+          return `<span class="chip" onclick="abrirPDF()" title="Abrir en una pestaña nueva">${badgeDe(n)}${limpio(n)} ↗</span>`;
+        return descargable
+          ? `<span class="chip dl" onclick="descargarTarea(${w.sem}, '${esc(n).replace(/'/g,"&#39;")}')" title="Descargar">${badgeDe(n)}${limpio(n)} ⬇</span>`
+          : `<span class="chip static">${badgeDe(n)}${limpio(n)}</span>`;
+      }).join("<br>")
+    : '<div class="aviso">Esta semana no tiene documentos.</div>';
+  const nota = descargable
+    ? '<div class="aviso">📄 Haz clic en cada documento para abrirlo o descargarlo.</div>'
+    : '<div class="aviso">📄 El material oficial de estudio se abre en una pestaña nueva. La descarga directa del resto estará disponible muy pronto.</div>';
+  c.innerHTML = cab(w, l) + `
+    <div style="font-weight:600;margin:2px 0 8px;color:var(--texto2);">📄 Documentos de esta semana</div>
+    <div style="margin-bottom:10px;">${lista}</div>
+    ${nota}
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Marcado como leído'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
 }
 
 // ── Tarea ──
