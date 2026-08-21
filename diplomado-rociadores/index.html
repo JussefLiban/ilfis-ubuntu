@@ -1407,7 +1407,9 @@ async function lecQuiz(w, l, c){
   (q.preguntas || []).forEach((p, qi) => {
     // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
     const num = (p.num !== undefined && p.num !== null) ? p.num : (qi + 1);
-    const soloNum = String(p.enunciado||"").trim() === String(num);
+    const enunTxt = String(p.enunciado||"").trim();
+    // Hoja de respuestas: sin enunciado (o solo el número) → el enunciado y las figuras van en el PDF.
+    const soloNum = !enunTxt || enunTxt === String(num);
     const enun = soloNum
       ? `Pregunta ${num} <span class="pts">(el enunciado está en el documento PDF de esta evaluación)</span>`
       : `${num}. ${esc(p.enunciado)}`;
