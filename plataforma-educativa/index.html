@@ -139,9 +139,17 @@ const CURSOS_EDU = [
     nombre: "Curso de Hidráulica Básica",
     img:    "https://ilfislatinoamerica.com/wp-content/uploads/2025/04/Curso-Hidraulica-Basica-300x300.webp",
     inicio: "por definir",
-    datos:  "🎬 13 clases · 📝 4 evaluaciones calificadas · 📄 material completo · 🗓 6 semanas",
+    datos:  "🎬 13 clases · 📝 4 evaluaciones calificadas · 📄 material completo · 🗓 4 semanas",
     aula:   "../diplomado-rociadores/?curso=hidraulica-basica",
     info:   "https://ilfislatinoamerica.com/producto/curso-de-hidraulica-basica/"
+  },
+  {
+    nombre: "Curso IPM Motores de Bombas PCI",
+    img:    "https://ilfislatinoamerica.com/wp-content/uploads/2025/02/Diseno-Instalacion-y-Mantenimiento-de-Bombas-Contra-Incendios-300x300.jpg",
+    inicio: "por definir",
+    datos:  "🎬 12 clases (9 módulos) · 🗓 4 semanas · 👨‍🏫 Ing. Carlos Domínguez · 📝 evaluaciones en preparación",
+    aula:   "../diplomado-rociadores/?curso=ipm-motores",
+    info:   ""
   }
 ];
 
@@ -155,7 +163,7 @@ document.getElementById("grilla").innerHTML = CURSOS_EDU.map(c => `
       <h3>${escHtml(c.nombre)}</h3>
       <div class="datos">${c.datos}<br>👨‍🏫 Tutoría de expertos ILFIS · 📊 libreta de notas en línea · 🎓 certificado al aprobar</div>
       <a class="btn rojo" href="${escHtml(c.aula)}">🎓 Entrar al aula</a>
-      <a class="btn outline" href="${escHtml(c.info)}" target="_blank" rel="noopener">Información del programa</a>
+      ${c.info ? `<a class="btn outline" href="${escHtml(c.info)}" target="_blank" rel="noopener">Información del programa</a>` : ""}
     </div>
   </div>`).join("");
 </script>
