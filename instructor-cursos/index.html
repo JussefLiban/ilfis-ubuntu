@@ -1149,6 +1149,10 @@ function renderPlanilla(){
   }
   const ap = P.aprobatoria || 60;
   const manuales = new Set(P.codigos_manuales || []);
+  // Modelo de notas del curso. En 'ponderado_plano' (Motores, Hidráulica, Cálculos) cada
+  // evaluación ya trae su peso y la nota final es su suma directa → NO existen las columnas
+  // SEMANAL/EXÁM/CONCEPTO (esas son del modelo de Rociadores).
+  const PLANO = (P.modelo === "ponderado_plano");
   // Encabezado: Alumno (fijo) + cada columna + cierre
   let th = `<th class="stick">Alumno</th>`;
   P.columnas.forEach(c => {
@@ -1162,7 +1166,9 @@ function renderPlanilla(){
       : `${c.nombre}${pct?" · "+pct:""}`;
     th += `<th class="${cls}" title="${esc(tit)}">${esc(_colLbl(c))}<div class="pct">${pct}</div></th>`;
   });
-  th += `<th class="colcierre">SEMANAL<br>60%</th><th class="colcierre">EXÁM.<br>30%</th><th class="colcierre colman">CONCEPTO<br>10%</th><th class="colcierre">TOTAL</th><th class="colcierre">RESULTADO</th><th class="colcierre">#</th>`;
+  th += PLANO
+    ? `<th class="colcierre">TOTAL</th><th class="colcierre">RESULTADO</th><th class="colcierre">#</th>`
+    : `<th class="colcierre">SEMANAL<br>60%</th><th class="colcierre">EXÁM.<br>30%</th><th class="colcierre colman">CONCEPTO<br>10%</th><th class="colcierre">TOTAL</th><th class="colcierre">RESULTADO</th><th class="colcierre">#</th>`;
   tb.querySelector("thead").innerHTML = `<tr>${th}</tr>`;
 
   const rows = (P.alumnos || []).map(a => {
@@ -1193,13 +1199,16 @@ function renderPlanilla(){
       }
     });
     // cierre
-    const conceptoCell = _celdaManual(a, { codigo:"NOTA_CONCEPTO", nombre:"Nota Concepto", semana:0 },
-                                      a.concepto, null, ap, "colcierre");
     const resCol = a.resultado==="APROBADO" ? "var(--verde)" : (a.resultado==="DESAPROBADO" ? "var(--rojoTxt)" : "var(--texto2)");
-    tds += `<td class="num colcierre">${_colNota(a.promedio_semanal, ap)}</td>`
-         + `<td class="num colcierre">${_colNota(a.promedio_examenes, ap)}</td>`
-         + conceptoCell
-         + `<td class="num colcierre">${a.promedio_total!=null?`<b style="color:${resCol};font-size:1.05em;">${fmtN(a.promedio_total)}</b>`:'—'}${(!a.completo&&a.promedio_total!=null)?'<div style="color:var(--texto2);font-size:.6rem;">en curso</div>':''}</td>`
+    if(!PLANO){
+      // Columnas del modelo de Rociadores (no aplican al ponderado plano).
+      const conceptoCell = _celdaManual(a, { codigo:"NOTA_CONCEPTO", nombre:"Nota Concepto", semana:0 },
+                                        a.concepto, null, ap, "colcierre");
+      tds += `<td class="num colcierre">${_colNota(a.promedio_semanal, ap)}</td>`
+           + `<td class="num colcierre">${_colNota(a.promedio_examenes, ap)}</td>`
+           + conceptoCell;
+    }
+    tds += `<td class="num colcierre">${a.promedio_total!=null?`<b style="color:${resCol};font-size:1.05em;">${fmtN(a.promedio_total)}</b>`:'—'}${(!a.completo&&a.promedio_total!=null)?'<div style="color:var(--texto2);font-size:.6rem;">en curso</div>':''}</td>`
          + `<td class="colcierre" style="color:${resCol};font-weight:700;font-size:.7rem;">${a.resultado||'En curso'}</td>`
          + `<td class="num colcierre">${a.ranking||'—'}</td>`;
     return `<tr>${tds}</tr>`;
@@ -1388,13 +1397,16 @@ async function guardarEvalNota(uid, codigo){
 }
 function exportarPlanilla(){
   if(!P || !P.columnas) return;
+  const PLANO = (P.modelo === "ponderado_plano");
   const cab = ["Ranking","Alumno","Correo",
     ...P.columnas.map(c => _colLbl(c)),
-    "Promedio Semanal","Promedio Exámenes","Nota Concepto","Promedio Total","Resultado"];
+    ...(PLANO ? [] : ["Promedio Semanal","Promedio Exámenes","Nota Concepto"]),
+    "Promedio Total","Resultado"];
   const filas = (P.alumnos||[]).map(a => [
     (a.ranking==null ? "" : Number(a.ranking)), a.nombre, a.email,
     ...P.columnas.map(c => { const v = a.celdas ? a.celdas[c.codigo] : null; return v==null?"":fmtN(v); }),
-    _num(a.promedio_semanal), _num(a.promedio_examenes), _num(a.concepto), _num(a.promedio_total), a.resultado||""
+    ...(PLANO ? [] : [_num(a.promedio_semanal), _num(a.promedio_examenes), _num(a.concepto)]),
+    _num(a.promedio_total), a.resultado||""
   ]);
   ILFISExcel.bajar({ archivo:`planilla_${CURSO}`, hojas:[{ nombre:"Libro de notas", cabeceras:cab, filas }] });
 }
