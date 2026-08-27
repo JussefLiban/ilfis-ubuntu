@@ -1039,6 +1039,7 @@ async function cargarEntrega(sem){
   let ctrl;
   if(e.puede_subir){
     ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}" multiple><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
+      <div class="ent-hint" style="border-left:3px solid var(--acento,#2563eb);background:rgba(37,99,235,.08);padding:8px 10px;border-radius:6px;margin-top:8px;">📝 <b>Nombra cada archivo así:</b> <b>Evaluación N - Tu Nombre</b> &nbsp;(ejemplo: <i>Evaluación 8 - Mario Gutiérrez</i>). Sube un archivo por evaluación con ese nombre; así el profesor identifica de inmediato tu trabajo.</div>
       <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} · cierre dom ${fmtLima(e.cierre)}.</div>`;
   } else {
     const _cerrado = new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
