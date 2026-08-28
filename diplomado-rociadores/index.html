@@ -309,6 +309,10 @@ let sincActiva = null;          // clase sincrónica que se está viendo
 let notasCache = null;
 let boletinCache = null;
 let _entregaSem = null, _entregaLecId = null;   // tarea abierta (para finalizar / completar)
+let _entregaModulo = null;   // módulo de entrega abierto (semanas partidas en 2 cajas); null = caja única
+// Sufijo de query con el módulo (para todas las llamadas de entrega). Solo una
+// tarea está abierta a la vez, así que el global basta.
+function _mq(){ return _entregaModulo ? ("?modulo=" + encodeURIComponent(_entregaModulo)) : ""; }
 
 const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤" };
 const $ = id => document.getElementById(id);
@@ -966,7 +970,7 @@ function lecTarea(w, l, c){
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
     <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>`;
-  _entregaSem = w.sem; _entregaLecId = l.id;
+  _entregaSem = w.sem; _entregaLecId = l.id; _entregaModulo = l.modulo || null;
   cargarEntrega(w.sem);
 }
 
@@ -1004,7 +1008,7 @@ async function cargarEntrega(sem){
   const box = $("entregaBox");
   if(!box) return;
   let e;
-  try{ e = await api(`/api/cursos/${CURSO}/entrega/${sem}`); }
+  try{ e = await api(`/api/cursos/${CURSO}/entrega/${sem}${_mq()}`); }
   catch(err){ box.innerHTML = `<div class="aviso err">No pude cargar tu entrega: ${esc(err.message)}</div>`; return; }
   if(!e.habilitado){
     const done = hechas.has(_entregaLecId);
@@ -1074,9 +1078,9 @@ async function borrarEntregaCompleta(sem){
   if(!confirm("¿Borrar toda tu entrega de esta semana?\n\nSe borrarán los archivos que subiste. Tu mensaje al profesor NO se borra.")) return;
   const pend = ($(`notaProf-${sem}`) || {}).value;   // el mensaje nunca se pierde
   try{
-    const e = await api(`/api/cursos/${CURSO}/entrega/${sem}`);
+    const e = await api(`/api/cursos/${CURSO}/entrega/${sem}${_mq()}`);
     for(const a of (e.archivos||[])){
-      await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(a.nombre)}`, { method:"DELETE" });
+      await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(a.nombre)}${_mq()}`, { method:"DELETE" });
     }
     await cargarEntrega(sem);
     const _ta = $(`notaProf-${sem}`); if(_ta && pend && pend.trim()){ _ta.value = pend; }
@@ -1087,7 +1091,7 @@ async function borrarEntregaCompleta(sem){
 async function finalizarEntrega(sem){
   if(!confirm("¿Finalizar tu entrega?\n\nQuedará registrada como entregada. Si necesitas corregir algo, podrás reabrirla mientras el plazo siga abierto.")) return;
   try{
-    await api(`/api/cursos/${CURSO}/entrega/${sem}/finalizar`, { method:"POST" });
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/finalizar${_mq()}`, { method:"POST" });
     if(_entregaLecId) await marcarCompletada(_entregaLecId);
     await cargarEntrega(sem);
   }catch(e){ alert("No se pudo finalizar: " + e.message); }
@@ -1097,7 +1101,7 @@ async function finalizarEntrega(sem){
 // Entregar temprano no debe castigar al alumno quitándole el derecho a modificar.
 async function reabrirEntrega(sem){
   try{
-    await api(`/api/cursos/${CURSO}/entrega/${sem}/reabrir`, { method:"POST" });
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/reabrir${_mq()}`, { method:"POST" });
     await cargarEntrega(sem);
   }catch(e){ alert("No se pudo reabrir: " + e.message); }
 }
@@ -1112,7 +1116,7 @@ async function enviarNotaProfesor(sem){
   const ta = $(`notaProf-${sem}`), msg = $(`notaProfMsg-${sem}`);
   if(msg){ msg.className = "ent-msg"; msg.textContent = "…"; }
   try{
-    await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje`, { method:"POST", body: JSON.stringify({ mensaje: (ta.value||"").trim() }) });
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/mensaje${_mq()}`, { method:"POST", body: JSON.stringify({ mensaje: (ta.value||"").trim() }) });
     if(msg){ msg.className = "ent-msg ok"; msg.textContent = "✓ mensaje enviado"; }
   }catch(e){ if(msg){ msg.className = "ent-msg err"; msg.textContent = "No se pudo: " + e.message; } }
 }
@@ -1150,7 +1154,7 @@ async function subirEntrega(sem){
       const etq = archivos.length>1 ? `archivo ${i+1} de ${archivos.length} · ${f.name} — ` : `${f.name} — `;
       if(btn) btn.textContent = `Subiendo… ${i+1}/${archivos.length}`;
       const fd = new FormData(); fd.append("archivo", f);
-      await apiFormXHR(`/api/cursos/${CURSO}/entrega/${sem}`, fd, pct => setMsg("", `⏳ Subiendo ${etq}${pct}%`));
+      await apiFormXHR(`/api/cursos/${CURSO}/entrega/${sem}${_mq()}`, fd, pct => setMsg("", `⏳ Subiendo ${etq}${pct}%`));
     }
     setMsg("ok", archivos.length>1 ? `✓ ${archivos.length} archivos subidos` : "✓ archivo subido");
     await cargarEntrega(sem);
@@ -1164,7 +1168,7 @@ async function subirEntrega(sem){
 async function borrarEntrega(sem, nombre){
   if(!confirm(`¿Quitar "${nombre}" de tu entrega?`)) return;
   try{
-    await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(nombre)}`, { method:"DELETE" });
+    await api(`/api/cursos/${CURSO}/entrega/${sem}/${encodeURIComponent(nombre)}${_mq()}`, { method:"DELETE" });
     await cargarEntrega(sem);
   }catch(e){ alert("No se pudo quitar: " + e.message); }
 }
