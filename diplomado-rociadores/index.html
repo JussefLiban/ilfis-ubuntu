@@ -314,7 +314,7 @@ let _entregaModulo = null;   // módulo de entrega abierto (semanas partidas en 
 // tarea está abierta a la vez, así que el global basta.
 function _mq(){ return _entregaModulo ? ("?modulo=" + encodeURIComponent(_entregaModulo)) : ""; }
 
-const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤" };
+const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤", texto:"📖" };
 const $ = id => document.getElementById(id);
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -720,6 +720,7 @@ function abrirLeccion(w, l){
   if(l.tipo === "docs")        return lecDocs(w, l, c);
   if(l.tipo === "tarea")       return lecTarea(w, l, c);
   if(l.tipo === "quiz")        return lecQuiz(w, l, c);
+  if(l.tipo === "texto")       return lecTexto(w, l, c);
 }
 
 // OBS-5 · Navegación "Siguiente actividad / Siguiente semana" (solo semanas abiertas).
@@ -869,6 +870,23 @@ async function abrirPDF(){
     const t = await usuario.getIdToken(true);
     window.open(`${API}/api/cursos/${CURSO}/pdf/stream?token=${t}`, "_blank");
   }catch(e){ alert("No pude abrir el PDF: " + e.message); }
+}
+
+// ── Texto de estudio / Introducción del módulo (contenido en pantalla, como en Q10) ──
+// Los "encabezados" (líneas cortas en MAYÚSCULAS) se muestran en negrita y con el
+// formato de la plataforma; el resto son párrafos. No hay adjuntos: es lectura directa.
+function lecTexto(w, l, c){
+  const bloques = String(l.texto || "").split(/\n+/).map(s => s.trim()).filter(Boolean).map(linea => {
+    const letras = (linea.match(/[A-Za-zÁÉÍÓÚÜÑ]/g) || []).length;
+    const mays   = (linea.match(/[A-ZÁÉÍÓÚÜÑ]/g) || []).length;
+    const esEnc  = linea.length <= 70 && letras > 0 && (mays / letras) >= 0.7;
+    return esEnc
+      ? `<div style="font-weight:700;margin:16px 0 4px;color:var(--texto);">${esc(_tit(linea))}</div>`
+      : `<p style="margin:0 0 10px;line-height:1.7;">${esc(linea)}</p>`;
+  }).join("");
+  c.innerHTML = cab(w, l) + `
+    <div style="max-width:720px;font-size:.9rem;color:var(--texto);">${bloques}</div>
+    <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Marcado como leído'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
 }
 
 // ── Documentos de la semana (un solo bloque con varios PDF) ──
