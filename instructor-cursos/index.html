@@ -507,7 +507,7 @@ function computeAlumnos(){
   };
   if(roster) roster.forEach(a => {
     const r = ensure(a.uid, a.email);
-    r.numero = a.numero; r.estado_matricula = a.estado_matricula;
+    r.numero = a.numero; r.estado_matricula = a.estado_matricula; r.pais = a.pais || "";
     if(a.nombre && a.nombre !== a.email) r.nombre = a.nombre;
   });
   // Con roster, la actividad de un uid que NO está matriculado se ignora (no crea fila).
@@ -641,7 +641,7 @@ function renderAlumnos(){
   const alumnos = computeAlumnos();
   const ap = APROB();
   $("tabla").querySelector("thead").innerHTML =
-    `<tr><th>Alumno</th><th style="text-align:right;">Avance</th><th>Último acceso</th><th style="text-align:right;">Cuestionarios</th><th style="text-align:right;">Promedio</th><th>Pendientes</th><th>Estado</th></tr>`;
+    `<tr><th>Alumno</th><th>País</th><th style="text-align:right;">Avance</th><th>Último acceso</th><th style="text-align:right;">Cuestionarios</th><th style="text-align:right;">Promedio</th><th>Pendientes</th><th>Estado</th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = alumnos.map(a => {
     const prom = a.promedio == null ? '<span style="color:var(--texto2);">—</span>'
       : `<b style="color:${a.promedio >= ap ? 'var(--verde)' : 'var(--rojoTxt)'};">${a.promedio}</b> / 100`;
@@ -653,6 +653,7 @@ function renderAlumnos(){
     return `
     <tr>
       <td>${numTxt}${foto}<span style="display:inline-block;vertical-align:middle;"><span class="a-nom">${esc(nomDe(a.uid, a.email))}</span>${pausTxt}${a.email ? `<br><span class="a-mail">${esc(a.email)}</span>` : ""}</span></td>
+      <td style="color:var(--texto2);">${esc(a.pais || "—")}</td>
       <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
       <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
       <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
@@ -660,7 +661,7 @@ function renderAlumnos(){
       <td>${a.manual ? `<span class="pill manual">⚠ ${a.manual}</span>` : `<span class="pill ok">—</span>`}</td>
       <td><span class="pill ${a.estado.cls}">${a.estado.txt}</span></td>
     </tr>`; }).join("") ||
-    `<tr><td colspan="7" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con actividad</td></tr>`;
+    `<tr><td colspan="8" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con actividad</td></tr>`;
 }
 
 // ── Cola de calificación ──
@@ -697,10 +698,10 @@ function renderCola(){
 function exportarNotas(){
   if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
-  const cab = ["N°","Alumno","Correo","Avance (%)","Lecciones completadas","Total lecciones","Último acceso",
+  const cab = ["N°","Alumno","Correo","País","Avance (%)","Lecciones completadas","Total lecciones","Último acceso",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
   const filas = alumnos.map(a => [
-    (a.numero == null ? "" : Number(a.numero)), nomDe(a.uid, a.email), a.email,
+    (a.numero == null ? "" : Number(a.numero)), nomDe(a.uid, a.email), a.email, (a.pais || ""),
     _num(a.avance), _num(a.comp), _num(a.total), txtDias(a.dias),
     _num(a.enviados), _num(a.aprobados), (a.promedio == null ? "" : _num(a.promedio)), _num(a.manual), a.estado.txt
   ]);
@@ -1176,7 +1177,8 @@ function renderPlanilla(){
     // N° del roster (mismo número que la intranet) + estado si está pausado.
     const numTxt = (a.numero!=null) ? `<b style="color:var(--texto2);">${a.numero}.</b> ` : "";
     const pausTxt = (a.estado_matricula==="pausado") ? ` <span style="color:var(--ambar);font-size:.62rem;">⏸ pausado</span>` : "";
-    let tds = `<td class="stick" title="${esc(a.email)}">${numTxt}${esc(a.nombre)}${pausTxt}</td>`;
+    const paisTxt = a.pais ? `<div style="color:var(--texto2);font-size:.62rem;font-weight:normal;">${esc(a.pais)}</div>` : "";
+    let tds = `<td class="stick" title="${esc(a.email)}">${numTxt}${esc(a.nombre)}${pausTxt}${paisTxt}</td>`;
     P.columnas.forEach(c => {
       const v = a.celdas ? a.celdas[c.codigo] : null;
       const est = a.estados ? a.estados[c.codigo] : null;
@@ -1399,12 +1401,12 @@ async function guardarEvalNota(uid, codigo){
 function exportarPlanilla(){
   if(!P || !P.columnas) return;
   const PLANO = (P.modelo === "ponderado_plano");
-  const cab = ["Ranking","Alumno","Correo",
+  const cab = ["Ranking","Alumno","Correo","País",
     ...P.columnas.map(c => _colLbl(c)),
     ...(PLANO ? [] : ["Promedio Semanal","Promedio Exámenes","Nota Concepto"]),
     "Promedio Total","Resultado"];
   const filas = (P.alumnos||[]).map(a => [
-    (a.ranking==null ? "" : Number(a.ranking)), a.nombre, a.email,
+    (a.ranking==null ? "" : Number(a.ranking)), a.nombre, a.email, (a.pais || ""),
     ...P.columnas.map(c => { const v = a.celdas ? a.celdas[c.codigo] : null; return v==null?"":fmtN(v); }),
     ...(PLANO ? [] : [_num(a.promedio_semanal), _num(a.promedio_examenes), _num(a.concepto)]),
     _num(a.promedio_total), a.resultado||""

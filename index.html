@@ -4938,8 +4938,10 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
         botones = `<button class="btn-a btn-dar" onclick="adminAbrirDar('${u.uid}','${u.email}','${nomJs}','${area}')">Matricular</button>`;
       }
       const eliminar = `<button class="btn-a btn-rev" style="background:#5a1a1a;border-color:#7a2020;" title="Elimina la cuenta y sus datos por completo (irreversible)" onclick="adminBorrarCuenta('${u.uid}','${u.email}','${nomJs}')">🗑 Eliminar</button>`;
+      const paisTxt = ro.pais ? _adminEsc(ro.pais) : '<span style="color:#6b7280;">—</span>';
       return { activo: true, html: `<tr>
         <td><div class="a-name">${numTxt}${_adminEsc(nom)}</div><div class="a-email">${u.email}</div></td>
+        <td>${paisTxt}</td>
         <td>${badge}</td>
         <td style="white-space:nowrap;min-width:220px;">${botones} ${eliminar}</td>
       </tr>` };
@@ -4994,9 +4996,12 @@ function _adminRenderAccesos(boxId, perteneceProducto, etiqueta, area) {
     if (acts.length)   filas += titulo('Con producto contratado', acts.length) + acts.map(x => x.html).join('');
     if (inacts.length) filas += titulo('Sin producto contratado', inacts.length) + inacts.map(x => x.html).join('');
   }
+  const encabezado = (area === 'educativa')
+    ? `<th>${etiqueta}</th><th>País</th><th>${colAccesos}</th><th>Acciones</th>`
+    : `<th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th>`;
   box.innerHTML = filas
     ? `<table class="admin-table">
-      <thead><tr><th>${etiqueta}</th><th>${colAccesos}</th><th>Acciones</th></tr></thead>
+      <thead><tr>${encabezado}</tr></thead>
       <tbody>${filas}</tbody>
     </table>`
     : (area === 'educativa'

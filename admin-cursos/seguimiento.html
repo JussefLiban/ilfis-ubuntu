@@ -59,7 +59,7 @@ input:focus{outline:none;border-color:var(--azul);}
 @media (max-width:800px){ .tarjetas{grid-template-columns:repeat(2,1fr);} }
 
 .tabla-wrap{background:var(--panel);border:1px solid var(--borde);border-radius:12px;overflow:auto;}
-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:820px;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:920px;}
 th{background:var(--navy);text-align:left;padding:10px 12px;font-size:.7rem;letter-spacing:.5px;border-bottom:2px solid var(--rojo);white-space:nowrap;position:sticky;top:0;text-transform:uppercase;color:#d7deed;}
 td{padding:9px 12px;border-bottom:1px solid var(--borde);vertical-align:middle;}
 tr:hover td{background:#1a2030;}
@@ -126,6 +126,7 @@ tr:hover td{background:#1a2030;}
       <thead><tr>
         <th>#</th>
         <th>Alumno</th>
+        <th>País</th>
         <th>Curso</th>
         <th>Último acceso</th>
         <th>Nota relativa</th>
@@ -275,12 +276,13 @@ function renderTabla(){
     return `<tr>
       <td class="rank">${i+1}</td>
       <td><div class="alumno-nombre">${esc(a.nombre)}</div><div class="alumno-email">${esc(a.email)}</div></td>
+      <td class="curso-tag">${esc(a.pais) || '<span class="sin-dato">—</span>'}</td>
       <td class="curso-tag">${esc(a.nombre_curso || a.curso)}</td>
       <td>${fechaRelativa(a)}</td>
       <td>${notaTxt}</td>
       <td>${pillEstado(a.estado)}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--texto2);padding:24px;">Sin resultados</td></tr>`;
+  }).join("") || `<tr><td colspan="7" style="text-align:center;color:var(--texto2);padding:24px;">Sin resultados</td></tr>`;
 }
 
 // ── Arranque: si hay clave en la sesión de la pestaña, entrar directo ──
