@@ -4501,10 +4501,12 @@ let _adminCertLista = [];
 let _certCatalogo = null;
 
 async function _certCargarCatalogo() {
-  if (!_certCatalogo) {
-    try { _certCatalogo = await (await fetch('certificado/catalogo.json?_=' + Date.now(), { cache: 'no-store' })).json(); }
-    catch(e) { _certCatalogo = { cursos:[], instructores:[], fondos:[] }; }
-  }
+  // Antes se cacheaba en memoria "una vez por pestaña abierta": si el catálogo
+  // se corregía en el servidor, una pestaña ya abierta seguía usando la copia
+  // vieja hasta que alguien recargara la página entera (F5) — nadie se acuerda
+  // de hacer eso. Se vuelve a pedir siempre; el archivo es chico.
+  try { _certCatalogo = await (await fetch('certificado/catalogo.json?_=' + Date.now(), { cache: 'no-store' })).json(); }
+  catch(e) { if (!_certCatalogo) _certCatalogo = { cursos:[], instructores:[], fondos:[] }; }
   const dl = document.getElementById('cert-cursos-dl');
   if (dl) dl.innerHTML = (_certCatalogo.cursos||[]).map(c =>
     `<option data-horas="${c.horas}" value="${_adminEsc(c.nombre)}"></option>`).join('');
