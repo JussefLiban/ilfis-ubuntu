@@ -57,7 +57,7 @@ td{padding:9px 12px;border-bottom:1px solid var(--borde);vertical-align:top;}
 tr:hover td{background:#1a2030;}
 td.num{font-family:'JetBrains Mono',monospace;text-align:right;white-space:nowrap;}
 /* Planilla / Libro de notas (matriz ancha) */
-th.stick,td.stick{position:sticky;left:0;z-index:3;background:var(--panel);min-width:150px;max-width:190px;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 0 var(--borde);}
+th.stick,td.stick{position:sticky;left:0;z-index:3;background:var(--panel);min-width:150px;max-width:210px;box-shadow:2px 0 0 var(--borde);}
 th.stick{z-index:5;background:var(--navy);}
 tr:hover td.stick{background:#1a2030;}
 th .pct{font-weight:400;color:var(--texto2);font-size:.6rem;letter-spacing:0;}
@@ -1177,7 +1177,7 @@ function renderPlanilla(){
     // N° del roster (mismo número que la intranet) + estado si está pausado.
     const numTxt = (a.numero!=null) ? `<b style="color:var(--texto2);">${a.numero}.</b> ` : "";
     const pausTxt = (a.estado_matricula==="pausado") ? ` <span style="color:var(--ambar);font-size:.62rem;">⏸ pausado</span>` : "";
-    const paisTxt = a.pais ? `<div style="color:var(--texto2);font-size:.62rem;font-weight:normal;">${esc(a.pais)}</div>` : "";
+    const paisTxt = `<div style="color:var(--azul,#5daaff);font-size:.72rem;font-weight:600;margin-top:2px;">🌎 ${esc(a.pais || "—")}</div>`;
     let tds = `<td class="stick" title="${esc(a.email)}">${numTxt}${esc(a.nombre)}${pausTxt}${paisTxt}</td>`;
     P.columnas.forEach(c => {
       const v = a.celdas ? a.celdas[c.codigo] : null;
