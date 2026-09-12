@@ -1089,10 +1089,16 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <select id="cert-cohorte-curso" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
             <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar Resultados</button>
             <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar Todos los Aprobados</button>
-            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosParticipacion()">Generar Participación (Desaprobados)</button>
-            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosMatricula()">Generar Matrícula (Todos)</button>
           </div>
+          <p style="font-size:0.76rem;color:#66788a;margin:0 0 10px;">Participación y Matrícula son documentos que se piden de a uno, no se generan para todo el curso — por eso van con un selector de alumno, no con un botón "Todos".</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;border-top:1px dashed #2a3450;padding-top:10px;">
+            <span style="font-size:0.8rem;color:#8899aa;">Participación de un solo alumno (no aprobó):</span>
+            <select id="cert-participacion-uno" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:260px;">
+              <option value="">— elige un alumno —</option>
+            </select>
+            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirParticipacionUno()">Generar Participación (este alumno)</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
             <span style="font-size:0.8rem;color:#8899aa;">Matrícula de un solo alumno:</span>
             <select id="cert-matricula-uno" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:260px;">
               <option value="">— elige un alumno —</option>
@@ -4617,7 +4623,15 @@ async function certCargarCohorte() {
     _certCohorteData = { meta, planilla, cohorte, roster };
     certRenderCohorte();
     _certLlenarSelectorMatriculaUno(roster);
+    const desaprobados = (planilla.alumnos || []).filter(a => a.resultado === 'DESAPROBADO' && a.completo);
+    _certLlenarSelectorParticipacionUno(desaprobados);
   } catch(e) { if (box) box.innerHTML = '<div style="color:#e87272;font-size:0.85rem;">No pude cargar los resultados: ' + e.message + '</div>'; }
+}
+function _certLlenarSelectorParticipacionUno(desaprobados) {
+  const sel = document.getElementById('cert-participacion-uno');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— elige un alumno —</option>' +
+    desaprobados.map(a => `<option value="${_adminEsc(a.uid)}">${_adminEsc(a.nombre)} (nota ${Math.round(a.promedio_total)})</option>`).join('');
 }
 function _certLlenarSelectorMatriculaUno(roster) {
   const sel = document.getElementById('cert-matricula-uno');
@@ -4757,80 +4771,31 @@ async function certEmitirTodosCohorte() {
   await certCargarCohorte();
   alert('Listo. Certificados generados: ' + ok + (fail ? (' · con error: ' + fail) : ''));
 }
-// Emite de una sola vez el certificado de PARTICIPACIÓN de los desaprobados que
-// completaron el curso (no hay nota mínima, pero sí cursaron todo). Espejo de
-// certEmitirTodosCohorte, pero filtrando por 'DESAPROBADO' y tipo 'participacion'.
-async function certEmitirTodosParticipacion() {
-  if (!_certCohorteData) { alert('Primero pulsa "Cargar resultados".'); return; }
-  const { meta, planilla, cohorte } = _certCohorteData;
+// Participación de UN alumno desaprobado (a pedido — no todos los que
+// desaprueban lo piden, por eso es individual, no un botón "Todos").
+async function certEmitirParticipacionUno() {
+  const sel = document.getElementById('cert-participacion-uno');
+  const uid = sel && sel.value;
+  if (!uid) { alert('Elige primero un alumno de la lista.'); return; }
+  if (!_certCohorteData) { alert('Primero pulsa "Cargar Resultados".'); return; }
+  const { meta, planilla } = _certCohorteData;
+  const a = (planilla.alumnos || []).find(x => x.uid === uid);
+  if (!a) return;
   const curso = _certCursoDeCohorte(meta);
-  const yaEmit = _certYaEmitidos(curso.nombre);
-  const pend = (planilla.alumnos || []).filter(a => a.resultado === 'DESAPROBADO' && a.completo && !yaEmit.has((a.nombre || '').trim().toLowerCase()));
-  if (!pend.length) { alert('No hay alumnos desaprobados (con el curso completo) pendientes de constancia.'); return; }
-  if (!confirm('Se generarán ' + pend.length + ' certificado(s) de PARTICIPACIÓN para los alumnos que completaron el curso sin aprobar. ¿Continuar?')) return;
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
-  const hoy = new Date();
-  const fechaHoy = _cert_fecha_larga_js(hoy);
-  let ok = 0, fail = 0;
-  for (const a of pend) {
-    const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
-      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaHoy,
-      calificacion: String(Math.round(a.promedio_total)),
-      uid: a.uid || undefined, curso_id: meta.id || undefined };
-    try {
-      const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
-        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (r.ok) ok++; else fail++;
-    } catch(_) { fail++; }
-  }
-  await adminCargarCertificados();
-  await certCargarCohorte();
-  alert('Listo. Constancias de participación generadas: ' + ok + (fail ? (' · con error: ' + fail) : ''));
-}
-// Emite la constancia de MATRÍCULA a TODOS los matriculados del curso (roster
-// oficial, no la planilla — así incluye a quien aún no tiene notas/resultado).
-async function certEmitirTodosMatricula() {
-  const meta = _certDiplomaMeta();
-  if (!meta || !meta.id) { alert('Elige el curso arriba.'); return; }
-  await _certCargarCatalogo();
-  const curso = _certCursoDeCohorte(meta);
-  let roster = [];
+  const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
+    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: _cert_fecha_larga_js(new Date()),
+    calificacion: String(Math.round(a.promedio_total)), uid: a.uid, curso_id: meta.id };
   try {
-    const r = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/roster', { headers: { 'x-admin-key': _getAdminKey() } });
-    if (r.status === 401) { _clearAdminKey(); return; }
-    if (!r.ok) throw new Error('Error ' + r.status);
-    const d = await r.json();
-    roster = (d.roster || []).filter(a => a.estado === 'matriculado');
-  } catch(e) { alert('No pude cargar el roster: ' + e.message); return; }
-  if (!roster.length) { alert('No hay alumnos matriculados en este curso.'); return; }
-  const yaEmit = _certYaEmitidos(curso.nombre);
-  const pend = roster.filter(a => !yaEmit.has((a.nombre || '').trim().toLowerCase()));
-  if (!pend.length) { alert('Todos los matriculados ya tienen constancia de matrícula.'); return; }
-  if (!confirm('Se generarán ' + pend.length + ' constancia(s) de MATRÍCULA. ¿Continuar?')) return;
-  const instrSel = document.getElementById('cert-f-instructor');
-  const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
-  // Fecha de inicio del COHORTE (no la de hoy) — es la que corresponde en una
-  // constancia de matrícula: cuándo arrancó el curso en el que está matriculado.
-  let fechaInicio = '';
-  try {
-    const rc = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
-    const dc = rc.ok ? await rc.json() : {};
-    if (dc.fecha_inicio) fechaInicio = _cert_fecha_larga_js(new Date(dc.fecha_inicio + 'T00:00:00'));
-  } catch(_) {}
-  let ok = 0, fail = 0;
-  for (const a of pend) {
-    const body = { tipo: 'matricula', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
-      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaInicio,
-      uid: a.uid || undefined, curso_id: meta.id || undefined };
-    try {
-      const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
-        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (r.ok) ok++; else fail++;
-    } catch(_) { fail++; }
-  }
-  await adminCargarCertificados();
-  alert('Listo. Constancias de matrícula generadas: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+    const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    await adminCargarCertificados();
+    certRenderCohorte();
+    alert('✓ Certificado de participación generado para ' + a.nombre + '.');
+  } catch(e) { alert('No pude generar: ' + e.message); }
 }
 // 'YYYY-MM-DD'/Date → '12 de septiembre de 2026' (mismo formato que usa el backend).
 function _cert_fecha_larga_js(d) {

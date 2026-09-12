@@ -166,12 +166,18 @@ function pintarCartaSimple(d){
     if(d.horas) partes.push(`que tendrá una duración de: ${esc(d.horas)} Horas`);
   } else {
     partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: ${esc(tituloCurso(d.curso))}`);
-    if(d.calificacion != null) partes.push(`obteniendo una calificación desaprobatoria de: ${esc(d.calificacion)}/100`);
     if(d.realizado) partes.push(`el mismo que fue dictado con fecha: ${esc(d.realizado)}`);
     if(d.horas) partes.push(`con un total de: ${esc(d.horas)} Horas`);
   }
   if(d.instructor) partes.push(`y que ${matricula ? "estará" : "estuvo"} a cargo del Instructor: ${esc(d.instructor)}`);
-  const texto = partes.join(", ") + `. Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: ${esc(capMes(d.fecha))} para los fines que el alumno estime pertinente.`;
+  let texto = partes.join(", ") + ". ";
+  if(!matricula){
+    // Frase aparte, sin ambigüedad: este documento NO es un certificado de
+    // aprobación. Se repite la palabra clave para que no se preste a
+    // confusión ni pueda usarse para aparentar que sí aprobó.
+    texto += `<b>EL ALUMNO NO APROBÓ EL CURSO.</b> Obtuvo una calificación de ${esc(d.calificacion != null ? d.calificacion : "—")}/100, no alcanzando la nota mínima de aprobación. Este documento certifica únicamente su participación, no su aprobación. `;
+  }
+  texto += `Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: ${esc(capMes(d.fecha))} para los fines que el alumno estime pertinente.`;
 
   const firmaSec = ASSETS + (d.firma_secretario || "firma-ilfis-guillermo-paredes.jpg");
   const firmaIns = d.firma_instructor ? (ASSETS + d.firma_instructor) : "";
