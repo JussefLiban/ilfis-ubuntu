@@ -4793,16 +4793,56 @@ function adminRenderCertificados() {
     const accVer = `<a href="certificado/?c=${encodeURIComponent(a.codigo)}" target="_blank" style="color:#7ab8ff;font-size:0.8rem;margin-right:12px;">Ver</a>`;
     const accAnular = `<span style="cursor:pointer;color:${a.anulado?'#4ade80':'#f87171'};font-size:0.8rem;" onclick="adminAnularCert('${_adminEsc(a.codigo)}')">${a.anulado?'Reactivar':'Anular'}</span>`;
     const accEliminar = `<span style="cursor:pointer;color:#8a3a3a;font-size:0.8rem;margin-left:12px;" title="Borra el registro por completo (irreversible) — para pruebas/errores, no para certificados reales" onclick="adminEliminarCert('${_adminEsc(a.codigo)}','${_adminEsc(a.nombre)}')">🗑 Eliminar</span>`;
+    const chk = `<input type="checkbox" class="cert-chk" value="${_adminEsc(a.codigo)}" onchange="_certActualizarBarraSeleccion()" style="margin-right:10px;width:16px;height:16px;">`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
-      <div style="min-width:220px;">
-        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(a.nombre)}</div>
-        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.curso)}</div>
-        <div style="margin-top:3px;">${estado} · código <b style="color:#7ab8ff;">${_adminEsc(a.codigo)}</b> · ${_adminEsc(a.fecha||'')}${nota}</div>
+      <div style="display:flex;align-items:center;min-width:220px;">
+        ${chk}
+        <div>
+          <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(a.nombre)}</div>
+          <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.curso)}</div>
+          <div style="margin-top:3px;">${estado} · código <b style="color:#7ab8ff;">${_adminEsc(a.codigo)}</b> · ${_adminEsc(a.fecha||'')}${nota}</div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;">${accVer}${accAnular}${accEliminar}</div>
     </div>`;
   }).join('');
-  box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:10px;">${_adminCertLista.length} certificado(s)</div>${filas}`;
+  const barra = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+    <span style="font-size:0.78rem;color:#7a8a9a;">${_adminCertLista.length} certificado(s)</span>
+    <label style="font-size:0.78rem;color:#9fb0d0;display:flex;align-items:center;gap:6px;cursor:pointer;">
+      <input type="checkbox" id="cert-chk-todos" onchange="_certMarcarTodos(this.checked)" style="width:16px;height:16px;"> Seleccionar todos
+    </label>
+    <button class="btn-a" id="cert-btn-eliminar-sel" style="padding:6px 12px;font-size:0.78rem;background:#5a1a1a;border-color:#7a2020;display:none;" onclick="adminEliminarCertSeleccionados()">🗑 Eliminar seleccionados (<span id="cert-sel-count">0</span>)</button>
+  </div>`;
+  box.innerHTML = barra + filas;
+}
+
+function _certActualizarBarraSeleccion() {
+  const n = document.querySelectorAll('.cert-chk:checked').length;
+  const btn = document.getElementById('cert-btn-eliminar-sel');
+  const cnt = document.getElementById('cert-sel-count');
+  if (cnt) cnt.textContent = n;
+  if (btn) btn.style.display = n > 0 ? 'inline-block' : 'none';
+  const todos = document.getElementById('cert-chk-todos');
+  const total = document.querySelectorAll('.cert-chk').length;
+  if (todos) todos.checked = (n > 0 && n === total);
+}
+function _certMarcarTodos(marcar) {
+  document.querySelectorAll('.cert-chk').forEach(c => c.checked = marcar);
+  _certActualizarBarraSeleccion();
+}
+async function adminEliminarCertSeleccionados() {
+  const codigos = Array.from(document.querySelectorAll('.cert-chk:checked')).map(c => c.value);
+  if (!codigos.length) return;
+  if (!confirm('¿BORRAR por completo ' + codigos.length + ' certificado(s)?\nEsto es IRREVERSIBLE — a diferencia de "Anular", no queda ningún registro. Úsalo solo para pruebas o errores.')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/certificados/admin/eliminar-lote', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigos }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    alert('Eliminados: ' + d.borrados + (d.no_existen && d.no_existen.length ? (' · ya no existían: ' + d.no_existen.length) : ''));
+    adminCargarCertificados();
+  } catch(e) { alert('No pude eliminar: ' + e.message); }
 }
 
 async function adminAnularCert(codigo) {
