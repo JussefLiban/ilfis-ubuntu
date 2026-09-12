@@ -207,6 +207,16 @@ function pintarCartaSimple(d){
   $("estado").textContent = "✓ Certificado auténtico · verificado por ILFIS";
   const alias = aliasCurso(d.curso);
   document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
+  _setPaginaImpresion("portrait");
+}
+
+// La carta simple (participación/matrícula) es vertical, no horizontal como el
+// certificado de aprobación (fondo 1920x1359) — el @page de impresión/PDF debe
+// coincidir, si no sale recortado o mal centrado en window.print()/A4.
+function _setPaginaImpresion(orientacion){
+  let s = document.getElementById("_paginaImpresion");
+  if(!s){ s = document.createElement("style"); s.id = "_paginaImpresion"; document.head.appendChild(s); }
+  s.textContent = `@media print{ @page{ size:A4 ${orientacion}; margin:${orientacion === "portrait" ? "14mm" : "0"}; } }`;
 }
 
 function pintar(d){
@@ -256,12 +266,17 @@ function pintar(d){
   // Nombre del archivo al descargar/imprimir: "Certificado {apodo} · {alumno}"
   const alias = aliasCurso(d.curso);
   document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
+  _setPaginaImpresion("landscape");
 }
 
-// Genera el PDF (horizontal, tamaño justo) desde la página, sin depender de la
+// Genera el PDF (tamaño justo, A4) desde la página, sin depender de la
 // impresión del navegador — así sale bien también en celular. Respaldo: window.print().
+// El certificado de aprobación (.hoja) es horizontal (fondo 1920x1359); la
+// carta simple de participación/matrícula (.part-hoja) es vertical — cada
+// una se ajusta a SU propio A4, no se fuerza una sola orientación para ambas.
 async function descargarPDF(){
-  const hoja = document.querySelector('.hoja');
+  const hoja = document.querySelector('.hoja') || document.querySelector('.part-hoja');
+  const esCartaSimple = hoja && hoja.classList.contains('part-hoja');
   const btn = document.getElementById('btnpdf');
   if(!hoja || typeof html2canvas === "undefined" || !(window.jspdf && window.jspdf.jsPDF)){
     window.print(); return;
@@ -271,9 +286,18 @@ async function descargarPDF(){
   try{
     const canvas = await html2canvas(hoja, { scale:2, useCORS:true, backgroundColor:"#ffffff", logging:false });
     const img = canvas.toDataURL("image/jpeg", 0.95);
-    const pdf = new window.jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
-    pdf.addImage(img, "JPEG", 0, 0, 297, 210);   // A4 apaisado 297x210 (ratio del certificado ≈ igual)
-    pdf.save((document.title || "Certificado") + ".pdf");
+    if(esCartaSimple){
+      // A4 vertical con margen, la imagen se ajusta al ancho de la hoja.
+      const pdf = new window.jspdf.jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+      const margen = 14, anchoUtil = 210 - margen * 2;
+      const alto = anchoUtil * (canvas.height / canvas.width);
+      pdf.addImage(img, "JPEG", margen, margen, anchoUtil, alto);
+      pdf.save((document.title || "Certificado") + ".pdf");
+    } else {
+      const pdf = new window.jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+      pdf.addImage(img, "JPEG", 0, 0, 297, 210);   // A4 apaisado 297x210 (ratio del certificado ≈ igual)
+      pdf.save((document.title || "Certificado") + ".pdf");
+    }
   }catch(e){
     window.print();
   }finally{
