@@ -1124,7 +1124,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <label class="cert-lbl">Horas
               <input type="number" id="cert-f-horas" min="0" placeholder="60">
             </label>
-            <label class="cert-lbl cert-apr">Calificación (0-100)
+            <label class="cert-lbl cert-cali">Calificación (0-100)
               <input type="number" id="cert-f-cali" min="0" max="100" placeholder="87">
             </label>
             <label class="cert-lbl cert-apr">Inicio
@@ -4465,6 +4465,9 @@ function certToggleTipo() {
   document.querySelectorAll('.cert-apr').forEach(el => el.style.display = (tipo==='aprobacion'?'flex':'none'));
   // La constancia de matrícula reutiliza el campo "Fecha del evento" (cert-part) como fecha de matrícula.
   document.querySelectorAll('.cert-part').forEach(el => el.style.display = ((tipo==='participacion'||tipo==='matricula')?'flex':'none'));
+  // La calificación se muestra en aprobación (obligatoria) y también en participación
+  // (opcional, para que el certificado deje ver la nota real que no llegó a aprobar).
+  document.querySelectorAll('.cert-cali').forEach(el => el.style.display = ((tipo==='aprobacion'||tipo==='participacion')?'flex':'none'));
 }
 
 function certAutoHoras() {
@@ -4485,7 +4488,7 @@ async function certEmitir() {
   const body = { tipo, nombre: g('cert-f-nombre'), curso: g('cert-f-curso'), horas: g('cert-f-horas'),
     instructor: instrNombre, instructor_firma: instrSel.value };
   if (tipo === 'aprobacion') { body.calificacion = g('cert-f-cali'); body.inicio = g('cert-f-inicio'); body.culminacion = g('cert-f-culm'); }
-  else { body.realizado = g('cert-f-realizado'); }
+  else { body.realizado = g('cert-f-realizado'); if (tipo === 'participacion') body.calificacion = g('cert-f-cali'); }
   if (_certFormUid) body.uid = _certFormUid;
   if (_certFormCursoId) body.curso_id = _certFormCursoId;
   const msg = document.getElementById('cert-emit-msg');
@@ -4657,6 +4660,7 @@ async function certEmitirTodosParticipacion() {
   for (const a of pend) {
     const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
       instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaHoy,
+      calificacion: String(Math.round(a.promedio_total)),
       uid: a.uid || undefined, curso_id: meta.id || undefined };
     try {
       const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
@@ -4788,13 +4792,14 @@ function adminRenderCertificados() {
     const nota = (a.tipo==='aprobacion' && a.calificacion!=null) ? ` · ${a.calificacion}/100` : '';
     const accVer = `<a href="certificado/?c=${encodeURIComponent(a.codigo)}" target="_blank" style="color:#7ab8ff;font-size:0.8rem;margin-right:12px;">Ver</a>`;
     const accAnular = `<span style="cursor:pointer;color:${a.anulado?'#4ade80':'#f87171'};font-size:0.8rem;" onclick="adminAnularCert('${_adminEsc(a.codigo)}')">${a.anulado?'Reactivar':'Anular'}</span>`;
+    const accEliminar = `<span style="cursor:pointer;color:#8a3a3a;font-size:0.8rem;margin-left:12px;" title="Borra el registro por completo (irreversible) — para pruebas/errores, no para certificados reales" onclick="adminEliminarCert('${_adminEsc(a.codigo)}','${_adminEsc(a.nombre)}')">🗑 Eliminar</span>`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
       <div style="min-width:220px;">
         <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(a.nombre)}</div>
         <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.curso)}</div>
         <div style="margin-top:3px;">${estado} · código <b style="color:#7ab8ff;">${_adminEsc(a.codigo)}</b> · ${_adminEsc(a.fecha||'')}${nota}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:4px;">${accVer}${accAnular}</div>
+      <div style="display:flex;align-items:center;gap:4px;">${accVer}${accAnular}${accEliminar}</div>
     </div>`;
   }).join('');
   box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:10px;">${_adminCertLista.length} certificado(s)</div>${filas}`;
@@ -4810,6 +4815,17 @@ async function adminAnularCert(codigo) {
     if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
     adminCargarCertificados();
   } catch(e) { alert('No pude: ' + e.message); }
+}
+async function adminEliminarCert(codigo, nombre) {
+  if (!confirm('¿BORRAR por completo el certificado de ' + nombre + ' (código ' + codigo + ')?\nEsto es IRREVERSIBLE — a diferencia de "Anular", no queda ningún registro. Úsalo solo para pruebas o errores.')) return;
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/certificados/admin/eliminar', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    adminCargarCertificados();
+  } catch(e) { alert('No pude eliminar: ' + e.message); }
 }
 
 async function adminCargar() {

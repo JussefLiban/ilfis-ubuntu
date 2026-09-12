@@ -149,6 +149,7 @@ function pintar(d){
   } else {
     if(d.realizado) det += `Realizado ${esc(d.realizado)}<br>`;
     if(d.horas) det += `Con un total de ${esc(d.horas)} Horas Lectivas<br>`;
+    if(d.calificacion != null) det += `Calificación obtenida: ${esc(d.calificacion)}/100 (no alcanzó la nota mínima de aprobación)<br>`;
   }
   if(d.instructor) det += `Instructor: ${esc(d.instructor)}<br>`;
   det += `Fecha de Emisión: ${esc(capMes(d.fecha))}`;
