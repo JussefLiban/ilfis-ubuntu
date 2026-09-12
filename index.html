@@ -4684,12 +4684,19 @@ function certRenderCohorte() {
         ? `<a href="certificado/?c=${encodeURIComponent(emitido.codigo)}" target="_blank" style="color:#5fd08a;font-size:0.78rem;">✓ Ver</a>`
         : `<button class="btn-a btn-dar" style="padding:5px 12px;font-size:0.78rem;" onclick="certGenerarUno('${a.uid}')">Generar</button>
            <button class="btn-a" style="padding:5px 10px;font-size:0.72rem;margin-left:4px;" title="Revisar/editar los datos antes de emitir" onclick="certPrefillCohorte('${a.uid}')">✎</button>`;
+    } else if (a.resultado === 'DESAPROBADO' && a.completo) {
+      // No es masivo (participación es a pedido puntual), pero sí se puede
+      // generar directo desde aquí, sin ir a buscar el selector aparte.
+      const emitido = _certEmitidoDe(curso.nombre, a.nombre);
+      accion = emitido
+        ? `<a href="certificado/?c=${encodeURIComponent(emitido.codigo)}" target="_blank" style="color:#e69a9a;font-size:0.78rem;">✓ Ver participación</a>`
+        : `<button class="btn-a" style="padding:5px 12px;font-size:0.78rem;" onclick="certEmitirParticipacionUno('${a.uid}')">Generar participación</button>`;
     }
     return `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 12px;border-top:1px solid #1e2740;font-size:0.85rem;color:#e6ecf7;">
       <span>${_adminEsc(a.nombre || '—')}</span>
       <span style="color:#8899aa;font-size:0.8rem;white-space:nowrap;">Nota: ${nota}</span>
       <span style="font-size:0.72rem;padding:3px 10px;border-radius:999px;white-space:nowrap;background:${est[1]};color:${est[2]};">${est[0]}</span>
-      <span style="text-align:right;min-width:90px;">${accion}</span>
+      <span style="text-align:right;min-width:150px;">${accion}</span>
     </div>`;
   }).join('');
   box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:8px;">${alumnos.length} alumno(s) · ${nAprob} aprobado(s)</div>
@@ -4773,9 +4780,8 @@ async function certEmitirTodosCohorte() {
 }
 // Participación de UN alumno desaprobado (a pedido — no todos los que
 // desaprueban lo piden, por eso es individual, no un botón "Todos").
-async function certEmitirParticipacionUno() {
-  const sel = document.getElementById('cert-participacion-uno');
-  const uid = sel && sel.value;
+async function certEmitirParticipacionUno(uidDirecto) {
+  const uid = uidDirecto || (document.getElementById('cert-participacion-uno') || {}).value;
   if (!uid) { alert('Elige primero un alumno de la lista.'); return; }
   if (!_certCohorteData) { alert('Primero pulsa "Cargar Resultados".'); return; }
   const { meta, planilla } = _certCohorteData;
