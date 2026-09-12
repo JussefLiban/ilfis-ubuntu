@@ -1090,6 +1090,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <select id="cert-cohorte-curso" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
             <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar Resultados</button>
             <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar Todos los Aprobados</button>
+            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosParticipacion()">Generar Participación (Desaprobados)</button>
+            <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosMatricula()">Generar Matrícula (Todos)</button>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;border-top:1px dashed #2a3450;padding-top:10px;">
             <span style="font-size:0.72rem;color:#66788a;">Modo prueba (simulacro):</span>
@@ -1106,6 +1108,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
               <select id="cert-f-tipo" onchange="certToggleTipo()">
                 <option value="aprobacion">Aprobación (curso con nota)</option>
                 <option value="participacion">Participación (evento / congreso)</option>
+                <option value="matricula">Matrícula (constancia, sin nota)</option>
               </select>
             </label>
             <label class="cert-lbl">Nombre del alumno
@@ -1130,7 +1133,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <label class="cert-lbl cert-apr">Culminación
               <input type="month" id="cert-f-culm">
             </label>
-            <label class="cert-lbl cert-part" style="display:none;">Fecha del evento
+            <label class="cert-lbl cert-part" style="display:none;">Fecha del evento / de matrícula
               <input type="text" id="cert-f-realizado" placeholder="15 de marzo de 2025">
             </label>
           </div>
@@ -4460,7 +4463,8 @@ async function _certCargarCatalogo() {
 function certToggleTipo() {
   const tipo = (document.getElementById('cert-f-tipo')||{}).value || 'aprobacion';
   document.querySelectorAll('.cert-apr').forEach(el => el.style.display = (tipo==='aprobacion'?'flex':'none'));
-  document.querySelectorAll('.cert-part').forEach(el => el.style.display = (tipo==='participacion'?'flex':'none'));
+  // La constancia de matrícula reutiliza el campo "Fecha del evento" (cert-part) como fecha de matrícula.
+  document.querySelectorAll('.cert-part').forEach(el => el.style.display = ((tipo==='participacion'||tipo==='matricula')?'flex':'none'));
 }
 
 function certAutoHoras() {
@@ -4469,6 +4473,10 @@ function certAutoHoras() {
   if (c) document.getElementById('cert-f-horas').value = c.horas;
 }
 
+// uid/curso_id del alumno para el formulario individual — se llenan solo cuando
+// se prellena desde "Pre-Certificados del Cohorte" (certPrefillCohorte); un
+// certificado a mano (ej. tercero en un congreso) los deja en null a propósito.
+let _certFormUid = null, _certFormCursoId = null;
 async function certEmitir() {
   const g = id => (document.getElementById(id).value || '').trim();
   const tipo = g('cert-f-tipo');
@@ -4478,6 +4486,8 @@ async function certEmitir() {
     instructor: instrNombre, instructor_firma: instrSel.value };
   if (tipo === 'aprobacion') { body.calificacion = g('cert-f-cali'); body.inicio = g('cert-f-inicio'); body.culminacion = g('cert-f-culm'); }
   else { body.realizado = g('cert-f-realizado'); }
+  if (_certFormUid) body.uid = _certFormUid;
+  if (_certFormCursoId) body.curso_id = _certFormCursoId;
   const msg = document.getElementById('cert-emit-msg');
   msg.textContent = 'Emitiendo…'; msg.style.color = '#8899aa';
   try {
@@ -4495,6 +4505,7 @@ async function certEmitir() {
       </div>`;
     document.getElementById('cert-f-nombre').value = '';
     document.getElementById('cert-f-cali').value = '';
+    _certFormUid = null; _certFormCursoId = null;
     adminCargarCertificados();
   } catch(e) { msg.textContent = 'No pude emitir: ' + e.message; msg.style.color = '#e87272'; }
 }
@@ -4586,6 +4597,7 @@ function certPrefillCohorte(uid) {
   const curso = _certCursoDeCohorte(meta);
   const m = _certMesesDeCohorte(cohorte, meta.semanas);
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  _certFormUid = a.uid || null; _certFormCursoId = meta.id || null;
   set('cert-f-tipo', 'aprobacion'); certToggleTipo();
   set('cert-f-nombre', a.nombre || '');
   set('cert-f-curso', curso.nombre);
@@ -4614,7 +4626,8 @@ async function certEmitirTodosCohorte() {
   for (const a of pend) {
     const body = { tipo: 'aprobacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
       instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '',
-      calificacion: String(Math.round(a.promedio_total)), inicio: m.inicio, culminacion: m.culm };
+      calificacion: String(Math.round(a.promedio_total)), inicio: m.inicio, culminacion: m.culm,
+      uid: a.uid || undefined, curso_id: meta.id || undefined };
     try {
       const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
         method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -4624,6 +4637,78 @@ async function certEmitirTodosCohorte() {
   await adminCargarCertificados();
   await certCargarCohorte();
   alert('Listo. Certificados generados: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+}
+// Emite de una sola vez el certificado de PARTICIPACIÓN de los desaprobados que
+// completaron el curso (no hay nota mínima, pero sí cursaron todo). Espejo de
+// certEmitirTodosCohorte, pero filtrando por 'DESAPROBADO' y tipo 'participacion'.
+async function certEmitirTodosParticipacion() {
+  if (!_certCohorteData) { alert('Primero pulsa "Cargar resultados".'); return; }
+  const { meta, planilla, cohorte } = _certCohorteData;
+  const curso = _certCursoDeCohorte(meta);
+  const yaEmit = _certYaEmitidos(curso.nombre);
+  const pend = (planilla.alumnos || []).filter(a => a.resultado === 'DESAPROBADO' && a.completo && !yaEmit.has((a.nombre || '').trim().toLowerCase()));
+  if (!pend.length) { alert('No hay alumnos desaprobados (con el curso completo) pendientes de constancia.'); return; }
+  if (!confirm('Se generarán ' + pend.length + ' certificado(s) de PARTICIPACIÓN para los alumnos que completaron el curso sin aprobar. ¿Continuar?')) return;
+  const instrSel = document.getElementById('cert-f-instructor');
+  const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  const hoy = new Date();
+  const fechaHoy = _cert_fecha_larga_js(hoy);
+  let ok = 0, fail = 0;
+  for (const a of pend) {
+    const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
+      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaHoy,
+      uid: a.uid || undefined, curso_id: meta.id || undefined };
+    try {
+      const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.ok) ok++; else fail++;
+    } catch(_) { fail++; }
+  }
+  await adminCargarCertificados();
+  await certCargarCohorte();
+  alert('Listo. Constancias de participación generadas: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+}
+// Emite la constancia de MATRÍCULA a TODOS los matriculados del curso (roster
+// oficial, no la planilla — así incluye a quien aún no tiene notas/resultado).
+async function certEmitirTodosMatricula() {
+  const meta = _certDiplomaMeta();
+  if (!meta || !meta.id) { alert('Elige el curso arriba.'); return; }
+  await _certCargarCatalogo();
+  const curso = _certCursoDeCohorte(meta);
+  let roster = [];
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/roster', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    roster = (d.roster || []).filter(a => a.estado === 'matriculado');
+  } catch(e) { alert('No pude cargar el roster: ' + e.message); return; }
+  if (!roster.length) { alert('No hay alumnos matriculados en este curso.'); return; }
+  const yaEmit = _certYaEmitidos(curso.nombre);
+  const pend = roster.filter(a => !yaEmit.has((a.nombre || '').trim().toLowerCase()));
+  if (!pend.length) { alert('Todos los matriculados ya tienen constancia de matrícula.'); return; }
+  if (!confirm('Se generarán ' + pend.length + ' constancia(s) de MATRÍCULA. ¿Continuar?')) return;
+  const instrSel = document.getElementById('cert-f-instructor');
+  const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  const fechaHoy = _cert_fecha_larga_js(new Date());
+  let ok = 0, fail = 0;
+  for (const a of pend) {
+    const body = { tipo: 'matricula', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
+      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaHoy,
+      uid: a.uid || undefined, curso_id: meta.id || undefined };
+    try {
+      const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.ok) ok++; else fail++;
+    } catch(_) { fail++; }
+  }
+  await adminCargarCertificados();
+  alert('Listo. Constancias de matrícula generadas: ' + ok + (fail ? (' · con error: ' + fail) : ''));
+}
+// 'YYYY-MM-DD'/Date → '12 de septiembre de 2026' (mismo formato que usa el backend).
+function _cert_fecha_larga_js(d) {
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  return d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
 }
 
 // Modo simulacro (SOLO superadmin): siembra 10 alumnos de prueba y luego los limpia.

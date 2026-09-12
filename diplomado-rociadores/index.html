@@ -572,18 +572,25 @@ async function cargarAula(){
 }
 
 // ── Certificado del alumno (se muestra el botón solo si el superadmin lo emitió) ──
+let _miCertUrl = null;
 let _miCertFolio = null;
 async function cargarCertificadoAlumno(){
   try{
     const r = await api(`/api/cursos/${CURSO}/certificado`);
-    if(r && r.emitido && r.folio){
-      _miCertFolio = r.folio;
-      const b = $("btnCertif"); if(b) b.style.display = "inline-block";
+    if(r && r.emitido){
+      _miCertUrl = r.url || null;
+      _miCertFolio = r.folio || null;
+      if(_miCertUrl || _miCertFolio){
+        const b = $("btnCertif"); if(b) b.style.display = "inline-block";
+      }
     }
   }catch(e){ /* si aún no hay certificado, no se muestra nada */ }
 }
 function verMiCertificado(){
-  if(_miCertFolio) window.open(`../certificado/?folio=${encodeURIComponent(_miCertFolio)}`, "_blank");
+  if(_miCertUrl){ window.open(_miCertUrl, "_blank"); return; }
+  if(_miCertFolio){
+    alert(`Tu certificado ya fue emitido (folio ${_miCertFolio}). Para obtener la copia con diseño, pídela a administración.`);
+  }
 }
 
 // ═══════════════ TEMARIO (sidebar) ═══════════════

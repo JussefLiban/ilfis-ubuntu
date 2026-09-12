@@ -135,9 +135,13 @@ function pintarAnulado(codigo){
 
 function pintar(d){
   const participacion = (d.tipo === "participacion");
+  const matricula = (d.tipo === "matricula");
   // Bloque de detalles (izquierda)
   let det = "";
-  if(!participacion){
+  if(matricula){
+    if(d.realizado) det += `Fecha de matrícula: ${esc(d.realizado)}<br>`;
+    if(d.horas) det += `Duración: ${esc(d.horas)} Horas<br>`;
+  } else if(!participacion){
     det += `Obteniendo una calificación aprobatoria de: ${esc(d.calificacion)}/100<br>`;
     if(d.inicio && d.culminacion) det += `Periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}<br>`;
     else if(d.inicio) det += `Inicio: ${esc(d.inicio)}<br>`;
@@ -158,10 +162,10 @@ function pintar(d){
     <div class="hoja">
       <img class="fondo" src="${fondo}" alt="">
       <div class="cont">
-        <div class="titulo">CERTIFICADO DE ${participacion ? "PARTICIPACIÓN" : "APROBACIÓN"}</div>
+        <div class="titulo">${matricula ? "CONSTANCIA DE MATRÍCULA" : ("CERTIFICADO DE " + (participacion ? "PARTICIPACIÓN" : "APROBACIÓN"))}</div>
         <div class="intro">El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a):</div>
         <div class="nombre">${esc(d.nombre) || "—"}</div>
-        <div class="accion">${participacion ? "Participó del:" : "Aprobó satisfactoriamente el curso:"}</div>
+        <div class="accion">${matricula ? "Se encuentra matriculado(a) en:" : (participacion ? "Participó del:" : "Aprobó satisfactoriamente el curso:")}</div>
         <div class="curso">${esc(tituloCurso(d.curso))}</div>
         <div class="detalles">${det}</div>
         <div class="firmas">
