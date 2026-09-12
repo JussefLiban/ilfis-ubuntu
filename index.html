@@ -878,8 +878,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <button class="admin-tab" onclick="adminShowTab('docentes', this)">Docentes</button>
             <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
             <button class="admin-tab" onclick="adminShowTab('educertif', this)">Certificados</button>
-            <a class="admin-tab" href="admin-cursos/seguimiento.html" target="_blank" rel="noopener"
-               style="text-decoration:none;display:inline-block;">📊 Seguimiento</a>
+            <button class="admin-tab" onclick="adminShowTab('eduseguimiento', this)">📊 Seguimiento</button>
           </div>
         </div>
       </div>
@@ -1151,6 +1150,47 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarCertificados()">Actualizar</button>
         </div>
         <div id="admin-cert-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+
+      <!-- Sección Seguimiento (Plataforma Educativa) -->
+      <div class="admin-section" id="admin-sec-eduseguimiento">
+        <style>
+          .seg-tarjetas{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+          .seg-tarjeta{ background:#0f1729; border:1px solid #2a2a5a; border-radius:10px; padding:14px 16px; }
+          .seg-tarjeta .num{ font-size:26px; font-weight:700; color:#e6ecf7; font-family:'JetBrains Mono',monospace; }
+          .seg-tarjeta .lbl{ font-size:11.5px; color:#8899aa; margin-top:2px; }
+          .seg-tarjeta.medio .num{ color:#e0b64f; }
+          .seg-tarjeta.alerta .num{ color:#f87171; }
+          .seg-barra{ width:70px; height:6px; background:#1e2433; border-radius:4px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px; }
+          .seg-barra i{ display:block; height:100%; background:#3b82f6; }
+          .seg-pill{ display:inline-block; font-size:0.72rem; padding:3px 10px; border-radius:12px; font-weight:600; white-space:nowrap; }
+          .seg-pill.ok{ background:rgba(74,222,128,.15); color:#4ade80; }
+          .seg-pill.atencion{ background:rgba(224,182,79,.15); color:#e0b64f; }
+          .seg-pill.rezagado{ background:rgba(192,57,43,.2); color:#f87171; }
+          @media (max-width:800px){ .seg-tarjetas{ grid-template-columns:repeat(2,1fr); } }
+        </style>
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Junta a <b style="color:#fff;">todos los alumnos de todos los diplomados</b> con su
+          <b style="color:#fff;">nota relativa</b> (solo lo que ya les tocaba a la fecha, no el curso completo)
+          y su <b style="color:#fff;">último acceso</b> al aula, para detectar rezago sin esperar al cierre del curso.
+          Excluye cuentas de prueba/staff.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <select id="seg-curso" onchange="segRenderTabla()" style="padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+          <input type="text" id="seg-buscar" placeholder="🔍 Buscar alumno por nombre o correo…" oninput="segRenderTabla()" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+          <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarSeguimiento()">↻ Actualizar</button>
+        </div>
+        <div class="seg-tarjetas">
+          <div class="seg-tarjeta"><div class="num" id="seg-total">0</div><div class="lbl">Alumnos reales</div></div>
+          <div class="seg-tarjeta"><div class="num" id="seg-aldia">0</div><div class="lbl">Al día</div></div>
+          <div class="seg-tarjeta medio"><div class="num" id="seg-atencion">0</div><div class="lbl">En atención</div></div>
+          <div class="seg-tarjeta alerta"><div class="num" id="seg-rezagado">0</div><div class="lbl">Rezagados</div></div>
+        </div>
+        <div id="admin-seg-content"><div class="admin-loading">Cargando...</div></div>
+        <p style="font-size:0.72rem;color:#7a8a9a;margin-top:12px;line-height:1.6;">
+          <b style="color:#e0b64f;">Atención</b>: nota &lt; 65% o &gt;3 días sin entrar. <b style="color:#f87171;">Rezagado</b>: nota &lt; 40% o &gt;7 días sin entrar.
+          Sin ningún dato de acceso todavía (recién publicado, o el alumno nunca entró), cuenta como el peor caso — se ajusta solo en unos días conforme entren al aula.
+        </p>
       </div>
     </div>
   </div>
@@ -4181,6 +4221,7 @@ function adminShowTab(name, btn) {
   if (name === 'docentes') adminCargarDocentes();
   if (name === 'cohorte') adminCargarCohorte();
   if (name === 'educertif') adminCargarCertificados();
+  if (name === 'eduseguimiento') adminCargarSeguimiento();
 }
 
 // ── Cohorte (fecha de inicio por diplomado; solo superadmin) ──
@@ -4754,6 +4795,87 @@ async function simulacroLimpiar() {
     alert('✓ Simulacro limpiado. Alumnos: ' + (b.alumnos||0) + ' · Notas: ' + ((b.notasManual||0)+(b.quizAttempts||0)) + ' · Certificados: ' + (b.certificados||0));
     adminCargarCertificados();
   } catch(e) { alert('No pude limpiar: ' + e.message); }
+}
+
+// ── Seguimiento de Alumnos (Plataforma Educativa) ──────────────────────────
+let _adminSegLista = [];
+async function adminCargarSeguimiento() {
+  const box = document.getElementById('admin-seg-content');
+  if (!box) return;
+  box.innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/admin/seguimiento', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    _adminSegLista = d.alumnos || [];
+    _segLlenarCursos();
+    segRenderTabla();
+  } catch(e) {
+    box.innerHTML = '<div style="color:#f87171;font-size:0.85rem;">No pude cargar el seguimiento: ' + e.message + '</div>';
+  }
+}
+function _segLlenarCursos() {
+  const sel = document.getElementById('seg-curso');
+  if (!sel) return;
+  const actual = sel.value;
+  const vistos = new Set(); const cursos = [];
+  _adminSegLista.forEach(a => { if (!vistos.has(a.curso)) { vistos.add(a.curso); cursos.push({ id: a.curso, nombre: a.nombre_curso || a.curso }); } });
+  sel.innerHTML = '<option value="">Todos los cursos</option>' + cursos.map(c => `<option value="${_adminEsc(c.id)}">${_adminEsc(c.nombre)}</option>`).join('');
+  if (cursos.some(c => c.id === actual)) sel.value = actual;
+}
+function _segFechaRelativa(a) {
+  if (!a.tiene_dato_acceso || a.dias_sin_entrar == null) return '<span style="color:#8899aa;font-style:italic;">sin datos aún</span>';
+  const d = a.dias_sin_entrar;
+  if (d < 1) return 'hoy';
+  if (d < 2) return 'ayer';
+  return 'hace ' + Math.round(d) + ' días';
+}
+function _segPillEstado(estado) {
+  const map = { al_dia: ['ok', 'Al día'], atencion: ['atencion', 'Atención'], rezagado: ['rezagado', 'Rezagado'] };
+  const [cls, txt] = map[estado] || ['ok', estado || '—'];
+  return `<span class="seg-pill ${cls}">${txt}</span>`;
+}
+function segRenderTabla() {
+  const box = document.getElementById('admin-seg-content');
+  if (!box) return;
+  const q = (document.getElementById('seg-buscar').value || '').trim().toLowerCase();
+  const cursoSel = document.getElementById('seg-curso').value;
+  let filas = _adminSegLista.filter(a => {
+    if (cursoSel && a.curso !== cursoSel) return false;
+    if (q && !((a.nombre || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  filas = filas.slice().sort((a, b) => {
+    const na = a.nota_relativa == null, nb = b.nota_relativa == null;
+    if (na !== nb) return na ? 1 : -1;
+    return (a.nota_relativa || 0) - (b.nota_relativa || 0);
+  });
+  document.getElementById('seg-total').textContent = filas.length;
+  document.getElementById('seg-aldia').textContent = filas.filter(a => a.estado === 'al_dia').length;
+  document.getElementById('seg-atencion').textContent = filas.filter(a => a.estado === 'atencion').length;
+  document.getElementById('seg-rezagado').textContent = filas.filter(a => a.estado === 'rezagado').length;
+  if (!filas.length) { box.innerHTML = '<div class="admin-loading">— sin resultados —</div>'; return; }
+  const filasHtml = filas.map((a, i) => {
+    const nota = a.nota_relativa;
+    const notaTxt = nota == null ? '<span style="color:#8899aa;font-style:italic;">sin datos aún</span>'
+      : `<span class="seg-barra"><i style="width:${Math.max(0, Math.min(100, nota))}%"></i></span><b style="font-family:'JetBrains Mono',monospace;">${nota.toFixed(1)}%</b>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
+      <div style="min-width:220px;display:flex;align-items:center;gap:10px;">
+        <b style="color:#7a8a9a;font-family:'JetBrains Mono',monospace;">${i + 1}.</b>
+        <div>
+          <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(a.nombre)}</div>
+          <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(a.email)} · ${_adminEsc(a.nombre_curso || a.curso)}${a.pais ? ' · ' + _adminEsc(a.pais) : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span style="color:#8899aa;font-size:0.8rem;">${_segFechaRelativa(a)}</span>
+        <span>${notaTxt}</span>
+        ${_segPillEstado(a.estado)}
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML = filasHtml;
 }
 
 async function adminCargarCertificados() {
