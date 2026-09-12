@@ -1086,7 +1086,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
             <label style="font-size:0.8rem;color:#8899aa;">Curso:</label>
-            <select id="cert-cohorte-curso" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+            <select id="cert-cohorte-curso" onchange="certCargarMatriculaSolo()" style="padding:8px 10px;border:1px solid #2a2a5a;border-radius:8px;background:#0b1220;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
             <button class="btn-dar btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certCargarCohorte()">Cargar Resultados</button>
             <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="certEmitirTodosCohorte()">Generar Todos los Aprobados</button>
           </div>
@@ -4622,6 +4622,7 @@ async function certCargarCohorte() {
     const roster = (rosterD.roster || []).filter(a => a.estado === 'matriculado');
     _certCohorteData = { meta, planilla, cohorte, roster };
     certRenderCohorte();
+    _certRosterMatriculaCurso = { id: meta.id, roster };
     _certLlenarSelectorMatriculaUno(roster);
     const desaprobados = (planilla.alumnos || []).filter(a => a.resultado === 'DESAPROBADO' && a.completo);
     _certLlenarSelectorParticipacionUno(desaprobados);
@@ -4645,14 +4646,24 @@ async function certEmitirMatriculaUno() {
   const sel = document.getElementById('cert-matricula-uno');
   const uid = sel && sel.value;
   if (!uid) { alert('Elige primero un alumno de la lista.'); return; }
-  if (!_certCohorteData) { alert('Primero pulsa "Cargar Resultados".'); return; }
-  const { meta, cohorte, roster } = _certCohorteData;
-  const a = (roster || []).find(x => x.uid === uid);
-  if (!a) return;
+  const meta = _certDiplomaMeta();
+  if (!meta || !meta.id) { alert('Elige el curso arriba.'); return; }
+  // Matrícula no depende de "Cargar Resultados" — su propio roster ya se
+  // cargó solo al elegir el curso (certCargarMatriculaSolo).
+  const roster = (_certRosterMatriculaCurso && _certRosterMatriculaCurso.id === meta.id)
+    ? _certRosterMatriculaCurso.roster : [];
+  const a = roster.find(x => x.uid === uid);
+  if (!a) { alert('No encontré ese alumno — vuelve a elegir el curso para refrescar la lista.'); return; }
   const curso = _certCursoDeCohorte(meta);
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
-  const fechaInicio = (cohorte && cohorte.fecha_inicio) ? _cert_fecha_larga_js(new Date(cohorte.fecha_inicio + 'T00:00:00')) : '';
+  // Fecha de inicio del cohorte (independiente de si ya se pulsó "Cargar Resultados").
+  let fechaInicio = '';
+  try {
+    const rc = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
+    const dc = rc.ok ? await rc.json() : {};
+    if (dc.fecha_inicio) fechaInicio = _cert_fecha_larga_js(new Date(dc.fecha_inicio + 'T00:00:00'));
+  } catch(_) {}
   const body = { tipo: 'matricula', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
     instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaInicio,
     uid: a.uid, curso_id: meta.id };
@@ -4938,6 +4949,7 @@ async function adminCargarCertificados() {
   await _certCargarCatalogo();
   _adminLlenarDiplomasCert();
   certToggleTipo();
+  certCargarMatriculaSolo();
   const box = document.getElementById('admin-cert-content');
   if (!box) return;
   box.innerHTML = '<div class="admin-loading">Cargando...</div>';
@@ -4950,6 +4962,28 @@ async function adminCargarCertificados() {
     adminRenderCertificados();
   } catch(e) {
     box.innerHTML = '<div class="admin-loading" style="color:#e87272;">Error: ' + e.message + '</div>';
+  }
+}
+// Matrícula NO depende de notas/resultados (a diferencia de Participación y
+// Aprobación) — su selector se llena solo con elegir el curso, sin tener que
+// pulsar "Cargar Resultados" primero (que además tarda más, porque trae la
+// planilla completa).
+let _certRosterMatriculaCurso = null;
+async function certCargarMatriculaSolo() {
+  const meta = _certDiplomaMeta();
+  const sel = document.getElementById('cert-matricula-uno');
+  if (!meta || !meta.id || !sel) return;
+  sel.innerHTML = '<option value="">Cargando…</option>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/roster', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    const roster = (d.roster || []).filter(a => a.estado === 'matriculado');
+    _certRosterMatriculaCurso = { id: meta.id, roster };
+    _certLlenarSelectorMatriculaUno(roster);
+  } catch(e) {
+    sel.innerHTML = '<option value="">No pude cargar</option>';
   }
 }
 
