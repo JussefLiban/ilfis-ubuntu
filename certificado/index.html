@@ -49,6 +49,26 @@
   .msg{ text-align:center; padding:70px 20px; color:#555; }
   .msg h2{ margin-bottom:8px; }
 
+  /* Constancia de participación — diseño simple (sin QR, sin fondo elaborado):
+     es un documento informativo, no un logro, así que no lleva el mismo peso
+     visual que el certificado de aprobación. */
+  .part-hoja{ width:900px; max-width:94vw; margin:0 auto 34px; background:#fff;
+              border:2px solid #c0392b; border-radius:6px; padding:44px 50px;
+              box-shadow:0 6px 22px rgba(0,0,0,.15); }
+  .part-logo{ display:flex; align-items:center; gap:14px; margin-bottom:26px; }
+  .part-logo img{ height:46px; }
+  .part-logo .n{ font-size:.78rem; color:#345; line-height:1.35; }
+  .part-titulo{ text-align:center; font-weight:800; font-size:1.15rem; letter-spacing:.03em;
+                margin-bottom:22px; color:#1a1a1a; }
+  .part-texto{ font-size:.98rem; line-height:1.75; color:#1a1a1a; text-align:justify; }
+  .part-firmas{ display:flex; justify-content:space-around; margin-top:44px; }
+  .part-firma{ text-align:center; width:15em; }
+  .part-firma img{ display:block; margin:0 auto; height:52px; }
+  .part-firma .n{ margin-top:4px; font-size:.9rem; }
+  @media print{
+    .part-hoja{ box-shadow:none; }
+  }
+
   /* Aviso de certificado ANULADO (destino del QR de uno revocado) */
   .anul{ max-width:560px; margin:50px auto; padding:34px 26px; text-align:center;
          background:#fdeaea; border:2px solid #d9534f; border-radius:16px; color:#7a1f1c; }
@@ -133,24 +153,65 @@ function pintarAnulado(codigo){
   document.title = "Certificado anulado · ILFIS";
 }
 
-function pintar(d){
-  const participacion = (d.tipo === "participacion");
+// Participación y matrícula: carta simple (párrafo, sin QR ni diseño elaborado) —
+// ninguna de las dos es un logro (una es "no aprobó", la otra es solo un trámite
+// administrativo), así que no llevan el mismo peso visual que el certificado de
+// aprobación. Estilo tomado del certificado antiguo (Laravel), a pedido de Jussef.
+function pintarCartaSimple(d){
   const matricula = (d.tipo === "matricula");
-  // Bloque de detalles (izquierda)
-  let det = "";
+  const partes = [];
   if(matricula){
-    if(d.realizado) det += `Fecha de matrícula: ${esc(d.realizado)}<br>`;
-    if(d.horas) det += `Duración: ${esc(d.horas)} Horas<br>`;
-  } else if(!participacion){
-    det += `Obteniendo una calificación aprobatoria de: ${esc(d.calificacion)}/100<br>`;
-    if(d.inicio && d.culminacion) det += `Periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}<br>`;
-    else if(d.inicio) det += `Inicio: ${esc(d.inicio)}<br>`;
-    if(d.horas) det += `Con un total de: ${esc(d.horas)} Horas<br>`;
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): <b>${esc(d.nombre) || "—"}</b>, se encuentra matriculado(a) en el curso: <b>${esc(tituloCurso(d.curso))}</b>`);
+    if(d.realizado) partes.push(`con fecha de matrícula: <b>${esc(d.realizado)}</b>`);
+    if(d.horas) partes.push(`con una duración de: <b>${esc(d.horas)} Horas</b>`);
   } else {
-    if(d.realizado) det += `Realizado ${esc(d.realizado)}<br>`;
-    if(d.horas) det += `Con un total de ${esc(d.horas)} Horas Lectivas<br>`;
-    if(d.calificacion != null) det += `Calificación obtenida: ${esc(d.calificacion)}/100 (no alcanzó la nota mínima de aprobación)<br>`;
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): <b>${esc(d.nombre) || "—"}</b>, ha participado del curso: <b>${esc(tituloCurso(d.curso))}</b>`);
+    if(d.calificacion != null) partes.push(`obteniendo una calificación desaprobatoria de: <b>${esc(d.calificacion)}/100</b>`);
+    if(d.realizado) partes.push(`el mismo que fue dictado con fecha: <b>${esc(d.realizado)}</b>`);
+    if(d.horas) partes.push(`con un total de: <b>${esc(d.horas)} Horas</b>`);
   }
+  if(d.instructor) partes.push(`y que estuvo a cargo del Instructor: <b>${esc(d.instructor)}</b>`);
+  const texto = partes.join(", ") + `. Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: <b>${esc(capMes(d.fecha))}</b> para los fines que el alumno estime pertinente.`;
+
+  const firmaSec = ASSETS + (d.firma_secretario || "firma-ilfis-guillermo-paredes.jpg");
+  const firmaIns = d.firma_instructor ? (ASSETS + d.firma_instructor) : "";
+
+  $("root").innerHTML = `
+    <div class="part-hoja">
+      <div class="part-logo">
+        <img src="${ASSETS}logo-ilfis.png" alt="ILFIS" onerror="this.style.display='none'">
+        <div class="n"><b style="font-size:1.05rem;">ILFIS</b><br>Instituto Latinoamericano<br>de Formación en Incendios<br>y Seguridad</div>
+      </div>
+      <div class="part-titulo">${matricula ? "CONSTANCIA DE MATRÍCULA" : "CERTIFICADO DE PARTICIPACIÓN"}</div>
+      <div class="part-texto">${texto}</div>
+      <div class="part-firmas">
+        <div class="part-firma">
+          <img src="${firmaSec}" alt="">
+          <div class="n"><b>${esc(d.secretario_nombre || "Guillermo Paredes")}</b><br>${esc(d.secretario_cargo || "Secretario General")}</div>
+        </div>
+        <div class="part-firma">
+          ${firmaIns ? `<img src="${firmaIns}" alt="">` : `<div style="height:52px"></div>`}
+          <div class="n"><b>${esc(d.instructor || "")}</b><br>Instructor</div>
+        </div>
+      </div>
+    </div>`;
+
+  $("barra").style.display = "flex";
+  $("estado").className = "estado ok";
+  $("estado").textContent = "✓ Certificado auténtico · verificado por ILFIS";
+  const alias = aliasCurso(d.curso);
+  document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
+}
+
+function pintar(d){
+  if(d.tipo === "participacion" || d.tipo === "matricula"){ pintarCartaSimple(d); return; }
+  // A partir de aquí, solo queda el certificado de APROBACIÓN (el único con
+  // diseño completo: fondo, QR, y el mismo peso que un logro real).
+  let det = "";
+  det += `Obteniendo una calificación aprobatoria de: ${esc(d.calificacion)}/100<br>`;
+  if(d.inicio && d.culminacion) det += `Periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}<br>`;
+  else if(d.inicio) det += `Inicio: ${esc(d.inicio)}<br>`;
+  if(d.horas) det += `Con un total de: ${esc(d.horas)} Horas<br>`;
   if(d.instructor) det += `Instructor: ${esc(d.instructor)}<br>`;
   det += `Fecha de Emisión: ${esc(capMes(d.fecha))}`;
 
@@ -163,10 +224,10 @@ function pintar(d){
     <div class="hoja">
       <img class="fondo" src="${fondo}" alt="">
       <div class="cont">
-        <div class="titulo">${matricula ? "CONSTANCIA DE MATRÍCULA" : ("CERTIFICADO DE " + (participacion ? "PARTICIPACIÓN" : "APROBACIÓN"))}</div>
+        <div class="titulo">CERTIFICADO DE APROBACIÓN</div>
         <div class="intro">El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a):</div>
         <div class="nombre">${esc(d.nombre) || "—"}</div>
-        <div class="accion">${matricula ? "Se encuentra matriculado(a) en:" : (participacion ? "Participó del:" : "Aprobó satisfactoriamente el curso:")}</div>
+        <div class="accion">Aprobó satisfactoriamente el curso:</div>
         <div class="curso">${esc(tituloCurso(d.curso))}</div>
         <div class="detalles">${det}</div>
         <div class="firmas">

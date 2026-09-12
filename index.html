@@ -4586,6 +4586,11 @@ function _certYaEmitidos(cursoNombre) {
     .filter(c => (c.curso || '').trim().toLowerCase() === (cursoNombre || '').trim().toLowerCase())
     .map(c => (c.nombre || '').trim().toLowerCase()));
 }
+// Como _certYaEmitidos pero devuelve el registro completo (para el link "Ver").
+function _certEmitidoDe(cursoNombre, nombreAlumno) {
+  const cn = (cursoNombre || '').trim().toLowerCase(), na = (nombreAlumno || '').trim().toLowerCase();
+  return (_adminCertLista || []).find(c => (c.curso || '').trim().toLowerCase() === cn && (c.nombre || '').trim().toLowerCase() === na) || null;
+}
 async function certCargarCohorte() {
   await _certCargarCatalogo();
   _adminLlenarDiplomasCert();
@@ -4609,7 +4614,6 @@ function certRenderCohorte() {
   const { meta, planilla } = _certCohorteData;
   const alumnos = planilla.alumnos || [];
   const curso = _certCursoDeCohorte(meta);
-  const yaEmit = _certYaEmitidos(curso.nombre);
   const nAprob = alumnos.filter(a => a.resultado === 'APROBADO').length;
   const filas = alumnos.map(a => {
     const nota = (a.promedio_total == null) ? '—' : (Math.round(a.promedio_total * 100) / 100);
@@ -4618,9 +4622,11 @@ function certRenderCohorte() {
               : ['En curso', '#222a3d', '#8b95ad'];
     let accion = '';
     if (a.resultado === 'APROBADO') {
-      accion = yaEmit.has((a.nombre || '').trim().toLowerCase())
-        ? '<span style="color:#5fd08a;font-size:0.78rem;">✓ Emitido</span>'
-        : `<button class="btn-a btn-dar" style="padding:5px 12px;font-size:0.78rem;" onclick="certPrefillCohorte('${a.uid}')">Generar</button>`;
+      const emitido = _certEmitidoDe(curso.nombre, a.nombre);
+      accion = emitido
+        ? `<a href="certificado/?c=${encodeURIComponent(emitido.codigo)}" target="_blank" style="color:#5fd08a;font-size:0.78rem;">✓ Ver</a>`
+        : `<button class="btn-a btn-dar" style="padding:5px 12px;font-size:0.78rem;" onclick="certGenerarUno('${a.uid}')">Generar</button>
+           <button class="btn-a" style="padding:5px 10px;font-size:0.72rem;margin-left:4px;" title="Revisar/editar los datos antes de emitir" onclick="certPrefillCohorte('${a.uid}')">✎</button>`;
     }
     return `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 12px;border-top:1px solid #1e2740;font-size:0.85rem;color:#e6ecf7;">
       <span>${_adminEsc(a.nombre || '—')}</span>
@@ -4631,6 +4637,32 @@ function certRenderCohorte() {
   }).join('');
   box.innerHTML = `<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:8px;">${alumnos.length} alumno(s) · ${nAprob} aprobado(s)</div>
     <div style="border:1px solid #1e2740;border-radius:10px;overflow:hidden;">${filas || '<div style="padding:12px;color:#8899aa;font-size:0.82rem;">Sin datos del cohorte todavía.</div>'}</div>`;
+}
+// Genera de una vez el certificado de UN alumno aprobado (sin pasar por el
+// formulario manual) — el boton dice "Generar" y ahora sí genera directo,
+// igual que "Generar Todos los Aprobados" pero para uno solo. El lápiz (✎) de
+// al lado sigue abriendo el formulario por si se quiere revisar antes.
+async function certGenerarUno(uid) {
+  if (!_certCohorteData) { alert('Primero pulsa "Cargar resultados".'); return; }
+  const { meta, cohorte, planilla } = _certCohorteData;
+  const a = (planilla.alumnos || []).find(x => x.uid === uid);
+  if (!a) return;
+  const curso = _certCursoDeCohorte(meta);
+  const m = _certMesesDeCohorte(cohorte, meta.semanas);
+  const instrSel = document.getElementById('cert-f-instructor');
+  const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  const body = { tipo: 'aprobacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
+    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '',
+    calificacion: String(Math.round(a.promedio_total)), inicio: m.inicio, culminacion: m.culm,
+    uid: a.uid || undefined, curso_id: meta.id || undefined };
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    await adminCargarCertificados();
+    certRenderCohorte();
+  } catch(e) { alert('No pude generar: ' + e.message); }
 }
 // Rellena el formulario de emisión con los datos del alumno aprobado (para revisar y emitir).
 function certPrefillCohorte(uid) {
@@ -4778,8 +4810,8 @@ async function simulacroSembrar() {
     const rep = (d.reporte||[]).map(x => '• ' + x.alumno + ': nota ' + x.nota_total + ' → ' + x.resultado + ' (' + x.entregas + ' entregas)').join('\n');
     alert('✓ SIMULACRO SEMBRADO\n\n' +
           (d.creados||0) + ' alumnos · ' + (d.entregas||0) + ' entregas · ' + (d.mensajes||0) + ' mensajes · ' + (d.calificaciones||0) + ' calificaciones\n' +
-          (d.aprobados||0) + ' aprobados / ' + (d.desaprobados||0) + ' desaprobados\n\n' + rep +
-          '\n\nAhora pulsa "Cargar Resultados", revisa la Planilla, las Entregas y los Boletines.');
+          (d.aprobados||0) + ' aprobados / ' + (d.desaprobados||0) + ' desaprobados\n\n' + rep);
+    await certCargarCohorte();
   } catch(e) { alert('No pude sembrar: ' + e.message); }
 }
 async function simulacroLimpiar() {
