@@ -4790,12 +4790,11 @@ async function certEmitirParticipacionUno(uidDirecto) {
   const curso = _certCursoDeCohorte(meta);
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
-  // Fecha real en que se dictó el curso (inicio del cohorte) — NO la fecha de
-  // hoy, que es solo cuándo se generó el documento (eso ya va aparte, al final).
-  const fechaDictado = (cohorte && cohorte.fecha_inicio)
-    ? _cert_fecha_larga_js(new Date(cohorte.fecha_inicio + 'T00:00:00')) : '';
+  // Mismo "Periodo: mes - mes" que ya usa el certificado de aprobación (no una
+  // fecha puntual — evita confundir "cuándo se generó" con "cuándo se dictó").
+  const m = _certMesesDeCohorte(cohorte, meta.semanas);
   const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
-    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaDictado,
+    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', inicio: m.inicio, culminacion: m.culm,
     calificacion: String(Math.round(a.promedio_total)), uid: a.uid, curso_id: meta.id };
   try {
     const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {

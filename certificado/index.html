@@ -166,7 +166,7 @@ function pintarCartaSimple(d){
     if(d.horas) partes.push(`que tendrá una duración de: ${esc(d.horas)} Horas`);
   } else {
     partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: ${esc(tituloCurso(d.curso))}`);
-    if(d.realizado) partes.push(`el mismo que fue dictado con fecha: ${esc(d.realizado)}`);
+    if(d.inicio && d.culminacion) partes.push(`en el periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}`);
     if(d.horas) partes.push(`con un total de: ${esc(d.horas)} Horas`);
   }
   if(d.instructor) partes.push(`y que ${matricula ? "estará" : "estuvo"} a cargo del Instructor: ${esc(d.instructor)}`);
