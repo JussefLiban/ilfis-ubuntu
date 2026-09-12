@@ -207,7 +207,11 @@ function pintarCartaSimple(d){
   $("barra").style.display = "flex";
   $("estado").style.display = "none";
   const alias = aliasCurso(d.curso);
-  document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
+  // El nombre del archivo debe decir lo que el documento realmente es y no
+  // chocar con los otros dos tipos del mismo alumno/curso (si no, Windows los
+  // numera "(1)", "(2)"... sin que se note cuál es cuál).
+  const etiqueta = matricula ? "Constancia Matrícula" : "Certificado Participación";
+  document.title = etiqueta + " " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
   _setPaginaImpresion("landscape");
 }
 

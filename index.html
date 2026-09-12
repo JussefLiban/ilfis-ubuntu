@@ -4502,7 +4502,7 @@ let _certCatalogo = null;
 
 async function _certCargarCatalogo() {
   if (!_certCatalogo) {
-    try { _certCatalogo = await (await fetch('certificado/catalogo.json')).json(); }
+    try { _certCatalogo = await (await fetch('certificado/catalogo.json?_=' + Date.now(), { cache: 'no-store' })).json(); }
     catch(e) { _certCatalogo = { cursos:[], instructores:[], fondos:[] }; }
   }
   const dl = document.getElementById('cert-cursos-dl');
