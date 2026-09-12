@@ -175,7 +175,7 @@ function pintarCartaSimple(d){
     // Frase aparte, sin ambigüedad: este documento NO es un certificado de
     // aprobación. Se repite la palabra clave para que no se preste a
     // confusión ni pueda usarse para aparentar que sí aprobó.
-    texto += `<b>EL ALUMNO NO APROBÓ EL CURSO.</b> Obtuvo una calificación de ${esc(d.calificacion != null ? d.calificacion : "—")}/100, no alcanzando la nota mínima de aprobación. Este documento certifica únicamente su participación, no su aprobación. `;
+    texto += `<b>EL ALUMNO NO APROBÓ EL CURSO</b>, obteniendo una calificación de ${esc(d.calificacion != null ? d.calificacion : "—")}/100. Este documento certifica únicamente su participación. `;
   }
   texto += `Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: ${esc(capMes(d.fecha))} para los fines que el alumno estime pertinente.`;
 
