@@ -4784,14 +4784,18 @@ async function certEmitirParticipacionUno(uidDirecto) {
   const uid = uidDirecto || (document.getElementById('cert-participacion-uno') || {}).value;
   if (!uid) { alert('Elige primero un alumno de la lista.'); return; }
   if (!_certCohorteData) { alert('Primero pulsa "Cargar Resultados".'); return; }
-  const { meta, planilla } = _certCohorteData;
+  const { meta, planilla, cohorte } = _certCohorteData;
   const a = (planilla.alumnos || []).find(x => x.uid === uid);
   if (!a) return;
   const curso = _certCursoDeCohorte(meta);
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
+  // Fecha real en que se dictó el curso (inicio del cohorte) — NO la fecha de
+  // hoy, que es solo cuándo se generó el documento (eso ya va aparte, al final).
+  const fechaDictado = (cohorte && cohorte.fecha_inicio)
+    ? _cert_fecha_larga_js(new Date(cohorte.fecha_inicio + 'T00:00:00')) : '';
   const body = { tipo: 'participacion', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
-    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: _cert_fecha_larga_js(new Date()),
+    instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaDictado,
     calificacion: String(Math.round(a.promedio_total)), uid: a.uid, curso_id: meta.id };
   try {
     const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
