@@ -161,15 +161,15 @@ function pintarCartaSimple(d){
   const matricula = (d.tipo === "matricula");
   const partes = [];
   if(matricula){
-    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, se encuentra matriculado(a) en el curso: ${esc(tituloCurso(d.curso))}`);
-    if(d.realizado) partes.push(`con fecha de inicio: ${esc(d.realizado)}`);
-    if(d.horas) partes.push(`que tendrá una duración de: ${esc(d.horas)} Horas`);
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, se encuentra matriculado(a) en el curso: <b>${esc(tituloCurso(d.curso))}</b>`);
+    if(d.realizado) partes.push(`con fecha de inicio ${esc(d.realizado)}`);
+    if(d.horas) partes.push(`que tendrá una duración de ${esc(d.horas)} Horas`);
   } else {
-    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: ${esc(tituloCurso(d.curso))}`);
-    if(d.inicio && d.culminacion) partes.push(`en el periodo: ${esc(d.inicio)} - ${esc(d.culminacion)}`);
-    if(d.horas) partes.push(`con un total de: ${esc(d.horas)} Horas`);
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: <b>${esc(tituloCurso(d.curso))}</b>`);
+    if(d.inicio && d.culminacion) partes.push(`en el periodo ${esc(d.inicio)} - ${esc(d.culminacion)}`);
+    if(d.horas) partes.push(`con un total de ${esc(d.horas)} Horas`);
   }
-  if(d.instructor) partes.push(`y que ${matricula ? "estará" : "estuvo"} a cargo del Instructor: ${esc(d.instructor)}`);
+  if(d.instructor) partes.push(`y que ${matricula ? "estará" : "estuvo"} a cargo del Instructor ${esc(d.instructor)}`);
   let texto = partes.join(", ") + ". ";
   if(!matricula){
     // Frase aparte, sin ambigüedad: este documento NO es un certificado de
@@ -202,9 +202,10 @@ function pintarCartaSimple(d){
       </div>
     </div>`;
 
+  // Sin la insignia "Certificado auténtico · verificado" — es un documento
+  // simple, no lleva la misma verificación/peso que el de aprobación.
   $("barra").style.display = "flex";
-  $("estado").className = "estado ok";
-  $("estado").textContent = "✓ Certificado auténtico · verificado por ILFIS";
+  $("estado").style.display = "none";
   const alias = aliasCurso(d.curso);
   document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
   _setPaginaImpresion("portrait");
@@ -261,6 +262,7 @@ function pintar(d){
     </div>`;
 
   $("barra").style.display = "flex";
+  $("estado").style.display = "";
   $("estado").className = "estado ok";
   $("estado").textContent = "✓ Certificado auténtico · verificado por ILFIS";
   // Nombre del archivo al descargar/imprimir: "Certificado {apodo} · {alumno}"
