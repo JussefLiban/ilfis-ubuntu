@@ -163,14 +163,14 @@ function pintarCartaSimple(d){
   if(matricula){
     partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, se encuentra matriculado(a) en el curso: ${esc(tituloCurso(d.curso))}`);
     if(d.realizado) partes.push(`con fecha de inicio: ${esc(d.realizado)}`);
-    if(d.horas) partes.push(`con una duración de: ${esc(d.horas)} Horas`);
+    if(d.horas) partes.push(`que tendrá una duración de: ${esc(d.horas)} Horas`);
   } else {
     partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: ${esc(tituloCurso(d.curso))}`);
     if(d.calificacion != null) partes.push(`obteniendo una calificación desaprobatoria de: ${esc(d.calificacion)}/100`);
     if(d.realizado) partes.push(`el mismo que fue dictado con fecha: ${esc(d.realizado)}`);
     if(d.horas) partes.push(`con un total de: ${esc(d.horas)} Horas`);
   }
-  if(d.instructor) partes.push(`y que estuvo a cargo del Instructor: ${esc(d.instructor)}`);
+  if(d.instructor) partes.push(`y que ${matricula ? "estará" : "estuvo"} a cargo del Instructor: ${esc(d.instructor)}`);
   const texto = partes.join(", ") + `. Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: ${esc(capMes(d.fecha))} para los fines que el alumno estime pertinente.`;
 
   const firmaSec = ASSETS + (d.firma_secretario || "firma-ilfis-guillermo-paredes.jpg");
