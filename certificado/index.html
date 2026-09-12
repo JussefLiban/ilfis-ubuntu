@@ -208,10 +208,10 @@ function pintarCartaSimple(d){
   $("estado").style.display = "none";
   const alias = aliasCurso(d.curso);
   document.title = "Certificado " + (alias ? alias + " " : "") + "· " + (d.nombre || d.codigo || "ILFIS");
-  _setPaginaImpresion("portrait");
+  _setPaginaImpresion("landscape");
 }
 
-// La carta simple (participación/matrícula) es vertical, no horizontal como el
+// La carta simple (participación/matrícula) es apaisada (A4 horizontal), como el
 // certificado de aprobación (fondo 1920x1359) — el @page de impresión/PDF debe
 // coincidir, si no sale recortado o mal centrado en window.print()/A4.
 function _setPaginaImpresion(orientacion){
@@ -289,11 +289,15 @@ async function descargarPDF(){
     const canvas = await html2canvas(hoja, { scale:2, useCORS:true, backgroundColor:"#ffffff", logging:false });
     const img = canvas.toDataURL("image/jpeg", 0.95);
     if(esCartaSimple){
-      // A4 vertical con margen, la imagen se ajusta al ancho de la hoja.
-      const pdf = new window.jspdf.jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
-      const margen = 14, anchoUtil = 210 - margen * 2;
-      const alto = anchoUtil * (canvas.height / canvas.width);
-      pdf.addImage(img, "JPEG", margen, margen, anchoUtil, alto);
+      // A4 apaisado (horizontal) con margen, la imagen se ajusta a lo que
+      // entre en la hoja (por ancho o por alto, lo que primero se cumpla).
+      const pdf = new window.jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+      const margen = 14, anchoHoja = 297 - margen * 2, altoHoja = 210 - margen * 2;
+      const ratio = canvas.height / canvas.width;
+      let anchoImg = anchoHoja, altoImg = anchoHoja * ratio;
+      if(altoImg > altoHoja){ altoImg = altoHoja; anchoImg = altoHoja / ratio; }
+      const x = margen + (anchoHoja - anchoImg) / 2, y = margen + (altoHoja - altoImg) / 2;
+      pdf.addImage(img, "JPEG", x, y, anchoImg, altoImg);
       pdf.save((document.title || "Certificado") + ".pdf");
     } else {
       const pdf = new window.jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
