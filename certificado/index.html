@@ -53,8 +53,8 @@
      es un documento informativo, no un logro, así que no lleva el mismo peso
      visual que el certificado de aprobación. */
   .part-hoja{ width:900px; max-width:94vw; margin:0 auto 34px; background:#fff;
-              border:2px solid #c0392b; border-radius:6px; padding:44px 50px;
-              box-shadow:0 6px 22px rgba(0,0,0,.15); }
+              border:1px solid #1a1a1a; padding:44px 50px;
+              box-shadow:0 2px 8px rgba(0,0,0,.08); }
   .part-logo{ display:flex; align-items:center; gap:14px; margin-bottom:26px; }
   .part-logo img{ height:46px; }
   .part-logo .n{ font-size:.78rem; color:#345; line-height:1.35; }
@@ -161,17 +161,17 @@ function pintarCartaSimple(d){
   const matricula = (d.tipo === "matricula");
   const partes = [];
   if(matricula){
-    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): <b>${esc(d.nombre) || "—"}</b>, se encuentra matriculado(a) en el curso: <b>${esc(tituloCurso(d.curso))}</b>`);
-    if(d.realizado) partes.push(`con fecha de matrícula: <b>${esc(d.realizado)}</b>`);
-    if(d.horas) partes.push(`con una duración de: <b>${esc(d.horas)} Horas</b>`);
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, se encuentra matriculado(a) en el curso: ${esc(tituloCurso(d.curso))}`);
+    if(d.realizado) partes.push(`con fecha de inicio: ${esc(d.realizado)}`);
+    if(d.horas) partes.push(`con una duración de: ${esc(d.horas)} Horas`);
   } else {
-    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): <b>${esc(d.nombre) || "—"}</b>, ha participado del curso: <b>${esc(tituloCurso(d.curso))}</b>`);
-    if(d.calificacion != null) partes.push(`obteniendo una calificación desaprobatoria de: <b>${esc(d.calificacion)}/100</b>`);
-    if(d.realizado) partes.push(`el mismo que fue dictado con fecha: <b>${esc(d.realizado)}</b>`);
-    if(d.horas) partes.push(`con un total de: <b>${esc(d.horas)} Horas</b>`);
+    partes.push(`El Instituto Latinoamericano de Formación en Incendios y Seguridad, certifica que el(la) alumno(a): ${esc(d.nombre) || "—"}, ha participado del curso: ${esc(tituloCurso(d.curso))}`);
+    if(d.calificacion != null) partes.push(`obteniendo una calificación desaprobatoria de: ${esc(d.calificacion)}/100`);
+    if(d.realizado) partes.push(`el mismo que fue dictado con fecha: ${esc(d.realizado)}`);
+    if(d.horas) partes.push(`con un total de: ${esc(d.horas)} Horas`);
   }
-  if(d.instructor) partes.push(`y que estuvo a cargo del Instructor: <b>${esc(d.instructor)}</b>`);
-  const texto = partes.join(", ") + `. Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: <b>${esc(capMes(d.fecha))}</b> para los fines que el alumno estime pertinente.`;
+  if(d.instructor) partes.push(`y que estuvo a cargo del Instructor: ${esc(d.instructor)}`);
+  const texto = partes.join(", ") + `. Se emite el presente ${matricula ? "documento" : "certificado"} con fecha: ${esc(capMes(d.fecha))} para los fines que el alumno estime pertinente.`;
 
   const firmaSec = ASSETS + (d.firma_secretario || "firma-ilfis-guillermo-paredes.jpg");
   const firmaIns = d.firma_instructor ? (ASSETS + d.firma_instructor) : "";

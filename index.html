@@ -1132,7 +1132,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <label class="cert-lbl cert-apr">Culminación
               <input type="month" id="cert-f-culm">
             </label>
-            <label class="cert-lbl cert-part" style="display:none;">Fecha del evento / de matrícula
+            <label class="cert-lbl cert-part" style="display:none;">Fecha del evento / de inicio del curso
               <input type="text" id="cert-f-realizado" placeholder="15 de marzo de 2025">
             </label>
           </div>
@@ -4767,11 +4767,18 @@ async function certEmitirTodosMatricula() {
   if (!confirm('Se generarán ' + pend.length + ' constancia(s) de MATRÍCULA. ¿Continuar?')) return;
   const instrSel = document.getElementById('cert-f-instructor');
   const instrNombre = instrSel && instrSel.options[instrSel.selectedIndex] ? instrSel.options[instrSel.selectedIndex].text : '';
-  const fechaHoy = _cert_fecha_larga_js(new Date());
+  // Fecha de inicio del COHORTE (no la de hoy) — es la que corresponde en una
+  // constancia de matrícula: cuándo arrancó el curso en el que está matriculado.
+  let fechaInicio = '';
+  try {
+    const rc = await fetch(BACKEND + '/api/cursos/' + meta.id + '/admin/cohorte', { headers: { 'x-admin-key': _getAdminKey() } });
+    const dc = rc.ok ? await rc.json() : {};
+    if (dc.fecha_inicio) fechaInicio = _cert_fecha_larga_js(new Date(dc.fecha_inicio + 'T00:00:00'));
+  } catch(_) {}
   let ok = 0, fail = 0;
   for (const a of pend) {
     const body = { tipo: 'matricula', nombre: a.nombre, curso: curso.nombre, horas: String(curso.horas || ''),
-      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaHoy,
+      instructor: instrNombre, instructor_firma: instrSel ? instrSel.value : '', realizado: fechaInicio,
       uid: a.uid || undefined, curso_id: meta.id || undefined };
     try {
       const r = await fetch(BACKEND + '/api/cursos/certificados/emitir', {
