@@ -591,7 +591,6 @@ async function cargarAula(){
     pantalla("aula");
     cargarPerfil();
     cargarCertificadoAlumno();
-    if(new URLSearchParams(location.search).get("verencuesta") === "1") abrirEncuesta();
   }catch(e){
     if(e.status === 403){
       mostrarSinMatricula();
