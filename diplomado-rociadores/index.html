@@ -469,20 +469,22 @@ async function abrirFormSolicitud(){
   let p = {};
   try{ const r = await api(`/api/cursos/perfil`); p = r.perfil || {}; }catch(e){}
   $("matriculaMsg").textContent = "Completa tus datos para solicitar el acceso (los mismos que van en tu certificado).";
+  const solCodBloque = _codBloque("solCod", p.telefono_cod||"+51");
   box.innerHTML = `<div class="perfil-form">
       <label>Nombre completo <span class="req">(tal cual irá en el certificado)</span>
         <input id="solNombre" type="text" maxlength="120" value="${esc(p.nombre_certificado||"")}" placeholder="Nombres y apellidos"></label>
       <label>Fecha de nacimiento
         <input id="solNac" type="date" value="${esc(p.fecha_nacimiento||"")}"></label>
       <label>País de nacimiento
-        <select id="solNacimiento">${opcionesPais(p.pais_nacimiento||"")}</select></label>
+        ${_paisBloque("solNacimiento", p.pais_nacimiento||"")}</label>
       <label>País de residencia
-        <select id="solResid">${opcionesPais(p.pais_residencia||"")}</select></label>
+        ${_paisBloque("solResid", p.pais_residencia||"")}</label>
       <label>Teléfono
         <div class="tel-row">
-          <select id="solCod">${opcionesCod(p.telefono_cod||"+51")}</select>
+          ${solCodBloque.select}
           <input id="solTel" type="tel" maxlength="30" value="${esc(p.telefono||"")}" placeholder="Número">
-        </div></label>
+        </div>
+        ${solCodBloque.otro}</label>
       <label>Correo
         <input type="email" value="${esc(p.email||(usuario&&usuario.email)||"")}" disabled style="opacity:.6;"></label>
     </div>
@@ -495,9 +497,9 @@ async function enviarSolicitud(){
   const body = {
     nombre_certificado: $("solNombre").value.trim(),
     fecha_nacimiento: $("solNac").value || null,
-    pais_nacimiento: $("solNacimiento").value,
-    pais_residencia: $("solResid").value,
-    telefono_cod: $("solCod").value,
+    pais_nacimiento: _valorConOtro("solNacimiento"),
+    pais_residencia: _valorConOtro("solResid"),
+    telefono_cod: _valorConOtro("solCod"),
     telefono: $("solTel").value.trim()
   };
   if((body.nombre_certificado||"").length < 3){
@@ -1239,21 +1241,49 @@ async function borrarEntrega(sem, nombre){
 // ── Datos del alumno para el certificado ──
 let perfilCache = null;
 
-// [nombre, código telefónico] — foco en Latinoamérica + países comunes
-const PAISES = [["Alemania","49"],["Argentina","54"],["Belice","501"],["Bolivia","591"],
-  ["Brasil","55"],["Canadá","1"],["Chile","56"],["Colombia","57"],["Costa Rica","506"],
-  ["Cuba","53"],["Ecuador","593"],["El Salvador","503"],["España","34"],["Estados Unidos","1"],
-  ["Francia","33"],["Guatemala","502"],["Guinea Ecuatorial","240"],["Haití","509"],
-  ["Honduras","504"],["Italia","39"],["México","52"],["Nicaragua","505"],["Panamá","507"],
-  ["Paraguay","595"],["Perú","51"],["Portugal","351"],["Puerto Rico","1"],["Reino Unido","44"],
+// Solo países de habla hispana (Latinoamérica + España + Guinea Ecuatorial) —
+// la barrera real para ser cliente de ILFIS es el idioma, no la nacionalidad.
+// Mismo criterio y mismo orden que /preinscripcion/. "Otros" siempre al final,
+// con campo de texto libre (por si un alumno real nació/vive fuera de esta lista).
+const PAISES = [["Argentina","54"],["Bolivia","591"],["Chile","56"],["Colombia","57"],
+  ["Costa Rica","506"],["Cuba","53"],["Ecuador","593"],["El Salvador","503"],["España","34"],
+  ["Guatemala","502"],["Guinea Ecuatorial","240"],["Honduras","504"],["México","52"],
+  ["Nicaragua","505"],["Panamá","507"],["Paraguay","595"],["Perú","51"],["Puerto Rico","1"],
   ["República Dominicana","1"],["Uruguay","598"],["Venezuela","58"]];
 
-function opcionesPais(sel){
-  return `<option value=""${sel?"":" selected"} disabled>— Selecciona —</option>` +
-    PAISES.map(([n]) => `<option${n===sel?" selected":""}>${n}</option>`).join("");
+// Muestra/oculta el campo de texto libre cuando se elige "Otros".
+function _toggleOtroPerfil(selId, otroId){
+  const sel = $(selId), inp = $(otroId);
+  if(!sel || !inp) return;
+  const esOtro = sel.value === "Otros";
+  inp.style.display = esOtro ? "block" : "none";
+  if(!esOtro) inp.value = "";
 }
-function opcionesCod(sel){
-  return PAISES.map(([n,c]) => `<option value="+${c}"${("+"+c)===sel?" selected":""}>${n} (+${c})</option>`).join("");
+// Select de país + su input "Otros" (pre-rellenado si el dato guardado no está
+// en la lista, para no perder el valor real de un alumno ya existente).
+function _paisBloque(idSel, valorActual){
+  const enLista = PAISES.some(([n]) => n === valorActual);
+  const esOtro = !!valorActual && !enLista;
+  const opciones = `<option value=""${valorActual?"":" selected"} disabled>— Selecciona —</option>` +
+    PAISES.map(([n]) => `<option${n===valorActual?" selected":""}>${n}</option>`).join("") +
+    `<option value="Otros"${esOtro?" selected":""}>Otros</option>`;
+  return `<select id="${idSel}" onchange="_toggleOtroPerfil('${idSel}','${idSel}Otro')">${opciones}</select>`
+    + `<input id="${idSel}Otro" type="text" placeholder="Escribe tu país" maxlength="80" style="display:${esOtro?"block":"none"};margin-top:6px;" value="${esOtro?esc(valorActual):""}">`;
+}
+// Select de código telefónico + su input "Otros" (mismo criterio).
+function _codBloque(idSel, valorActual){
+  const enLista = PAISES.some(([,c]) => ("+"+c) === valorActual);
+  const esOtro = !!valorActual && !enLista;
+  const opciones = PAISES.map(([n,c]) => `<option value="+${c}"${("+"+c)===valorActual?" selected":""}>${n} (+${c})</option>`).join("") +
+    `<option value="Otros"${esOtro?" selected":""}>Otros</option>`;
+  return { select: `<select id="${idSel}" onchange="_toggleOtroPerfil('${idSel}','${idSel}Otro')">${opciones}</select>`,
+    otro: `<input id="${idSel}Otro" type="text" placeholder="Escribe tu código (ej. +1)" maxlength="6" style="display:${esOtro?"block":"none"};margin-top:6px;" value="${esOtro?esc(valorActual):""}">` };
+}
+// Valor final a guardar: si eligió "Otros", usa lo escrito en el campo libre.
+function _valorConOtro(idSel){
+  const sel = $(idSel);
+  if(!sel) return "";
+  return sel.value === "Otros" ? ($(idSel+"Otro").value||"").trim() : sel.value;
 }
 
 async function cargarPerfil(){
@@ -1275,6 +1305,7 @@ async function abrirPerfil(){
   const p = perfilCache || {};
   let _tokFoto = ""; try{ _tokFoto = await usuario.getIdToken(); }catch(e){}
   const fotoSrc = p.tiene_foto ? `${API}/api/cursos/perfil/foto?token=${_tokFoto}&t=${Date.now()}` : "";
+  const pfCodBloque = _codBloque("pfCod", p.telefono_cod||"+51");
   c.innerHTML = `<h2>📋 Mis datos para el certificado</h2>
     <div class="meta">Estos datos se usan solo para emitir tu diploma. No son obligatorios para entrar al aula; complétalos cuando quieras.</div>
     <div style="border:2px solid var(--ambar);border-radius:9px;background:#2a1f06;padding:11px 14px;margin:10px 0 14px;font-size:.84rem;line-height:1.5;">
@@ -1305,14 +1336,15 @@ async function abrirPerfil(){
       <label>Fecha de nacimiento
         <input id="pfNac" type="date" value="${esc(p.fecha_nacimiento||"")}"></label>
       <label>País de nacimiento
-        <select id="pfNacimiento">${opcionesPais(p.pais_nacimiento||"")}</select></label>
+        ${_paisBloque("pfNacimiento", p.pais_nacimiento||"")}</label>
       <label>País de residencia
-        <select id="pfResid">${opcionesPais(p.pais_residencia||"")}</select></label>
+        ${_paisBloque("pfResid", p.pais_residencia||"")}</label>
       <label>Teléfono
         <div class="tel-row">
-          <select id="pfCod">${opcionesCod(p.telefono_cod||"+51")}</select>
+          ${pfCodBloque.select}
           <input id="pfTel" type="tel" maxlength="30" value="${esc(p.telefono||"")}" placeholder="Número">
-        </div></label>
+        </div>
+        ${pfCodBloque.otro}</label>
       <label>Correo
         <input type="email" value="${esc(p.email||(usuario&&usuario.email)||"")}" disabled style="opacity:.6;"></label>
     </div>
@@ -1362,9 +1394,9 @@ async function guardarPerfilForm(){
   const body = {
     nombre_certificado: nombreOficial($("pfNombre").value),
     fecha_nacimiento: $("pfNac").value || null,
-    pais_nacimiento: $("pfNacimiento").value,
-    pais_residencia: $("pfResid").value,
-    telefono_cod: $("pfCod").value,
+    pais_nacimiento: _valorConOtro("pfNacimiento"),
+    pais_residencia: _valorConOtro("pfResid"),
+    telefono_cod: _valorConOtro("pfCod"),
     telefono: $("pfTel").value.trim()
   };
   if(btn){ btn.disabled = true; btn.textContent = "Guardando…"; }
