@@ -879,6 +879,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
             <button class="admin-tab" onclick="adminShowTab('educertif', this)">Certificados</button>
             <button class="admin-tab" onclick="adminShowTab('eduseguimiento', this)">📊 Seguimiento</button>
+            <button class="admin-tab" onclick="adminShowTab('eduencuesta', this)">📋 Encuesta</button>
           </div>
         </div>
       </div>
@@ -1204,6 +1205,45 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           <b style="color:#e0b64f;">Atención</b>: nota &lt; 65% o &gt;3 días sin entrar. <b style="color:#f87171;">Rezagado</b>: nota &lt; 40% o &gt;7 días sin entrar.
           Sin ningún dato de acceso todavía (recién publicado, o el alumno nunca entró), cuenta como el peor caso — se ajusta solo en unos días conforme entren al aula.
         </p>
+      </div>
+      <!-- Sección Encuesta de satisfacción (OBS-17 de Eliana): obligatoria para el
+           alumno antes de ver su certificado ya emitido. Estadísticas de las 26
+           preguntas + quién de los que ya terminaron el diplomado aún no responde. -->
+      <div class="admin-section" id="admin-sec-eduencuesta">
+        <style>
+          .enq-tarjetas{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+          .enq-tarjeta{ background:#0f1729; border:1px solid #2a2a5a; border-radius:10px; padding:14px 16px; }
+          .enq-tarjeta .num{ font-size:26px; font-weight:700; color:#e6ecf7; font-family:'JetBrains Mono',monospace; }
+          .enq-tarjeta .lbl{ font-size:11.5px; color:#8899aa; margin-top:2px; }
+          .enq-tarjeta.alerta .num{ color:#f87171; }
+          .enq-preg{ background:#0f1729; border:1px solid #2a2a5a; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+          .enq-preg .enq-tit{ font-size:0.82rem; color:#e6ecf7; font-weight:600; margin-bottom:8px; line-height:1.4; }
+          .enq-op{ display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:0.78rem; }
+          .enq-op .enq-oplbl{ flex:0 0 260px; color:#c7cfe0; white-space:normal; }
+          .enq-op .enq-barra{ flex:1; height:9px; background:#1e2433; border-radius:4px; overflow:hidden; }
+          .enq-op .enq-barra i{ display:block; height:100%; background:#3b82f6; }
+          .enq-op .enq-opnum{ flex:0 0 34px; text-align:right; color:#8899aa; font-family:'JetBrains Mono',monospace; }
+          .enq-coment{ border-top:1px solid #22345c; padding:6px 0; font-size:0.8rem; color:#c7cfe0; }
+          .enq-coment b{ color:#e6ecf7; }
+          .enq-pend-fila{ display:flex; justify-content:space-between; gap:10px; padding:7px 10px; border-bottom:1px solid #22345c; font-size:0.8rem; }
+          @media (max-width:800px){ .enq-tarjetas{ grid-template-columns:1fr; } .enq-op .enq-oplbl{ flex-basis:160px; } }
+        </style>
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Encuesta de satisfacción <b style="color:#fff;">obligatoria</b>: el alumno la responde al terminar
+          el diplomado, antes de poder ver su certificado ya emitido. Aquí se ven las estadísticas de las
+          21 preguntas de opción única, el interés en próximos cursos (pregunta 22), los comentarios de
+          texto libre y quién de los que ya terminaron aún no ha respondido.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <select id="enq-curso" onchange="adminCargarEncuesta()" style="padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:220px;"></select>
+          <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarEncuesta()">↻ Actualizar</button>
+        </div>
+        <div class="enq-tarjetas">
+          <div class="enq-tarjeta"><div class="num" id="enq-respondidas">0</div><div class="lbl">Respondieron la encuesta</div></div>
+          <div class="enq-tarjeta"><div class="num" id="enq-completos">0</div><div class="lbl">Ya terminaron el diplomado</div></div>
+          <div class="enq-tarjeta alerta"><div class="num" id="enq-pendientes">0</div><div class="lbl">Terminaron y aún no responden</div></div>
+        </div>
+        <div id="admin-enq-content"><div class="admin-loading">Elige un curso.</div></div>
       </div>
     </div>
   </div>
@@ -4235,6 +4275,7 @@ function adminShowTab(name, btn) {
   if (name === 'cohorte') adminCargarCohorte();
   if (name === 'educertif') adminCargarCertificados();
   if (name === 'eduseguimiento') adminCargarSeguimiento();
+  if (name === 'eduencuesta') adminCargarEncuesta();
 }
 
 // ── Cohorte (fecha de inicio por diplomado; solo superadmin) ──
@@ -4945,6 +4986,98 @@ function segRenderTabla() {
     </div>`;
   }).join('');
   box.innerHTML = filasHtml;
+}
+
+// ── Encuesta de satisfacción (OBS-17 de Eliana) ────────────────────────────
+const ENQ_TEXTOS = {
+  p1:  '1. Importancia y aplicabilidad a su vida profesional de los temas tratados',
+  p2:  '2. Nivel de dificultad de los temas tratados',
+  p3:  '3. Amplitud de los temas tratados',
+  p4:  '4. Las evaluaciones fueron:',
+  p5:  '5. Capacidad del (de los) profesor(es) para transmitir los conocimientos',
+  p6:  '6. Conocimientos y dominio de los temas por el(los) profesor(es)',
+  p7:  '7. Disposición del (de los) profesor(es) a aclarar dudas',
+  p8:  '8. Cumplimiento de los objetivos del curso',
+  p9:  '9. Opinión sobre el material de enseñanza distribuido',
+  p10: '10. Nivel de organización de ILFIS en relación al curso',
+  p11: '11. Distracción durante las clases NO presenciales',
+  p12: '12. Distracción durante las clases presenciales',
+  p13: '13. Adquisición de conocimientos y cambios en su desarrollo profesional',
+  p14: '14. Horas semanales dedicadas al curso',
+  p15: '15. Relación tiempo invertido / aprendizaje',
+  p16: '16. El tiempo dedicado al curso es:',
+  p17: '17. Desempeño general del (de los) profesor(es)',
+  p18: '18. Comparación curso virtual vs. presencial',
+  p19: '19. Relación resultados obtenidos / precio pagado',
+  p20: '20. Calificación general del curso (1 a 5)',
+  p21: '21. Expectativas previas vs. actuales',
+};
+let _adminEnqLista = [];
+function _enqLlenarCursos() {
+  const sel = document.getElementById('enq-curso');
+  if (!sel || sel.options.length) return;   // ya llenado
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+}
+async function adminCargarEncuesta() {
+  _enqLlenarCursos();
+  const sel = document.getElementById('enq-curso');
+  const curso = (sel && sel.value) || (DIPLOMAS[0] && DIPLOMAS[0].id) || 'rociadores';
+  const box = document.getElementById('admin-enq-content');
+  if (!box) return;
+  box.innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const r = await fetch(BACKEND + '/api/cursos/' + curso + '/admin/encuesta-satisfaccion', { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    _adminEnqLista = d;
+    document.getElementById('enq-respondidas').textContent = d.total_respondidas || 0;
+    document.getElementById('enq-completos').textContent = d.total_completos || 0;
+    document.getElementById('enq-pendientes').textContent = d.total_pendientes || 0;
+    _enqRender(d);
+  } catch (e) {
+    box.innerHTML = '<div style="color:#f87171;font-size:0.85rem;">No pude cargar la encuesta: ' + e.message + '</div>';
+  }
+}
+function _enqBarraPregunta(titulo, conteo, total) {
+  const opciones = Object.keys(conteo || {});
+  if (!opciones.length) return `<div class="enq-preg"><div class="enq-tit">${_adminEsc(titulo)}</div><div style="color:#7a8a9a;font-size:0.78rem;">Sin respuestas todavía.</div></div>`;
+  const filas = opciones.sort((a, b) => (conteo[b] || 0) - (conteo[a] || 0)).map(op => {
+    const n = conteo[op] || 0;
+    const pct = total > 0 ? Math.round((n / total) * 100) : 0;
+    return `<div class="enq-op"><span class="enq-oplbl">${_adminEsc(op)}</span><span class="enq-barra"><i style="width:${pct}%"></i></span><span class="enq-opnum">${n}</span></div>`;
+  }).join('');
+  return `<div class="enq-preg"><div class="enq-tit">${_adminEsc(titulo)}</div>${filas}</div>`;
+}
+function _enqRender(d) {
+  const box = document.getElementById('admin-enq-content');
+  if (!box) return;
+  const total = d.total_respondidas || 0;
+  if (!total) {
+    box.innerHTML = '<div class="admin-loading">Nadie ha respondido la encuesta de este curso todavía.</div>';
+    return;
+  }
+  let html = '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:4px 0 10px;">Preguntas de opción única (1 a 21)</h4>';
+  Object.keys(ENQ_TEXTOS).forEach(p => {
+    html += _enqBarraPregunta(ENQ_TEXTOS[p], (d.conteos || {})[p], total);
+  });
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">22. Interés en próximos diplomados de ILFIS</h4>';
+  (d.preguntas_matriz || []).forEach(curso => {
+    html += _enqBarraPregunta(curso, (d.conteos_matriz || {})[curso], total);
+  });
+  const listaTexto = (arr, vacio) => (arr && arr.length)
+    ? arr.map(t => `<div class="enq-coment"><b>${_adminEsc(t.nombre || '—')}:</b> ${_adminEsc(t.texto || '')}</div>`).join('')
+    : `<div style="color:#7a8a9a;font-size:0.78rem;">${vacio}</div>`;
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">23. Aspectos buenos y a mejorar</h4>' + listaTexto((d.textos || {}).p23, 'Sin respuestas.');
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">24. Defectos a mejorar</h4>' + listaTexto((d.textos || {}).p24, 'Sin respuestas.');
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">25. Metodología de comunicación por Telegram</h4>' + listaTexto((d.textos || {}).p25, 'Sin respuestas.');
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">26. Testimonios (opcional)</h4>' + listaTexto((d.textos || {}).p26, 'Nadie dejó testimonio todavía.');
+  html += '<h4 style="color:#e6ecf7;font-size:0.88rem;margin:18px 0 10px;">Terminaron el diplomado y aún NO responden</h4>';
+  const pendientes = d.pendientes || [];
+  html += pendientes.length
+    ? pendientes.map(p => `<div class="enq-pend-fila"><span style="color:#e6ecf7;">${_adminEsc(p.nombre || p.uid)}</span><span style="color:#8899aa;">${_adminEsc(p.email || '')}</span></div>`).join('')
+    : '<div style="color:#5fd08a;font-size:0.8rem;">Nadie pendiente — todos los que terminaron ya respondieron 🎉</div>';
+  box.innerHTML = html;
 }
 
 async function adminCargarCertificados() {
