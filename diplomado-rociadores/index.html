@@ -587,10 +587,48 @@ async function cargarCertificadoAlumno(){
   }catch(e){ /* si aún no hay certificado, no se muestra nada */ }
 }
 function verMiCertificado(){
+  if(!_encuestaRespondida()){
+    alert("Antes de ver tu certificado debes responder la encuesta de satisfacción del diplomado. La encontrarás en \"Mi boletín\".");
+    verNotas();
+    return;
+  }
   if(_miCertUrl){ window.open(_miCertUrl, "_blank"); return; }
   if(_miCertFolio){
     alert(`Tu certificado ya fue emitido (folio ${_miCertFolio}). Para obtener la copia con diseño, pídela a administración.`);
   }
+}
+
+// ═══════════════ ENCUESTA DE SATISFACCIÓN OBLIGATORIA (OBS-17 de Eliana) ═══════════════
+// Requisito simple resuelto en el frontend (sin Firebase): al terminar el diplomado,
+// el boletín exige abrir el Google Form real del curso antes de habilitar el certificado.
+// Cada diplomado tiene su propio Form/hoja de respuestas histórica en Drive.
+const ENCUESTA_FORM_URL = {
+  "rociadores":            "https://docs.google.com/forms/d/1pnCfqxBZNtDlDdYhEU7DLr_r02LUcsOa1qBjNEO83ts/viewform",
+  "calculos-hidraulicos":  "https://docs.google.com/forms/d/1fWO34J9tpKcpDt8qXG3vRqbBC4CU-cn-b8396NUnYEc/viewform",
+  "hidraulica-basica":     "https://docs.google.com/forms/d/1qnZkUSPHCsTmmzmkXpjWfOyxHohgu4nksMzS8gJXUVY/viewform",
+  "proteccion-mercancias": "https://docs.google.com/forms/d/1TC3A7QcJqz09HyOZZ4qmqCF_mhVKkfy1X4TQfn7ylO4/viewform",
+  "ipm-motores":           "https://docs.google.com/forms/d/1pY1bGpxHt6SC-2vNoNLkIRxeUyxQNes1OwMFXn-T9kw/viewform",
+};
+function _encuestaLsKey(){ return "ilfis_encuesta_ok_" + CURSO; }
+function _encuestaRespondida(){
+  try{ return localStorage.getItem(_encuestaLsKey()) === "1"; }catch(e){ return true; }
+}
+function marcarEncuestaAbierta(){
+  try{ localStorage.setItem(_encuestaLsKey(), "1"); }catch(e){}
+  setTimeout(verNotas, 300);   // refresca el boletín para que el aviso desaparezca
+}
+// Se muestra solo cuando el diplomado ya cerró (nota final, no "en curso").
+function bloqueEncuesta(r){
+  if(!r || !r.resultado) return "";
+  const url = ENCUESTA_FORM_URL[CURSO];
+  if(!url) return "";
+  if(_encuestaRespondida()){
+    return `<div class="aviso" style="margin-top:14px;border-color:var(--verde);">✓ Encuesta de satisfacción respondida. Ya puedes descargar tu certificado.</div>`;
+  }
+  return `<div class="aviso" style="margin-top:14px;border-color:var(--ambar);">
+    📋 <b>Encuesta de satisfacción obligatoria:</b> antes de poder ver/descargar tu certificado debes responder esta breve encuesta sobre el diplomado.
+    <div style="margin-top:8px;"><a href="${url}" target="_blank" rel="noopener" class="btn" onclick="marcarEncuestaAbierta()" style="text-decoration:none;display:inline-block;">Abrir encuesta de satisfacción →</a></div>
+  </div>`;
 }
 
 // ═══════════════ TEMARIO (sidebar) ═══════════════
@@ -1838,6 +1876,7 @@ async function verNotas(){
     ${leyenda}
     ${cuerpo}
     ${cierre}
+    ${bloqueEncuesta(r)}
     ${plano
       ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`
       : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`}`;
