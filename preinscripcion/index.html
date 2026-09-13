@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preinscripción | ILFIS Ubuntu</title>
+<link rel="icon" href="../logo-nuevo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#0e1117; --panel:#161b26; --campo:#1e2433; --borde:#2a3144;
+  --texto:#e2e8f4; --texto2:#8b95b0; --marino:#16213e; --rojo:#c0392b;
+  --azul:#3b82f6; --azul2:#1d4ed8; --verde:#4ade80; --ambar:#fbbf24; --rojoTxt:#f87171;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--fondo);color:var(--texto);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+header{background:var(--marino);border-bottom:2px solid var(--rojo);padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.logo-box{background:#fff;border-radius:8px;padding:4px 8px;display:flex;align-items:center;}
+.logo-box img{height:34px;display:block;}
+.head-tit{flex:1;min-width:220px;}
+.head-tit .l1{font-size:.72rem;letter-spacing:2.5px;color:#9fb0d0;font-weight:700;}
+.head-tit .l2{font-size:1.02rem;font-weight:700;}
+.volver{color:#9fb0d0;text-decoration:none;font-size:.8rem;border:1px solid #2a3a5e;border-radius:6px;padding:6px 10px;}
+.volver:hover{color:#fff;border-color:#3b82f6;}
+
+main{max-width:560px;margin:34px auto 60px;padding:0 16px;}
+.card{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:28px;}
+.card h1{font-size:1.3rem;margin-bottom:8px;}
+.card p.sub{font-size:.86rem;color:var(--texto2);line-height:1.55;margin-bottom:22px;}
+label{display:block;font-size:.76rem;color:var(--texto2);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--borde);border-radius:8px;background:var(--campo);color:var(--texto);font-size:.92rem;font-family:inherit;}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.fila-tel{display:flex;gap:8px;}
+.fila-tel select{flex:0 0 150px;}
+.fila-tel input{flex:1;}
+.btn{display:block;width:100%;margin-top:22px;background:var(--azul);color:#fff;border:none;border-radius:8px;padding:13px 20px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn:hover{background:var(--azul2);}
+.btn:disabled{opacity:.6;cursor:default;}
+.err{color:var(--rojoTxt);font-size:.82rem;margin-top:12px;display:none;}
+.ok-box{display:none;text-align:center;padding:10px 0;}
+.ok-box .tick{font-size:2.6rem;margin-bottom:10px;}
+.ok-box h2{font-size:1.15rem;margin-bottom:8px;}
+.ok-box p{font-size:.88rem;color:var(--texto2);line-height:1.6;}
+footer{max-width:560px;margin:0 auto 40px;padding:0 16px;text-align:center;font-size:.72rem;color:#5c6784;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box"><img src="../logo-nuevo.png" alt="ILFIS"></div>
+  <div class="head-tit">
+    <div class="l1">UBUNTU · PLATAFORMA EDUCATIVA</div>
+    <div class="l2">Preinscripción a cursos y diplomados</div>
+  </div>
+  <a class="volver" href="../">← Volver a UBUNTU</a>
+</header>
+
+<main>
+  <div class="card">
+    <div id="formBox">
+      <h1>Cuéntanos qué curso te interesa</h1>
+      <p class="sub">Completa tus datos y una asesora de ILFIS se pondrá en contacto contigo para ayudarte con la matrícula.</p>
+
+      <form id="preForm" onsubmit="return enviarPreinscripcion(event)">
+        <label for="pNombre">Nombre y apellidos</label>
+        <input id="pNombre" type="text" required maxlength="200" autocomplete="name">
+
+        <label for="pTelCod">Teléfono</label>
+        <div class="fila-tel">
+          <select id="pTelCod"></select>
+          <input id="pTel" type="tel" required maxlength="40" autocomplete="tel" placeholder="Número">
+        </div>
+
+        <label for="pPais">País</label>
+        <select id="pPais" required></select>
+
+        <label for="pCorreo">Correo electrónico</label>
+        <input id="pCorreo" type="email" required maxlength="200" autocomplete="email">
+
+        <label for="pCurso">Curso de interés</label>
+        <select id="pCurso" required><option value="">Cargando cursos…</option></select>
+
+        <div class="err" id="pError"></div>
+        <button class="btn" type="submit" id="pBtn">Enviar preinscripción</button>
+      </form>
+    </div>
+
+    <div class="ok-box" id="okBox">
+      <div class="tick">✅</div>
+      <h2>¡Gracias por tu interés!</h2>
+      <p>Recibimos tus datos. Un asesor de ILFIS te contactará pronto para ayudarte con tu matrícula.</p>
+    </div>
+  </div>
+</main>
+<footer>ILFIS Ubuntu — Plataforma Educativa</footer>
+
+<script>
+const API = "https://ilfis-ubuntu-27378911758.us-central1.run.app";
+
+// Mismo catálogo de países/código telefónico que usa el perfil del alumno
+// (diplomado-rociadores/index.html), copiado aquí porque esta página es pública
+// y no depende del resto del aula.
+const PAISES = [["Alemania","49"],["Argentina","54"],["Belice","501"],["Bolivia","591"],
+  ["Brasil","55"],["Canadá","1"],["Chile","56"],["Colombia","57"],["Costa Rica","506"],
+  ["Cuba","53"],["Ecuador","593"],["El Salvador","503"],["España","34"],["Estados Unidos","1"],
+  ["Francia","33"],["Guatemala","502"],["Guinea Ecuatorial","240"],["Haití","509"],
+  ["Honduras","504"],["Italia","39"],["México","52"],["Nicaragua","505"],["Panamá","507"],
+  ["Paraguay","595"],["Perú","51"],["Portugal","351"],["Puerto Rico","1"],["Reino Unido","44"],
+  ["República Dominicana","1"],["Uruguay","598"],["Venezuela","58"]];
+
+function llenarPaises(){
+  const selPais = document.getElementById('pPais');
+  selPais.innerHTML = '<option value="" disabled selected>— Selecciona —</option>' +
+    PAISES.map(([n]) => `<option>${n}</option>`).join('');
+  const selCod = document.getElementById('pTelCod');
+  selCod.innerHTML = PAISES.map(([n,c]) => `<option value="+${c}"${c==='51'?' selected':''}>${n} (+${c})</option>`).join('');
+}
+llenarPaises();
+
+async function llenarCursos(){
+  const sel = document.getElementById('pCurso');
+  try{
+    const r = await fetch('../certificado/catalogo.json', {cache:'no-store'});
+    const d = await r.json();
+    const cursos = d.cursos || [];
+    sel.innerHTML = '<option value="" disabled selected>— Selecciona —</option>' +
+      cursos.map(c => `<option value="${(c.alias||c.nombre).replace(/"/g,'&quot;')}">${c.alias||c.nombre}</option>`).join('');
+  }catch(e){
+    sel.innerHTML = '<option value="" disabled selected>No pude cargar el catálogo — escribe a soporte</option>';
+  }
+}
+llenarCursos();
+
+async function enviarPreinscripcion(ev){
+  ev.preventDefault();
+  const err = document.getElementById('pError');
+  const btn = document.getElementById('pBtn');
+  err.style.display = 'none';
+
+  const nombre = document.getElementById('pNombre').value.trim();
+  const telefono_cod = document.getElementById('pTelCod').value;
+  const telefono = document.getElementById('pTel').value.trim();
+  const pais = document.getElementById('pPais').value;
+  const correo = document.getElementById('pCorreo').value.trim();
+  const cursoSel = document.getElementById('pCurso');
+  const curso_interes = cursoSel.value;
+
+  if(!nombre || !telefono || !pais || !correo || !curso_interes){
+    err.textContent = 'Completa todos los campos.';
+    err.style.display = 'block';
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  try{
+    const r = await fetch(API + '/api/preinscripcion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        nombre, telefono, telefono_cod, pais, correo,
+        curso_interes, curso_interes_texto: curso_interes
+      })
+    });
+    if(!r.ok){
+      const d = await r.json().catch(()=>({}));
+      throw new Error(d.detail || ('Error ' + r.status));
+    }
+    document.getElementById('formBox').style.display = 'none';
+    document.getElementById('okBox').style.display = 'block';
+  }catch(e){
+    err.textContent = 'No pude enviar tu preinscripción: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enviar preinscripción';
+  }
+  return false;
+}
+</script>
+</body>
+</html>

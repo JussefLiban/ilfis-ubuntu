@@ -879,6 +879,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
             <button class="admin-tab" onclick="adminShowTab('cohorte', this)">Cohorte</button>
             <button class="admin-tab" onclick="adminShowTab('educertif', this)">Certificados</button>
             <button class="admin-tab" onclick="adminShowTab('eduseguimiento', this)">📊 Seguimiento</button>
+            <button class="admin-tab" onclick="adminShowTab('edupreinscripcion', this)">🧲 Preinscripciones</button>
           </div>
         </div>
       </div>
@@ -1205,6 +1206,44 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           Sin ningún dato de acceso todavía (recién publicado, o el alumno nunca entró), cuenta como el peor caso — se ajusta solo en unos días conforme entren al aula.
         </p>
       </div>
+
+      <!-- Sección Preinscripciones (OBS-18: prospectos del formulario público /preinscripcion/) -->
+      <div class="admin-section" id="admin-sec-edupreinscripcion">
+        <p style="font-size:0.82rem;color:#8899aa;margin:0 0 14px;line-height:1.6;">
+          Prospectos que llenaron el formulario público de preinscripción (nombre, teléfono, país,
+          correo y curso de interés). Desde aquí se les puede cambiar el estado o convertirlos
+          directamente en matrícula de uno de los diplomados vivos, sin que vuelvan a cargar sus datos.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <select id="pre-estado" onchange="adminCargarPreinscripciones()" style="padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:200px;">
+            <option value="">Todos los estados</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="contactado">Contactado</option>
+            <option value="matriculado">Matriculado</option>
+            <option value="matriculado (pendiente de primer login)">Matriculado (pendiente de 1er login)</option>
+            <option value="descartado">Descartado</option>
+          </select>
+          <input type="text" id="pre-buscar" placeholder="🔍 Buscar por nombre o correo…" oninput="preRenderTabla()" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
+          <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarPreinscripciones()">↻ Actualizar</button>
+        </div>
+        <div id="admin-pre-content"><div class="admin-loading">Cargando...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Convertir en matrícula (Preinscripciones) -->
+<div class="admin-modal-bg" id="admin-modal-pre">
+  <div class="admin-modal">
+    <h3>Convertir en matrícula</h3>
+    <p style="font-size:0.8rem;color:#7a8a9a;margin-bottom:14px;" id="admin-modal-pre-nombre"></p>
+    <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">Diplomado</label>
+    <select id="admin-modal-pre-curso"></select>
+    <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 5px;">Días de acceso</label>
+    <input id="admin-modal-pre-dias" type="number" value="365" style="width:120px;">
+    <div class="admin-modal-btns">
+      <button class="btn-cancel" onclick="document.getElementById('admin-modal-pre').classList.remove('visible')">Cancelar</button>
+      <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarMatricularProspecto()">Matricular</button>
     </div>
   </div>
 </div>
@@ -4235,6 +4274,7 @@ function adminShowTab(name, btn) {
   if (name === 'cohorte') adminCargarCohorte();
   if (name === 'educertif') adminCargarCertificados();
   if (name === 'eduseguimiento') adminCargarSeguimiento();
+  if (name === 'edupreinscripcion') adminCargarPreinscripciones();
 }
 
 // ── Cohorte (fecha de inicio por diplomado; solo superadmin) ──
@@ -4945,6 +4985,123 @@ function segRenderTabla() {
     </div>`;
   }).join('');
   box.innerHTML = filasHtml;
+}
+
+// ── Preinscripciones (OBS-18): prospectos del formulario público /preinscripcion/ ──
+let _adminPreLista = [];
+let _adminPreSeleccionado = null;
+
+async function adminCargarPreinscripciones() {
+  const box = document.getElementById('admin-pre-content');
+  if (!box) return;
+  box.innerHTML = '<div class="admin-loading">Cargando...</div>';
+  try {
+    const estado = document.getElementById('pre-estado').value;
+    const qs = estado ? ('?estado=' + encodeURIComponent(estado)) : '';
+    const r = await fetch(BACKEND + '/api/admin/preinscripciones' + qs, { headers: { 'x-admin-key': _getAdminKey() } });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+    _adminPreLista = d.preinscripciones || [];
+    preRenderTabla();
+  } catch(e) {
+    box.innerHTML = '<div style="color:#f87171;font-size:0.85rem;">No pude cargar las preinscripciones: ' + e.message + '</div>';
+  }
+}
+
+function _preFecha(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' }); }
+  catch(e) { return iso.slice(0, 10); }
+}
+
+function _prePillEstado(estado) {
+  const map = {
+    'nuevo': ['background:rgba(59,130,246,.15);color:#7ab8ff;', 'Nuevo'],
+    'contactado': ['background:rgba(224,182,79,.15);color:#e0b64f;', 'Contactado'],
+    'matriculado': ['background:rgba(74,222,128,.15);color:#4ade80;', 'Matriculado'],
+    'matriculado (pendiente de primer login)': ['background:rgba(224,182,79,.15);color:#e0b64f;', 'Matriculado (falta 1er login)'],
+    'descartado': ['background:rgba(192,57,43,.2);color:#f87171;', 'Descartado'],
+  };
+  const [css, txt] = map[estado] || ['background:#222a3d;color:#8b95ad;', estado || '—'];
+  return `<span class="seg-pill" style="${css}">${_adminEsc(txt)}</span>`;
+}
+
+function preRenderTabla() {
+  const box = document.getElementById('admin-pre-content');
+  if (!box) return;
+  const q = (document.getElementById('pre-buscar').value || '').trim().toLowerCase();
+  let filas = _adminPreLista.filter(p => {
+    if (q && !((p.nombre || '').toLowerCase().includes(q) || (p.correo || '').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if (!filas.length) { box.innerHTML = '<div class="admin-loading">— sin resultados —</div>'; return; }
+  const filasHtml = filas.map(p => {
+    const tel = ((p.telefono_cod || '') + ' ' + (p.telefono || '')).trim();
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
+      <div style="min-width:220px;">
+        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(p.nombre)}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(p.correo)} · ${_adminEsc(tel)} · ${_adminEsc(p.pais)}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">Interés: <b style="color:#cfe0f7;">${_adminEsc(p.curso_interes_texto || p.curso_interes)}</b> · ${_preFecha(p.creado_utc)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        ${_prePillEstado(p.estado)}
+        <select onchange="adminCambiarEstadoProspecto('${p.id}', this.value)" style="padding:6px 8px;border:1px solid #2a2a5a;border-radius:6px;background:#0f1729;color:#e6ecf7;font-size:0.76rem;">
+          <option value="">Cambiar estado…</option>
+          <option value="contactado">Contactado</option>
+          <option value="descartado">Descartado</option>
+        </select>
+        <button class="btn-dar btn-a" style="padding:6px 12px;font-size:0.78rem;" onclick="adminAbrirModalPreinscripcion('${p.id}')">Convertir en matrícula</button>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML = filasHtml;
+}
+
+async function adminCambiarEstadoProspecto(id, estado) {
+  if (!estado) return;
+  try {
+    const r = await fetch(BACKEND + '/api/admin/preinscripciones/' + id + '/estado', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado }) });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    if (!r.ok) throw new Error('Error ' + r.status);
+    adminCargarPreinscripciones();
+  } catch(e) {
+    alert('No pude cambiar el estado: ' + e.message);
+  }
+}
+
+function adminAbrirModalPreinscripcion(id) {
+  const p = _adminPreLista.find(x => x.id === id);
+  if (!p) return;
+  _adminPreSeleccionado = id;
+  document.getElementById('admin-modal-pre-nombre').textContent = p.nombre + ' · ' + p.correo;
+  const sel = document.getElementById('admin-modal-pre-curso');
+  sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+  document.getElementById('admin-modal-pre-dias').value = 365;
+  document.getElementById('admin-modal-pre').classList.add('visible');
+}
+
+async function adminConfirmarMatricularProspecto() {
+  if (!_adminPreSeleccionado) return;
+  const curso = document.getElementById('admin-modal-pre-curso').value;
+  const dias = parseInt(document.getElementById('admin-modal-pre-dias').value, 10) || 365;
+  try {
+    const r = await fetch(BACKEND + '/api/admin/preinscripciones/' + _adminPreSeleccionado + '/matricular', {
+      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ curso, dias }) });
+    if (r.status === 401) { _clearAdminKey(); return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || ('Error ' + r.status));
+    document.getElementById('admin-modal-pre').classList.remove('visible');
+    if (d.pendiente) {
+      alert('Este correo aún no tiene cuenta en la plataforma. Quedó guardado como matrícula pendiente: se activará sola en cuanto la persona inicie sesión con Google por primera vez.');
+    }
+    adminCargarPreinscripciones();
+  } catch(e) {
+    alert('No pude matricular al prospecto: ' + e.message);
+  }
 }
 
 async function adminCargarCertificados() {
