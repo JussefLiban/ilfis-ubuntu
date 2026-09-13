@@ -133,23 +133,6 @@ video{width:100%;max-height:62vh;display:block;background:#000;}
 .prog-video{font-size:.78rem;color:var(--texto2);margin-top:6px;}
 .ok90{color:var(--verde);font-weight:700;}
 
-/* Encuesta de satisfacción obligatoria (OBS-17) */
-.enc-overlay{display:none;position:fixed;inset:0;background:rgba(4,6,12,.72);z-index:50;align-items:flex-start;justify-content:center;padding:26px 12px;overflow-y:auto;}
-.enc-modal{background:var(--panel);border:1px solid var(--borde);border-radius:14px;max-width:720px;width:100%;padding:22px 22px 26px;margin-bottom:40px;}
-.enc-modal h2{font-size:1.1rem;margin-bottom:6px;}
-.enc-modal .enc-sub{font-size:.82rem;color:var(--texto2);margin-bottom:16px;line-height:1.5;}
-.enc-q{margin:0 0 16px 0;padding-bottom:14px;border-bottom:1px solid var(--borde);}
-.enc-q .enc-num{font-size:.9rem;font-weight:600;margin-bottom:9px;line-height:1.4;}
-.enc-q .enc-req{color:var(--rojoTxt);}
-.enc-matriz{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:4px;}
-.enc-matriz th{background:var(--marino);padding:6px 7px;font-size:.68rem;border-bottom:2px solid var(--rojo);text-align:center;}
-.enc-matriz td{padding:7px 7px;border-bottom:1px solid var(--borde);}
-.enc-matriz td.enc-mfila{text-align:left;font-size:.76rem;}
-.enc-matriz td.enc-mop{text-align:center;}
-.enc-matriz input{accent-color:var(--rojo);}
-.enc-err{display:none;background:#3a1414;border:1px solid #7f1d1d;color:var(--rojoTxt);border-radius:8px;padding:10px 12px;font-size:.8rem;margin-bottom:14px;line-height:1.5;}
-.enc-botones{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap;}
-
 /* Quiz */
 .preg{margin:0 0 18px 0;padding-bottom:14px;border-bottom:1px solid var(--borde);}
 .preg .enun{font-size:.9rem;font-weight:600;margin-bottom:10px;line-height:1.45;}
@@ -287,21 +270,6 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
     <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios y las tareas cierran al terminar el domingo de su semana (medianoche) y las notas se publican el lunes siguiente a las 12:00.</div>
   </div>
   <div id="lecNav" style="display:none;grid-column:1/-1;text-align:right;margin-top:6px;"></div>
-</div>
-
-<!-- Encuesta de satisfacción OBLIGATORIA (OBS-17): se responde una sola vez por
-     diplomado, al terminarlo, para poder ver el certificado ya emitido. -->
-<div id="encOverlay" class="enc-overlay">
-  <div class="enc-modal">
-    <h2>📋 Encuesta de satisfacción del diplomado</h2>
-    <div class="enc-sub">Terminaste el diplomado — antes de ver tu certificado, cuéntanos cómo te fue. Son 26 preguntas rápidas, tus respuestas ayudan a mejorar los próximos cursos de ILFIS. Puedes responderla más tarde, pero te la volveremos a pedir.</div>
-    <div id="encErr" class="enc-err"></div>
-    <div id="encPreguntas"></div>
-    <div class="enc-botones">
-      <button class="btn btn-sec" onclick="cerrarEncuesta()">Responder más tarde</button>
-      <button class="btn" id="encBtnEnviar" onclick="encEnviar()">Enviar encuesta</button>
-    </div>
-  </div>
 </div>
 
 <footer>ILFIS — Instituto Latinoamericano de Formación en Incendios y Seguridad · ILFIS Ubuntu</footer>
@@ -606,32 +574,19 @@ async function cargarAula(){
 // ── Certificado del alumno (se muestra el botón solo si el superadmin lo emitió) ──
 let _miCertUrl = null;
 let _miCertFolio = null;
-let _miCertPendienteEncuesta = false;
 async function cargarCertificadoAlumno(){
   try{
     const r = await api(`/api/cursos/${CURSO}/certificado`);
     if(r && r.emitido){
       _miCertUrl = r.url || null;
       _miCertFolio = r.folio || null;
-      _miCertPendienteEncuesta = !!r.pendiente_encuesta;
-      if(_miCertUrl || _miCertFolio || _miCertPendienteEncuesta){
-        const b = $("btnCertif");
-        if(b){
-          b.style.display = "inline-block";
-          b.textContent = _miCertPendienteEncuesta ? "🎓 Mi certificado (responde la encuesta)" : "🎓 Mi certificado";
-        }
+      if(_miCertUrl || _miCertFolio){
+        const b = $("btnCertif"); if(b) b.style.display = "inline-block";
       }
     }
   }catch(e){ /* si aún no hay certificado, no se muestra nada */ }
 }
 function verMiCertificado(){
-  // OBS-17: el certificado YA está emitido, pero se retiene hasta responder la
-  // encuesta de satisfacción del diplomado (sin esto no hay codigo/url que abrir).
-  if(_miCertPendienteEncuesta){
-    alert("Responde la encuesta de satisfacción del diplomado para poder ver tu certificado. Solo toma unos minutos.");
-    abrirEncuesta();
-    return;
-  }
   if(_miCertUrl){ window.open(_miCertUrl, "_blank"); return; }
   if(_miCertFolio){
     alert(`Tu certificado ya fue emitido (folio ${_miCertFolio}). Para obtener la copia con diseño, pídela a administración.`);
@@ -1724,7 +1679,6 @@ async function verNotas(){
   try{
     if(!boletinCache) boletinCache = await api(`/api/cursos/${CURSO}/boletin`);
     r = boletinCache;
-    _revisarEncuestaObligatoria(r);   // OBS-17: si ya terminó y no respondió, se le pide aquí
   }catch(e){
     c.innerHTML = `<h2>📊 Mi boletín</h2><div class="aviso err">⚠ ${esc(e.message)}</div>`;
     return;
@@ -1887,192 +1841,6 @@ async function verNotas(){
     ${plano
       ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`
       : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`}`;
-}
-
-// ═══════════════ ENCUESTA DE SATISFACCIÓN OBLIGATORIA (OBS-17 de Eliana) ═══════════════
-// 26 preguntas, mismo texto/opciones del Google Form real de ILFIS. Se responde UNA vez
-// por diplomado, al terminarlo (boletín con resultado final): mientras no se responda,
-// el certificado ya emitido queda retenido (ver cargarCertificadoAlumno/verMiCertificado).
-const ENC_TEXTOS = {
-  p1:  "1. Indique usted la importancia y aplicabilidad a su vida profesional de los temas tratados en este curso",
-  p2:  "2. Indique usted el nivel de dificultad de los temas tratados en el curso",
-  p3:  "3. Cómo calificaría usted la amplitud de los temas tratados",
-  p4:  "4. Con respecto a las evaluaciones usted diría que fueron:",
-  p5:  "5. Indique usted la capacidad del (de los) profesor(es) para transmitir los conocimientos",
-  p6:  "6. Indique usted el nivel de conocimientos y dominio de los temas tratados por el(los) profesor(es)",
-  p7:  "7. En cuanto a la disposición del (de los) profesor(es) a aclarar los conocimientos transmitidos, tanto en clases presenciales, como por medios virtuales, usted diría que ha sido:",
-  p8:  "8. En cuanto al cumplimiento de los objetivos del curso, usted diría que:",
-  p9:  "9. Cuál es su opinión sobre el material de enseñanza distribuido (manuales, vídeos, presentaciones, etc.)",
-  p10: "10. Cuál es su opinión con respecto al nivel de organización de ILFIS como institución en relación al curso que usted ha tomado",
-  p11: "11. Durante las clases NO presenciales usted:",
-  p12: "12. Durante las clases presenciales usted:",
-  p13: "13. En cuanto a la adquisición de conocimientos y cambios que este curso ha provocado en su desarrollo profesional, indique lo siguiente:",
-  p14: "14. Indique cuántas horas semanales aproximadas en promedio le dedica usted a este curso",
-  p15: "15. Con respecto al tiempo que le dedica al curso usted considera que:",
-  p16: "16. Con respecto al tiempo que le dedica al curso usted considera que es:",
-  p17: "17. Cómo calificaría en términos generales el desempeño del (de los) profesor(es)",
-  p18: "18. Si usted tuviera que comparar este curso virtual con uno presencial usted diría que:",
-  p19: "19. En relación con los resultados obtenidos y el precio pagado por este curso, usted diría que:",
-  p20: "20. Si tuviera que calificar el curso en general, al (a los) profesor(es), a los materiales de enseñanza, a la organización del curso y a todas las demás variables en conjunto, qué puntaje de 1-5 le asignaría (1 es el puntaje más bajo y 5 es el mayor puntaje):",
-  p21: "21. Con respecto a sus expectativas actuales y las que tuvo previo a decidir tomar el curso, usted considera que:",
-  p25: "25. En relación a la metodología de comunicación principal de ILFIS, que se basa en una comunicación vía la plataforma de Telegram en modo privado y grupal, usted considera que fue:",
-};
-const ENC_OPCIONES = {
-  p1:  ["Bien Importante","Importante","Normal","Poco Importante","Intrascendente"],
-  p2:  ["Muy Elemental","Sencillo","Normal","Difícil","Muy Difícil"],
-  p3:  ["Demasiado Amplio","Amplio","Normal","Escaso","Demasiado Escaso"],
-  p4:  ["Muy Elementales","Sencillas","Normales","Difíciles","Muy Difíciles"],
-  p5:  ["Muy Buena","Buena","Regular","Mala","Muy Mala"],
-  p6:  ["Muy Bueno, Conoce y Domina los temas","Bueno, Conoce los temas","Su conocimiento es Regular","No conoce Mucho","No conoce Nada"],
-  p7:  ["Muy Buena","Buena","Regular","Mala","Muy Mala"],
-  p8:  ["Se Cumplieron todos los objetivos trazados","Se Cumplieron la mayoría de los Objetivos trazados pero no todos","Se Cumplieron algunos de los Objetivos trazados","No Se Cumplió ninguno de los objetivos trazados"],
-  p9:  ["Muy Buena","Buena","Regular","Mala","Muy Mala"],
-  p10: ["Muy Buena","Buena","Regular","Mala","Muy Mala"],
-  p11: ["Nunca se Distrajo","Muy Pocas Veces se Distrajo","Se distrajo ocasionalmente","Se distrajo gran parte del tiempo","Se Distrajo Permanentemente"],
-  p12: ["Nunca se Distrajo","Muy Pocas Veces se Distrajo","Se distrajo ocasionalmente","Se distrajo gran parte del tiempo","Se Distrajo Permanentemente"],
-  p13: ["No he sufrido ningún cambio significativo en mi conocimiento sobre los temas tratados en el curso","He adquirido algunos conceptos pero en términos generales el curso no ha incrementado mi nivel de conocimientos sobre los temas tratados","He complementado algunos conocimientos que me faltaba conocer","He adquirido muchos conceptos nuevos que han incrementado notablemente mi conocimiento sobre los temas tratados en el curso","Ha provocado un cambio total en los conceptos que manejaba sobre los temas tratados en el curso"],
-  p14: ["Más de 14 horas","12 a 14 horas","10 a 12 horas","8 a 10 horas","Menos de 8 horas"],
-  p15: ["Es demasiado tiempo con respecto a lo que logro aprender con ese tiempo invertido","Compensa lo que aprendo con el tiempo que invierto","Lo que he invertido de tiempo supera con creces todo lo que estoy logrando aprender"],
-  p16: ["Acorde a la complejidad de los temas","Innecesariamente trabajoso"],
-  p17: ["Muy Bueno","Bueno","Regular","Malo","Muy Malo"],
-  p18: ["El Curso presencial tiene más ventajas que el virtual","Cada uno tiene sus ventajas y desventajas pero en promedio ambos se equiparan","El Curso virtual tiene más ventajas que el presencial"],
-  p19: ["He pagado más de lo que siento que he recibido en aprendizaje","Siento que hay una compensación justa entre lo pagado y recibido en aprendizaje","He pagado menos de lo que siento que he recibido en aprendizaje"],
-  p20: ["1","2","3","4","5"],
-  p21: ["Este curso es menos de lo que me esperaba","Este curso es lo que me esperaba","Este curso rebasó totalmente las expectativas que tenía de él"],
-  p25: ["Muy desordenada, no pude seguir la misma","Desordenada","Normal","Buena, interactué mucho y me resultó sencillo encontrar la información","Excelente, el nivel de interacción entre alumnos y profesores por el medio fue lo mas destacado"],
-};
-const ENC_MATRIZ_CURSOS = [
-  "DIPLOMADO ESPECIALIZADO EN DISEÑO DE ROCIADORES AUTOMÁTICOS",
-  "DIPLOMADO ESPECIALIZADO EN PROTECCION CONTRA INCENDIOS DE ALMACENES Y RIESGOS ESPECIALES",
-  "DIPLOMADO INTERNACIONAL DE DISEÑO, INSTALACIÓN Y MANTENIMIENTO DE BOMBAS CONTRA INCENDIOS",
-  "DIPLOMADO ESPECIALIZADO EN DINAMICA DE INCENDIOS, MODELAMIENTO COMPUTACIONAL Y SIMULACION DE INCENDIOS",
-  "DIPLOMADO ESPECIALIZADO SEGURIDAD HUMANA Y MODELAMIENTO DE EVACUACION",
-  "DIPLOMADO ESPECIALIZADO SISTEMAS DE DETECCION Y ALARMA DE INCENDIOS: NIVEL BÁSICO, INTERMEDIO Y AVANZADO",
-];
-const ENC_MATRIZ_OPCIONES = ["Definitivamente lo tomaría","Quizás lo tome","No lo tomaría de ninguna manera"];
-
-let _encRenderizada = false;
-let _encEnviando = false;
-
-function _encRadios(name, opciones){
-  return opciones.map((op, i) =>
-    `<label class="opcion"><input type="radio" name="${name}" value="${esc(op)}"><span>${esc(op)}</span></label>`
-  ).join("");
-}
-
-function encRenderPreguntas(){
-  if(_encRenderizada) return;
-  const cont = $("encPreguntas");
-  let html = "";
-  // p1..p21 (opción única)
-  for(let i = 1; i <= 21; i++){
-    const k = "p" + i;
-    html += `<div class="enc-q"><div class="enc-num">${esc(ENC_TEXTOS[k])} <span class="enc-req">*</span></div>${_encRadios(k, ENC_OPCIONES[k])}</div>`;
-  }
-  // 22: matriz de interés por curso adicional
-  html += `<div class="enc-q"><div class="enc-num">22. Basados en la misma intensidad, nivel de exigencia, número de horas de enseñanza y de estudio, duración y precio, valore su interés y/o intención de tomar los siguientes cursos adicionales que ILFIS viene programando, en secuencia con este <span class="enc-req">*</span></div>`;
-  html += `<div style="overflow-x:auto;"><table class="enc-matriz"><thead><tr><th style="text-align:left;">Curso</th>${ENC_MATRIZ_OPCIONES.map(o => `<th>${esc(o)}</th>`).join("")}</tr></thead><tbody>`;
-  ENC_MATRIZ_CURSOS.forEach((curso, ci) => {
-    html += `<tr><td class="enc-mfila">${esc(curso)}</td>${ENC_MATRIZ_OPCIONES.map(op =>
-      `<td class="enc-mop"><input type="radio" name="matriz_${ci}" value="${esc(op)}"></td>`).join("")}</tr>`;
-  });
-  html += `</tbody></table></div></div>`;
-  // 23/24: texto libre obligatorio
-  html += `<div class="enc-q"><div class="enc-num">23. Indique usted los aspectos buenos y aquellos que deben mejorarse sobre el curso, el (los) profesor(es) y los temas tratados <span class="enc-req">*</span></div><textarea id="encP23" rows="3" style="max-width:100%;"></textarea></div>`;
-  html += `<div class="enc-q"><div class="enc-num">24. Si usted tuviera que encontrarle defectos o cosas por mejorar al curso, al (a los) profesor(es), a la organización, y a otros aspectos del curso, diga claramente cuáles serían <span class="enc-req">*</span></div><textarea id="encP24" rows="3" style="max-width:100%;"></textarea></div>`;
-  // 25: opción única (se muestra en el admin como texto libre, no agregado — así lo pidió Eliana)
-  html += `<div class="enc-q"><div class="enc-num">${esc(ENC_TEXTOS.p25)} <span class="enc-req">*</span></div>${_encRadios("p25", ENC_OPCIONES.p25)}</div>`;
-  // 26: testimonio opcional
-  html += `<div class="enc-q" style="border-bottom:none;"><div class="enc-num">26. Desearíamos que usted deje un testimonio de su experiencia en este diplomado y que nos permita compartir su opinión en las redes sociales. En caso no desee compartir su opinión obvie esta pregunta, y en caso desee compartirla indique su nombre completo <span style="color:var(--texto2);">(opcional)</span></div><textarea id="encP26" rows="2" style="max-width:100%;"></textarea></div>`;
-  cont.innerHTML = html;
-  _encRenderizada = true;
-}
-
-function abrirEncuesta(){
-  const ov = $("encOverlay");
-  if(!ov) return;
-  encRenderPreguntas();
-  ov.style.display = "flex";
-}
-function cerrarEncuesta(){
-  const ov = $("encOverlay");
-  if(ov) ov.style.display = "none";
-}
-
-function _encRecolectar(){
-  const opciones = {};
-  for(let i = 1; i <= 21; i++){
-    const k = "p" + i;
-    const el = document.querySelector(`input[name="${k}"]:checked`);
-    opciones[k] = el ? el.value : "";
-  }
-  const matriz_cursos = {};
-  ENC_MATRIZ_CURSOS.forEach((curso, ci) => {
-    const el = document.querySelector(`input[name="matriz_${ci}"]:checked`);
-    matriz_cursos[curso] = el ? el.value : "";
-  });
-  const p25el = document.querySelector('input[name="p25"]:checked');
-  return {
-    opciones, matriz_cursos,
-    p23: ($("encP23") ? $("encP23").value : "").trim(),
-    p24: ($("encP24") ? $("encP24").value : "").trim(),
-    p25: p25el ? p25el.value : "",
-    p26: ($("encP26") ? $("encP26").value : "").trim(),
-  };
-}
-
-async function encEnviar(){
-  if(_encEnviando) return;
-  const payload = _encRecolectar();
-  const errores = [];
-  const faltanOpc = Object.values(payload.opciones).filter(v => !v).length;
-  if(faltanOpc) errores.push(`Faltan ${faltanOpc} pregunta(s) de opción única (1 a 21) por responder.`);
-  const faltanMatriz = Object.values(payload.matriz_cursos).filter(v => !v).length;
-  if(faltanMatriz) errores.push(`Falta valorar tu interés en ${faltanMatriz} curso(s) de la pregunta 22.`);
-  if(!payload.p23) errores.push("Falta responder la pregunta 23.");
-  if(!payload.p24) errores.push("Falta responder la pregunta 24.");
-  if(!payload.p25) errores.push("Falta responder la pregunta 25.");
-  const errBox = $("encErr");
-  if(errores.length){
-    errBox.innerHTML = errores.map(e => "⚠ " + esc(e)).join("<br>");
-    errBox.style.display = "block";
-    errBox.scrollIntoView({behavior:"smooth", block:"center"});
-    return;
-  }
-  errBox.style.display = "none";
-  _encEnviando = true;
-  const btn = $("encBtnEnviar");
-  const txtOriginal = btn.textContent;
-  btn.disabled = true; btn.textContent = "Enviando…";
-  try{
-    await api(`/api/cursos/${CURSO}/encuesta-satisfaccion`, {method:"POST", body: JSON.stringify(payload)});
-    _encuestaYaRespondida = true;
-    cerrarEncuesta();
-    await cargarCertificadoAlumno();
-    alert("¡Gracias por tu respuesta! Si tu certificado ya fue emitido, ya puedes verlo con el botón “Mi certificado”.");
-  }catch(e){
-    errBox.textContent = "⚠ " + (e.message || "No pude enviar tu encuesta. Intenta de nuevo.");
-    errBox.style.display = "block";
-  }finally{
-    _encEnviando = false;
-    btn.disabled = false; btn.textContent = txtOriginal;
-  }
-}
-
-// Se dispara al abrir "Mi boletín": si el diplomado ya cerró (completo + resultado
-// final) y el alumno aún no respondió, se le pide aquí. Se puede posponer (botón
-// "Responder más tarde"), pero reaparece la próxima vez que abra su boletín o
-// intente ver su certificado.
-let _encuestaYaRespondida = null;   // null = no se sabe todavía
-async function _revisarEncuestaObligatoria(boletin){
-  if(_encuestaYaRespondida === true) return;
-  if(!boletin || !boletin.completo || !boletin.resultado) return;
-  if(estructura && estructura.rol === "docente") return;   // vista de docente/admin: no aplica
-  try{
-    const est = await api(`/api/cursos/${CURSO}/encuesta-satisfaccion/estado`);
-    _encuestaYaRespondida = !!est.respondido;
-    if(!_encuestaYaRespondida) abrirEncuesta();
-  }catch(e){ /* si falla la consulta, no molestamos al alumno con un error ajeno */ }
 }
 </script>
 </body>
