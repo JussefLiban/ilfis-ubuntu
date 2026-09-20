@@ -5951,7 +5951,7 @@ function adminAbrirDar(uid, email, nombre, area, cursoPre) {
                            : esDiploma                ? 'Matricular en el diplomado'
                            : (area === 'general')     ? 'Dar membresía de la plataforma'
                            : 'Dar acceso a curso';
-  // El diplomado es MATRÍCULA MANUAL sin vencimiento (pago externo por Odoo).
+  // El diplomado es MATRÍCULA MANUAL (pago externo por Odoo); vence al cerrar el curso + 15 días.
   const planBox = document.getElementById('admin-modal-dar-planbox');
   const planSel = document.getElementById('admin-modal-dar-plan');
   const lista   = esDiploma ? [] : (PLANES_POR_AREA[area] || PLANES_POR_AREA.premium);
@@ -6065,7 +6065,14 @@ async function adminConfirmarDar() {
     } else {
       // Alta normal por plan contratado.
       const plan = esDiploma ? null : _adminPlanElegido();
-      const dias = esDiploma ? 3650 : ((plan || { dias: 30 }).dias);
+      const dias = esDiploma ? 0 : ((plan || { dias: 30 }).dias);
+      if (esDiploma) {
+        // Diplomado: el vencimiento lo calcula el servidor (cierre del curso + 15
+        // días) y el alumno recibe su comprobante de matrícula por correo.
+        const rd = await post('/api/cursos/' + curso.replace(/^diplomado_/, '') + '/admin/matricular', { uid: _adminModalUid });
+        if (rd.status === 401) { _clearAdminKey(); return; }
+        if (!rd.ok) throw new Error((await rd.json().catch(() => ({}))).detail || ('Error ' + rd.status));
+      }
       // Un PAQUETE no concede tiempo (dias 0): su acceso sale del saldo. Si le
       // diéramos tiempo, el plan seria ilimitado y el saldo nunca bajaria.
       if (dias > 0) {
