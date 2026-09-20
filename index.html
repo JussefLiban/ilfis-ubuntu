@@ -1001,7 +1001,7 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
           </div>
           <p style="font-size:0.76rem;color:#8899aa;margin:0 0 6px;line-height:1.5;">
             Alumnos que pidieron acceso a <b style="color:#fff;">este diplomado</b> desde el aula. Al
-            <b style="color:#fff;">aceptar</b>, quedan matriculados (365 días) con sus datos ya cargados para el certificado.
+            <b style="color:#fff;">aceptar</b>, quedan matriculados hasta 15 días después de que cierra el curso, con sus datos ya cargados para el certificado.
           </p>
           <div id="edu-sol-content"><div class="admin-loading">Cargando...</div></div>
         </div>
@@ -1240,7 +1240,8 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
     <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">Diplomado</label>
     <select id="admin-modal-pre-curso"></select>
     <label style="display:block;font-size:0.72rem;color:#7a8a9a;text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 5px;">Días de acceso</label>
-    <input id="admin-modal-pre-dias" type="number" value="365" style="width:120px;">
+    <input id="admin-modal-pre-dias" type="number" placeholder="automático" style="width:140px;">
+    <p style="font-size:0.72rem;color:#7a8a9a;margin-top:6px;">Déjalo vacío: el acceso dura hasta 15 días después de que cierra el curso. Escribe días solo si quieres algo distinto.</p>
     <div class="admin-modal-btns">
       <button class="btn-cancel" onclick="document.getElementById('admin-modal-pre').classList.remove('visible')">Cancelar</button>
       <button class="btn-dar btn-a" style="padding:7px 16px;font-size:0.85rem;" onclick="adminConfirmarMatricularProspecto()">Matricular</button>
@@ -5057,14 +5058,14 @@ function adminAbrirModalPreinscripcion(id) {
   document.getElementById('admin-modal-pre-nombre').textContent = p.nombre + ' · ' + p.correo;
   const sel = document.getElementById('admin-modal-pre-curso');
   sel.innerHTML = DIPLOMAS.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
-  document.getElementById('admin-modal-pre-dias').value = 365;
+  document.getElementById('admin-modal-pre-dias').value = '';
   document.getElementById('admin-modal-pre').classList.add('visible');
 }
 
 async function adminConfirmarMatricularProspecto() {
   if (!_adminPreSeleccionado) return;
   const curso = document.getElementById('admin-modal-pre-curso').value;
-  const dias = parseInt(document.getElementById('admin-modal-pre-dias').value, 10) || 365;
+  const dias = parseInt(document.getElementById('admin-modal-pre-dias').value, 10) || null;
   try {
     const r = await fetch(BACKEND + '/api/admin/preinscripciones/' + _adminPreSeleccionado + '/matricular', {
       method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
