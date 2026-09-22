@@ -387,8 +387,15 @@ function fmtLima(iso, conHora){
 }
 
 // ═══════════════ AUTH ═══════════════
+// En celular (o si se abre el link desde WhatsApp/Telegram), signInWithPopup
+// suele fallar porque esos navegadores bloquean la ventana emergente. Ahí se
+// usa signInWithRedirect (Google abre en la misma pestaña y vuelve).
+const _ES_MOVIL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 async function loginGoogle(){
-  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  try {
+    if(_ES_MOVIL) await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    else await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  }
   catch(e){
     if(e.code !== "auth/popup-closed-by-user"){
       $("loginErr").textContent = "No pude iniciar sesión. Intenta de nuevo.";
@@ -396,6 +403,12 @@ async function loginGoogle(){
     }
   }
 }
+auth.getRedirectResult().catch(e => {
+  if(e && e.code && e.code !== "auth/popup-closed-by-user"){
+    const el = $("loginErr");
+    if(el){ el.textContent = "No pude iniciar sesión. Intenta de nuevo."; el.style.display = "block"; }
+  }
+});
 async function salir(){ await auth.signOut(); location.reload(); }
 
 async function reintentarMatricula(){

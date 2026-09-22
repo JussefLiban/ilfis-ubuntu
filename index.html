@@ -2205,16 +2205,31 @@ async function recuperarPassword() {
 }
 
 // ── LOGIN GOOGLE ───────────────────────────────────────────
+// En celular (o si se abre el link desde WhatsApp/Telegram), signInWithPopup
+// suele fallar porque esos navegadores bloquean la ventana emergente. Ahí se
+// usa signInWithRedirect (Google abre en la misma pestaña y vuelve). El
+// resultado del redirect se procesa más abajo con getRedirectResult().
+const _ES_MOVIL = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 async function loginGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    await auth.signInWithPopup(provider);
+    if (_ES_MOVIL) {
+      await auth.signInWithRedirect(provider);
+    } else {
+      await auth.signInWithPopup(provider);
+    }
   } catch(e) {
     if (e.code !== 'auth/popup-closed-by-user') {
       showErr(document.getElementById('login-error'), tradErr(e.code));
     }
   }
 }
+auth.getRedirectResult().catch(e => {
+  if (e && e.code && e.code !== 'auth/popup-closed-by-user') {
+    const el = document.getElementById('login-error');
+    if (el) showErr(el, tradErr(e.code));
+  }
+});
 
 // ── LOGOUT ─────────────────────────────────────────────────
 async function logout() { await auth.signOut(); }
