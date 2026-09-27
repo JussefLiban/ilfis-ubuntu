@@ -1033,12 +1033,20 @@ function lecTarea(w, l, c){
         ? `<span class="chip dl" onclick="descargarTarea(${w.sem}, '${esc(n).replace(/'/g,"&#39;")}')" title="Descargar">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))} ⬇</span>`
         : `<span class="chip static">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))}</span>`).join("<br>")
     : '<div class="aviso">Esta semana no tiene archivos de tarea.</div>';
-  const nota = descargable
-    ? '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo.<br>'
-      + 'El PDF de evaluación trae <b>dos tipos de preguntas</b>:<br>'
-      + '• <b>Para marcar</b> → las respondes en el cuestionario de esta semana (el número de cada pregunta del cuestionario corresponde al PDF).<br>'
-      + '• <b>Para desarrollar</b> → las resuelves por tu cuenta y subes el archivo aquí abajo, en <b>Tu entrega</b>.</div>'
-    : '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
+  // Semanas 100% de marcar no piden subir nada: el backend manda entrega:false.
+  const hayEntrega = (l.entrega !== false);
+  let nota;
+  if(descargable){
+    nota = '<div class="aviso">⬇ Haz clic en cada documento para abrirlo o descargarlo.<br>'
+      + (hayEntrega
+          ? 'El PDF de evaluación trae <b>dos tipos de preguntas</b>:<br>'
+            + '• <b>Para marcar</b> → las respondes en el cuestionario de esta semana (el número de cada pregunta del cuestionario corresponde al PDF).<br>'
+            + '• <b>Para desarrollar</b> → las resuelves por tu cuenta y subes el archivo aquí abajo, en <b>Tu entrega</b>.'
+          : 'Todas las preguntas de esta semana son <b>para marcar</b>: las respondes en el cuestionario. Esta semana no hay entrega de archivos.')
+      + '</div>';
+  } else {
+    nota = '<div class="aviso">📦 La descarga directa de estos documentos desde el aula estará disponible muy pronto. Por ahora los recibes por los canales del diplomado (correo/WhatsApp del curso).</div>';
+  }
   const btnZip = (descargable && archivos.length)
     ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar Todo el Material de la Semana</button>`
     : "";
@@ -1047,9 +1055,11 @@ function lecTarea(w, l, c){
     <div style="font-weight:600;margin:2px 0 6px;color:var(--texto2);">📄 Material y evaluación de esta semana</div>
     <div style="margin-bottom:10px;">${lista}</div>
     ${nota}
-    <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>`;
-  _entregaSem = w.sem; _entregaLecId = l.id; _entregaModulo = l.modulo || null;
-  cargarEntrega(w.sem);
+    ${hayEntrega ? '<div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>' : ''}`;
+  if(hayEntrega){
+    _entregaSem = w.sem; _entregaLecId = l.id; _entregaModulo = l.modulo || null;
+    cargarEntrega(w.sem);
+  }
 }
 
 async function descargarTarea(sem, nombre){
