@@ -1028,6 +1028,13 @@ function _respuestaProfe(e){
 function lecTarea(w, l, c){
   const archivos = (l.archivos || []);
   const descargable = !!(estructura && estructura.tareas_descargables);
+  // Aviso de vencimiento igual de visible que en los cuestionarios (antes solo
+  // aparecía en letra chica dentro de "Tu entrega"). Semanas con fechas por
+  // módulo (entregas_modulos) tienen su propio aviso correcto más abajo, en la
+  // caja de "Tu entrega" — aquí solo se muestra el genérico si NO es por módulo.
+  const avisoVence = (!l.modulo && w.cierre_cuestionarios)
+    ? `<div class="aviso">⏱ Vence el domingo ${fmtLima(w.cierre_cuestionarios)} a medianoche (hora de Lima).</div>`
+    : "";
   const lista = archivos.length
     ? archivos.map(n => descargable
         ? `<span class="chip dl" onclick="descargarTarea(${w.sem}, '${esc(n).replace(/'/g,"&#39;")}')" title="Descargar">${badgeDe(n)}${esc(n.replace(/\.(pdf|docx?|xlsx?|dwg)$/i,""))} ⬇</span>`
@@ -1050,7 +1057,7 @@ function lecTarea(w, l, c){
   const btnZip = (descargable && archivos.length)
     ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar Todo el Material de la Semana</button>`
     : "";
-  c.innerHTML = cab(w, l) + `
+  c.innerHTML = cab(w, l) + avisoVence + `
     ${btnZip}
     <div style="font-weight:600;margin:2px 0 6px;color:var(--texto2);">📄 Material y evaluación de esta semana</div>
     <div style="margin-bottom:10px;">${lista}</div>
