@@ -1558,9 +1558,12 @@ async function lecQuiz(w, l, c){
   const _intro = q.instruccion
     ? `<div class="aviso" style="white-space:pre-line;line-height:1.65;">${esc(q.instruccion)}</div>`
     : "";
+  // Cursos sin vencimientos (q.cierre === null): un solo intento, sin fecha, nota al instante.
   const _aviso = q.diagnostico
-    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento. Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima).</div>`
-    : `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`;
+    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento${q.cierre ? '. Cierra el domingo ' + fmtLima(q.cierre) + ' a medianoche (hora de Lima)' : ''}.</div>`
+    : (q.cierre
+        ? `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`
+        : `<div class="aviso">⏱ <b>Un solo intento</b> · sin fecha límite, respóndelo cuando quieras · tu nota se muestra apenas termines.</div>`);
   let html = cab(w, l) + _intro + _aviso + '<div id="quizTimer" class="aviso" style="display:none;font-weight:700;position:sticky;top:0;z-index:5;"></div>';
   (q.preguntas || []).forEach((p, qi) => {
     // Numeración OFICIAL (p.num): es la referencia al PDF de la evaluación. No se renumera.
