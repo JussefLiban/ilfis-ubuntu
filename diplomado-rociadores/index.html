@@ -1519,6 +1519,17 @@ async function verMisRespuestas(quizId){
 }
 
 // ── Quiz ──
+async function comenzarQuiz(quizId, btn){
+  if(btn){ btn.disabled = true; btn.textContent = "Iniciando…"; }
+  try{
+    await api(`/api/cursos/${CURSO}/cuestionario/${encodeURIComponent(quizId)}/iniciar`, { method:"POST" });
+    if(window._lecQuizRecargar) window._lecQuizRecargar();
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = "▶ Comenzar"; }
+    alert("No pude iniciar el cuestionario: " + e.message);
+  }
+}
+
 async function lecQuiz(w, l, c){
   c.innerHTML = cab(w, l) + '<div class="aviso">Cargando cuestionario…</div>';
   let q;
@@ -1529,17 +1540,31 @@ async function lecQuiz(w, l, c){
     return;
   }
 
+  // Curso sin vencimientos: el cuestionario tiene tiempo límite desde que el alumno
+  // pulsa "Comenzar" (no desde que lo mira), así que primero va esta pantalla.
+  if(q.requiere_inicio){
+    c.innerHTML = cab(w, l) + `
+      <div class="aviso">⏱ Este cuestionario tiene <b>${q.tiempo_limite_min} minutos</b> de tiempo y es de <b>un solo intento</b>. El reloj empieza cuando pulses <b>Comenzar</b>; si sales a mitad, el tiempo sigue corriendo. Puedes hacerlo cuando quieras, sin fecha límite.</div>
+      <button class="btn" id="btnComenzar" onclick="comenzarQuiz('${esc(l.quizId)}', this)">▶ Comenzar</button>`;
+    window._lecQuizRecargar = () => lecQuiz(w, l, c);
+    return;
+  }
+
   if(q.ya_respondido){
     const enviado = q.intento && q.intento.enviado ? " el " + fmtLima(q.intento.enviado, true) : "";
     // Revisión del propio cuestionario: solo desde que su nota está publicada.
-    const pubOk = q.diagnostico || (q.publicacion_notas && new Date() >= new Date(q.publicacion_notas));
+    const pubOk = q.diagnostico || q.nota_publicada
+      || (q.nota_publicada === undefined && q.publicacion_notas && new Date() >= new Date(q.publicacion_notas));
     const btnRev = pubOk
       ? `<button class="btn btn-sec" onclick="verMisRespuestas('${esc(l.quizId)}')">🔎 Ver mis respuestas</button>`
       : `<div class="aviso">Podrás revisar tus respuestas cuando se publique tu nota.</div>`;
     const cierre = q.diagnostico
       ? `<div class="aviso">Es un cuestionario de diagnóstico: <b>no cuenta para tu nota</b>. ¡Gracias por responderlo!</div>`
-      : `<div class="aviso">Tu nota se publica el lunes ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
-         <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`;
+      : (q.sin_vencimientos
+          ? `<div class="aviso">${q.nota_publicada ? 'Tus notas ya están publicadas.' : 'Tu nota se mostrará cuando el profesor publique las notas del curso.'} La verás en <b>📊 Mi boletín</b>.</div>
+         <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`
+          : `<div class="aviso">Tu nota se publica el lunes ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
+         <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`);
     c.innerHTML = cab(w, l) + `
       <div class="aviso okv">✓ Respuestas registradas${enviado}. Se permite un solo intento.</div>`
       + cierre + `<div style="margin-top:10px;">${btnRev}</div>`;
@@ -1728,7 +1753,7 @@ async function enviarQuiz(auto){
     notasCache = null; boletinCache = null;
     $("contenido").innerHTML = cab(_quizActivo.w, _quizActivo.l) + `
       <div class="aviso okv">✓ ${esc(r.mensaje || "Respuestas registradas.")}</div>
-      <div class="aviso">Tu nota estará visible desde el ${fmtLima(r.nota_visible_desde, true)} (hora de Lima) en <b>📊 Mis notas</b>.</div>
+      <div class="aviso">${r.nota_visible_desde ? 'Tu nota estará visible desde el ' + fmtLima(r.nota_visible_desde, true) + ' (hora de Lima)' : 'Tu nota se mostrará cuando el profesor publique las notas del curso'} en <b>📊 Mis notas</b>.</div>
       <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mis notas</button>`;
   }catch(e){
     if(e.status === 409){
@@ -1938,15 +1963,15 @@ async function verNotas(){
     }
   </style>`;
   c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
-    <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · las notas se publican el lunes 12:00 de la semana siguiente</div>
+    <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · ${r.sin_vencimientos ? 'las notas las publica el profesor al final del curso' : 'las notas se publican el lunes 12:00 de la semana siguiente'}</div>
     <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
     ${leyenda}
     ${cuerpo}
     ${cierre}
     ${bloqueEncuesta(r)}
     ${plano
-      ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`
-      : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y la nota se publica el lunes 12:00. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (venció el plazo sin entregar).</div>`}`;
+      ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica el lunes 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`
+      : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica el lunes 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`}`;
 }
 </script>
 </body>

@@ -261,6 +261,7 @@ textarea{background:var(--campo);border:1px solid var(--borde);color:var(--texto
          estar junto al selector se leían como si fueran del cuestionario elegido. -->
     <span class="stat" title="Totales de todo el curso, sumando todos los cuestionarios.">En todo el curso · alumnos con avance: <b id="stAlumnos">0</b> · intentos recibidos: <b id="stIntentos">0</b></span>
     <button class="btn gris mini" id="btnExport" onclick="exportarNotas()" style="display:none;">⬇ Exportar notas (Excel)</button>
+    <button class="btn mini" id="btnNotasPub" onclick="alternarNotasPublicas()" style="display:none;"></button>
     <button class="btn gris mini" onclick="cargar(false)">↻ Recargar</button>
   </div>
   <div class="kpis" id="kpis">
@@ -386,6 +387,36 @@ async function entrar(){
   }
 }
 
+// Cursos SIN vencimientos: las notas no salen solas, las libera el profesor con este botón
+// (normalmente al terminar el curso). Mientras estén ocultas el alumno no ve su nota ni las
+// respuestas correctas, así no se las pasan entre ellos.
+function pintarBotonNotasPub(){
+  const b = $("btnNotasPub");
+  if(!b) return;
+  if(!(R && R.sin_vencimientos)){ b.style.display = "none"; return; }
+  b.style.display = "";
+  const pub = !!R.notas_publicadas;
+  b.textContent = pub ? "🔒 Ocultar notas a los alumnos" : "📢 Publicar notas a los alumnos";
+  b.title = pub ? "Las notas están VISIBLES para los alumnos. Pulsa para volver a ocultarlas."
+                : "Las notas están OCULTAS. Pulsa cuando el curso haya terminado para que cada alumno vea su nota.";
+  b.className = "btn mini" + (pub ? " gris" : "");
+}
+
+async function alternarNotasPublicas(){
+  const publicar = !R.notas_publicadas;
+  const msg = publicar
+    ? "¿Publicar las notas de TODO el curso?\n\nCada alumno verá su nota y, en lo que falló, la respuesta correcta. Úsalo cuando ya se haya vencido el tiempo del curso."
+    : "¿Volver a ocultar las notas a los alumnos?";
+  if(!confirm(msg)) return;
+  try{
+    const d = await postJSON(`/api/cursos/${CURSO}/admin/publicar-notas`, { publicar });
+    R.notas_publicadas = !!d.notas_publicadas;
+    pintarBotonNotasPub();
+  }catch(e){
+    alert("No pude cambiarlo: " + (e.message || e));
+  }
+}
+
 async function cargar(inicial){
   R = await api(`/api/cursos/${CURSO}/admin/resumen`);
   try{ if(usuario) _fotoTok = await usuario.getIdToken(); }catch(e){}
@@ -393,6 +424,7 @@ async function cargar(inicial){
   $("panel").style.display = "block";
   $("stAlumnos").textContent = R.progreso.length;
   $("stIntentos").textContent = R.intentos.length;
+  pintarBotonNotasPub();
   const sel = $("selQuiz");
   sel.innerHTML = R.quizzes.map(q => `<option value="${esc(q.quizId)}">S${q.semana} · ${esc(q.titulo)}</option>`).join("");
   // Entregas (guardado defensivo: si el backend aún no las soporta, no rompe el panel)
