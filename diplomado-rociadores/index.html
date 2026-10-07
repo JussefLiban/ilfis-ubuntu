@@ -1032,7 +1032,9 @@ function lecTarea(w, l, c){
   // aparecía en letra chica dentro de "Tu entrega"). Semanas con fechas por
   // módulo (entregas_modulos) tienen su propio aviso correcto más abajo, en la
   // caja de "Tu entrega" — aquí solo se muestra el genérico si NO es por módulo.
-  const avisoVence = (!l.modulo && w.cierre_cuestionarios)
+  // En cursos sin fecha de entrega no se muestra vencimiento sobre la tarea
+  // (el cierre del cuestionario sí sigue visible en la lección del cuestionario).
+  const avisoVence = (!l.modulo && w.cierre_cuestionarios && !(estructura && estructura.entregas_sin_cierre))
     ? `<div class="aviso">⏱ Vence el domingo ${fmtLima(w.cierre_cuestionarios)} a medianoche (hora de Lima).</div>`
     : "";
   const lista = archivos.length
