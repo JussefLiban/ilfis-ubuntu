@@ -391,6 +391,9 @@ async function entrar(){
 // (normalmente al terminar el curso). Mientras estén ocultas el alumno no ve su nota ni las
 // respuestas correctas, así no se las pasan entre ellos.
 function pintarBotonNotasPub(){
+  // Sin plazos no hay nada que prorrogar: se esconde la pestaña de prórrogas.
+  const tp = $("tabPr");
+  if(tp) tp.style.display = (R && R.sin_vencimientos) ? "none" : "";
   const b = $("btnNotasPub");
   if(!b) return;
   if(!(R && R.sin_vencimientos)){ b.style.display = "none"; return; }
@@ -1636,6 +1639,41 @@ function renderCalendario(){
       <th style="width:74px;">Notas</th>
       <th style="width:56px;">Clases</th>
       <th>Cierre de evaluaciones<span style="${_sub}">plazo de entrega de cada una</span></th></tr>`;
+  const sv = !!(R && R.sin_vencimientos);
+  if(sv){
+    // Diplomado SIN vencimientos: no hay cierres ni fechas de publicación. Solo cuándo
+    // abre cada semana (editable) y si las notas están ocultas o publicadas.
+    tb.querySelector("thead").innerHTML = `<tr>
+      <th style="width:34px;">Sem</th><th>Semana</th>
+      <th style="width:140px;">Abre semana</th>
+      <th style="width:96px;">Notas<span style="${_sub}">las libera el profesor</span></th>
+      <th style="width:56px;">Clases</th>
+      <th>Evaluaciones<span style="${_sub}">sin fecha de vencimiento</span></th></tr>`;
+    tb.querySelector("tbody").innerHTML = cal.map(w => {
+      const abre = w.abre ? new Date(w.abre) : null;
+      const abierta = !!(abre && abre <= ahora);
+      const evs = (w.evaluaciones || []).map(ev => {
+        const et = ev.tipo === "objetivo" ? "📝" : "📤";
+        const nom = (ev.nombre && ev.nombre !== ev.codigo)
+          ? [ev.codigo, ev.nombre].filter(Boolean).join(" · ") : (ev.codigo || ev.nombre || "");
+        return `${et} ${esc(nom)}`;
+      }).join("<br>") || '<span style="color:var(--texto2);">—</span>';
+      const notas = R.notas_publicadas
+        ? '<b style="color:var(--verde);">Publicadas</b>' : '<b style="color:var(--ambar);">Ocultas</b>';
+      return `<tr${abierta ? ' style="background:#16281c;"' : ''}>
+        <td style="text-align:center;font-weight:700;">${w.sem}</td>
+        <td>${esc(w.titulo)}<div style="font-size:.68rem;color:${abierta ? "var(--verde)" : "var(--ambar)"};text-transform:uppercase;letter-spacing:.04em;">${abierta ? "semana abierta" : "por abrir"}</div></td>
+        <td>${_calInput(w, "abre")}</td>
+        <td style="white-space:nowrap;">${notas}</td>
+        <td style="text-align:center;">${w.clases || "—"}</td>
+        <td style="font-size:.76rem;line-height:1.6;">${evs}</td>
+      </tr>`;
+    }).join("");
+    $("tablaCap").style.display = "block";
+    $("tablaCap").innerHTML = `📅 <b>Calendario del diplomado</b> · inicio de cohorte: <b>${esc(R.fecha_inicio_cohorte || "sin definir")}</b>.<br>`
+      + `<span style="color:var(--texto2);font-size:.8rem;">Este diplomado <b style="color:var(--texto);">no tiene fechas de vencimiento</b>: las tareas y los cuestionarios se pueden hacer en cualquier momento. Solo se fija cuándo <b style="color:var(--texto);">abre</b> cada semana (la editas aquí). Las notas las liberas tú con el botón <b style="color:var(--texto);">Publicar notas a los alumnos</b>.</span>`;
+    return;
+  }
   tb.querySelector("tbody").innerHTML = cal.map(w => {
     const abre = w.abre ? new Date(w.abre) : null;
     const cie  = w.cierre ? new Date(w.cierre) : null;

@@ -267,7 +267,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
   <div id="contenido">
     <h2>Bienvenido al aula</h2>
     <div class="meta">Selecciona una lección en el temario para comenzar.</div>
-    <div class="aviso">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios y las tareas cierran al terminar el domingo de su semana (medianoche) y las notas se publican el lunes siguiente a las 12:00.</div>
+    <div class="aviso" id="avisoGeneral">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios y las tareas cierran al terminar el domingo de su semana (medianoche) y las notas se publican el lunes siguiente a las 12:00.</div>
   </div>
   <div id="lecNav" style="display:none;grid-column:1/-1;text-align:right;margin-top:6px;"></div>
 </div>
@@ -551,6 +551,10 @@ async function cargarAula(){
       api(RUTA_PROGRESO)
     ]);
     estructura = est;
+    if(est.sin_vencimientos){
+      const ag = $("avisoGeneral");
+      if(ag) ag.innerHTML = "Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Este diplomado <b>no tiene fechas de vencimiento</b>: haz las tareas y los cuestionarios a tu ritmo, pero te aconsejamos ir avanzando semana a semana. Tus notas las publica el profesor al finalizar el curso.";
+    }
     // El aula se titula con el curso que cargó (sirve a cualquier diplomado)
     if(est.nombre){
       const t = "Aula — " + est.nombre;
@@ -714,7 +718,7 @@ function renderTemario(){
     const d = document.createElement("div");
     d.className = "sem " + (abiertaW ? "sem-abierta" : "sem-cerrada") + (_semExp.has(w.sem) ? " exp" : "");
     const fechas = abiertaW
-      ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}`
+      ? (w.cierre_cuestionarios ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}` : "")
       : `abre lun ${fmtLima(w.abre)}`;
     d.innerHTML = `<div class="sem-cab" onclick="toggleSemana(${w.sem}, this)">
         <span class="st">${esc(_tit(w.titulo))}</span>
@@ -1123,8 +1127,8 @@ async function cargarEntrega(sem){
     const msgF = _cajaMensaje(sem, e);
     const califF = _respuestaProfe(e);
     const cabF = e.puede_reabrir
-      ? `<div class="ent-nota" style="background:#14532d;">✅ <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ¿Necesitas corregir algo? Puedes reabrirla mientras el plazo siga abierto.</div>`
-      : `<div class="ent-nota" style="background:#14532d;">🔒 <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. El plazo cerró: ya es definitiva.</div>`;
+      ? `<div class="ent-nota" style="background:#14532d;">✅ <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ¿Necesitas corregir algo? Puedes reabrirla${e.sin_cierre ? ' cuando quieras' : ' mientras el plazo siga abierto'}.</div>`
+      : `<div class="ent-nota" style="background:#14532d;">🔒 <b>Entrega registrada</b> el ${fmtLima(e.finalizado_lima)}. ${e.sin_cierre ? 'Quedó registrada.' : 'El plazo cerró: ya es definitiva.'}</div>`;
     const btnRe = e.puede_reabrir
       ? `<button class="btn sm" style="margin-top:12px;display:block;" onclick="reabrirEntrega(${sem})">🔓 Reabrir para modificar</button>`
       : "";
@@ -1143,13 +1147,15 @@ async function cargarEntrega(sem){
       <div class="ent-hint" style="border-left:3px solid var(--acento,#2563eb);background:rgba(37,99,235,.08);padding:8px 10px;border-radius:6px;margin-top:8px;">📝 <b>Nombra cada archivo así:</b> <b>Evaluación N - Tu Nombre</b> &nbsp;(ejemplo: <i>Evaluación 8 - Mario Gutiérrez</i>). Sube un archivo por evaluación con ese nombre; así el profesor identifica de inmediato tu trabajo.</div>
       <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} ${e.sin_cierre ? '· <b>sin fecha de entrega</b>: súbela cuando quieras' : '· cierre dom ' + fmtLima(e.cierre)}.</div>`;
   } else {
-    const _cerrado = new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
+    const _cerrado = !!e.cierre && new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
     const _w = ((estructura && estructura.semanas) || []).find(x => x.sem === sem);
     if(e.abierta === false){
       // La semana todavía no abre: decirlo claro (no hablar del cierre, confunde).
       ctrl = `<div class="aviso">🔒 Esta semana aún no abre${_w && _w.abre ? ` (abre el lun ${fmtLima(_w.abre)})` : ""}. Desde ese día podrás subir tu entrega.</div>`;
     } else {
-      ctrl = _cerrado
+      ctrl = e.sin_cierre
+        ? `<div class="aviso">Por ahora no puedes subir archivos en esta semana.</div>`
+        : _cerrado
         ? `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
         : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
     }
@@ -1162,7 +1168,7 @@ async function cargarEntrega(sem){
   const btnFinalizar = e.puede_finalizar
     ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borde);">
          <button class="btn" style="background:#065f46;" onclick="finalizarEntrega(${sem})">✅ Entregar (finalizar)</button>
-         <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Tu entrega queda <b>registrada con la fecha</b>. Si luego necesitas corregir algo, puedes <b>reabrirla</b> mientras el plazo siga abierto.</div>
+         <div style="font-size:.75rem;color:var(--texto2);margin-top:6px;">Tu entrega queda <b>registrada con la fecha</b>. Si luego necesitas corregir algo, puedes <b>reabrirla</b>${e.sin_cierre ? ' cuando quieras' : ' mientras el plazo siga abierto'}.</div>
        </div>`
     : "";
   // Mismo orden que en la vista sellada: la respuesta del profesor va ANTES de
@@ -1186,7 +1192,7 @@ async function borrarEntregaCompleta(sem){
 
 // OBS-3/6 · Finaliza (sella) la entrega: queda registrada con fecha y ya no se edita.
 async function finalizarEntrega(sem){
-  if(!confirm("¿Finalizar tu entrega?\n\nQuedará registrada como entregada. Si necesitas corregir algo, podrás reabrirla mientras el plazo siga abierto.")) return;
+  if(!confirm("¿Finalizar tu entrega?\n\nQuedará registrada como entregada. Si necesitas corregir algo, podrás reabrirla" + ((estructura && estructura.sin_vencimientos) ? " cuando quieras." : " mientras el plazo siga abierto."))) return;
   try{
     await api(`/api/cursos/${CURSO}/entrega/${sem}/finalizar${_mq()}`, { method:"POST" });
     if(_entregaLecId) await marcarCompletada(_entregaLecId);
@@ -1667,7 +1673,9 @@ function _quizIniciarTimer(q){
   if(!el || !(q && q.tiempo_limite_min > 0) || q.segundos_restantes == null) return;
   el.style.display = "block";
   if(q.segundos_restantes <= 0){
-    el.textContent = "⏱ El tiempo de este cuestionario se agotó. Envía lo que tengas antes del cierre.";
+    el.textContent = (estructura && estructura.sin_vencimientos)
+      ? "⏱ El tiempo de este cuestionario se agotó. Escríbele a tu profesor."
+      : "⏱ El tiempo de este cuestionario se agotó. Envía lo que tengas antes del cierre.";
     el.style.color = "var(--rojoTxt)";
     return;
   }
