@@ -1068,7 +1068,7 @@ async function responderEntrega(uid, sem){
   if(msg){ msg.textContent = "…"; msg.className = "ent-save"; }
   try{
     const r = await fetch(`${API}/api/cursos/${CURSO}/admin/entrega/${encodeURIComponent(uid)}/${sem}/nota`, {
-      method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" },
+      method:"POST", headers: await authHeaders({ "Content-Type":"application/json" }),
       body: JSON.stringify({ nota: notaStr === "" ? null : Number(notaStr), comentario: com })
     });
     let d=null; try{ d=await r.json(); }catch(e){}
@@ -1144,7 +1144,7 @@ async function guardarCalifManual(){
   if(out){ out.textContent = "…"; out.className = "ent-save"; }
   try{
     const r = await fetch(`${API}/api/cursos/${CURSO}/admin/intento/${encodeURIComponent(window._cal.uid)}/${encodeURIComponent(window._cal.quizId)}/calificar`, {
-      method:"POST", headers:{ "X-Admin-Key": clave, "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      method:"POST", headers: await authHeaders({ "Content-Type":"application/json" }), body: JSON.stringify(body) });
     let d=null; try{ d=await r.json(); }catch(e){}
     if(!r.ok) throw new Error(d&&d.detail?d.detail:("Error "+r.status));
     if(out){ out.textContent = "✓ guardada"; out.className = "ent-save ok"; }
