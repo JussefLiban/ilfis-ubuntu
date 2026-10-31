@@ -314,7 +314,7 @@ let _entregaModulo = null;   // módulo de entrega abierto (semanas partidas en 
 // tarea está abierta a la vez, así que el global basta.
 function _mq(){ return _entregaModulo ? ("?modulo=" + encodeURIComponent(_entregaModulo)) : ""; }
 
-const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤", texto:"📖" };
+const ICO = { video:"🎬", manual:"📄", docs:"📄", quiz:"📝", tarea:"📤", texto:"📖", reglamento:"✍️" };
 const $ = id => document.getElementById(id);
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -546,9 +546,10 @@ auth.onAuthStateChanged(async user => {
 // ═══════════════ CARGA INICIAL ═══════════════
 async function cargarAula(){
   try{
-    const [est, prog] = await Promise.all([
+    const [est, prog, reg] = await Promise.all([
       api(`/api/cursos/${CURSO}/estructura`),
-      api(RUTA_PROGRESO)
+      api(RUTA_PROGRESO),
+      api(`/api/cursos/${CURSO}/reglamento`).catch(() => null)   // aceptación del reglamento (no crítica)
     ]);
     estructura = est;
     if(est.sin_vencimientos){
@@ -562,6 +563,7 @@ async function cargarAula(){
       document.title = t + " | ILFIS Ubuntu";
     }
     hechas = new Set(Object.keys(prog.lecciones || {}));
+    if(reg && reg.aceptado) hechas.add("s0-reglamento");   // ✓ en el temario si ya aceptó
     totalLecs = est.semanas.reduce((a,w) => a + w.lecciones.length, 0);
     await cargarSincronicas();     // clases en vivo grabadas (bloque propio del temario)
     renderTemario();
@@ -786,6 +788,7 @@ function abrirLeccion(w, l){
   if(l.tipo === "tarea")       return lecTarea(w, l, c);
   if(l.tipo === "quiz")        return lecQuiz(w, l, c);
   if(l.tipo === "texto")       return lecTexto(w, l, c);
+  if(l.tipo === "reglamento")  return lecReglamento(w, l, c);
 }
 
 // OBS-5 · Navegación "Siguiente actividad / Siguiente semana" (solo semanas abiertas).
@@ -952,6 +955,52 @@ function lecTexto(w, l, c){
   c.innerHTML = cab(w, l) + `
     <div style="max-width:720px;font-size:.9rem;color:var(--texto);">${bloques}</div>
     <button class="btn" onclick="marcarCompletada('${esc(l.id)}');this.disabled=true;this.style.opacity='.5';this.textContent='✓ Marcado como leído'" ${hechas.has(l.id)?"disabled style='opacity:.5'":""}>${hechas.has(l.id)?"✓ Marcado como leído":"Marcar como leído"}</button>`;
+}
+
+// ── Aceptación del Reglamento (Semana 0, común a todos los cursos de ILFIS) ──
+// Lo que Q10 pedía con 2 preguntas (¿lo leyó? ¿está de acuerdo?): aquí son 2 casillas y un botón.
+// Queda guardada la fecha; el profesor ve en su panel quién ya aceptó.
+async function lecReglamento(w, l, c){
+  const lecId = l.id;
+  c.innerHTML = cab(w, l) + `<div class="aviso">Cargando…</div>`;
+  let r = { aceptado:false };
+  try{ r = await api(`/api/cursos/${CURSO}/reglamento`); }catch(e){}
+  if(lecActiva && lecActiva.leccion.id !== lecId) return;   // cambió de lección mientras cargaba
+  if(r.aceptado){
+    hechas.add(lecId); renderTemario();
+    c.innerHTML = cab(w, l) + `<div class="aviso" style="border-color:var(--verde);color:var(--texto);">✅ Aceptaste la <b>Normativa y Reglamento</b> del curso el <b>${fmtLima(r.fecha, true)}</b> (hora de Lima).</div>`;
+    return;
+  }
+  c.innerHTML = cab(w, l) + `
+    <div style="max-width:720px;font-size:.9rem;line-height:1.7;color:var(--texto);">
+      <p style="margin:0 0 12px;">Antes de continuar, lee con atención la <b>Normativa y Reglamento</b> del curso (la encuentras en los documentos de presentación de esta misma Semana 0) y confirma aquí.</p>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0;cursor:pointer;">
+        <input type="checkbox" id="regLeido" style="margin-top:5px;"><span>Leí cuidadosamente y entendí la Normativa y Reglamento del curso.</span></label>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0;cursor:pointer;">
+        <input type="checkbox" id="regAcuerdo" style="margin-top:5px;"><span>Manifiesto estar de acuerdo con la Normativa y Reglamento del curso.</span></label>
+      <button class="btn" id="btnReg" onclick="aceptarReglamento()">Aceptar el Reglamento</button>
+      <div id="regMsg" class="aviso" style="display:none;"></div>
+    </div>`;
+  window._regCtx = { w, l, c };
+}
+async function aceptarReglamento(){
+  const ctx = window._regCtx; if(!ctx) return;
+  const msg = $("regMsg"), btn = $("btnReg");
+  const leido = $("regLeido").checked, acuerdo = $("regAcuerdo").checked;
+  if(!leido || !acuerdo){
+    msg.style.display = "block";
+    msg.textContent = "Marca las dos casillas para poder aceptar.";
+    return;
+  }
+  btn.disabled = true; btn.textContent = "Guardando…";
+  try{
+    await api(`/api/cursos/${CURSO}/reglamento/aceptar`, { method:"POST", body: JSON.stringify({ leido:true, de_acuerdo:true }) });
+    lecReglamento(ctx.w, ctx.l, ctx.c);
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Aceptar el Reglamento";
+    msg.style.display = "block";
+    msg.textContent = "No pude guardar tu aceptación: " + (e.message || e) + ". Inténtalo de nuevo.";
+  }
 }
 
 // ── Documentos de la semana (un solo bloque con varios PDF) ──

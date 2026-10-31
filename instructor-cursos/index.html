@@ -571,6 +571,7 @@ function computeAlumnos(){
     r.promedio = r.calificados ? Math.round(r.sumaNota / r.calificados) : null;
     r.dias = diasDesde(r.lastTs);
     r.estado = estadoDe(r.dias);
+    r.reglamento = (R.reglamento || {})[r.uid] || null;   // fecha en que aceptó el reglamento
     return r;
   });
   // Orden = N° del roster (el MISMO que la intranet y la planilla). Sin N°, al final por correo.
@@ -677,7 +678,7 @@ function renderAlumnos(){
   const alumnos = computeAlumnos();
   const ap = APROB();
   $("tabla").querySelector("thead").innerHTML =
-    `<tr><th>Alumno</th><th>País</th><th style="text-align:right;">Avance</th><th>Último acceso</th><th style="text-align:right;">Cuestionarios</th><th style="text-align:right;">Promedio</th><th>Pendientes</th><th>Estado</th></tr>`;
+    `<tr><th>Alumno</th><th>País</th><th style="text-align:right;">Avance</th><th>Último acceso</th><th>Reglamento</th><th style="text-align:right;">Cuestionarios</th><th style="text-align:right;">Promedio</th><th>Pendientes</th><th>Estado</th></tr>`;
   $("tabla").querySelector("tbody").innerHTML = alumnos.map(a => {
     const prom = a.promedio == null ? '<span style="color:var(--texto2);">—</span>'
       : `<b style="color:${a.promedio >= ap ? 'var(--verde)' : 'var(--rojoTxt)'};">${a.promedio}</b> / 100`;
@@ -692,12 +693,13 @@ function renderAlumnos(){
       <td style="color:var(--texto2);">${esc(a.pais || "—")}</td>
       <td class="num">${a.comp} / ${a.total} (${a.avance}%)</td>
       <td style="white-space:nowrap;color:var(--texto2);">${txtDias(a.dias)}</td>
+      <td style="white-space:nowrap;">${a.reglamento ? `<span class="pill ok" title="Aceptó el reglamento">✓ ${fmtLima(a.reglamento)}</span>` : `<span style="color:var(--texto2);">${R.reglamento ? "pendiente" : "—"}</span>`}</td>
       <td class="num">${a.enviados ? `${a.aprobados}/${a.enviados} aprob.` : "0"}</td>
       <td class="num">${prom}</td>
       <td>${a.manual ? `<span class="pill manual">⚠ ${a.manual}</span>` : `<span class="pill ok">—</span>`}</td>
       <td><span class="pill ${a.estado.cls}">${a.estado.txt}</span></td>
     </tr>`; }).join("") ||
-    `<tr><td colspan="8" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con actividad</td></tr>`;
+    `<tr><td colspan="9" style="text-align:center;color:var(--texto2);padding:22px;">Aún no hay alumnos con actividad</td></tr>`;
 }
 
 // ── Cola de calificación ──
@@ -734,11 +736,11 @@ function renderCola(){
 function exportarNotas(){
   if(tab === "planilla") return exportarPlanilla();
   const alumnos = computeAlumnos();
-  const cab = ["N°","Alumno","Correo","País","Avance (%)","Lecciones completadas","Total lecciones","Último acceso",
+  const cab = ["N°","Alumno","Correo","País","Avance (%)","Lecciones completadas","Total lecciones","Último acceso","Reglamento aceptado",
                "Cuestionarios enviados","Aprobados","Promedio /100","Pendientes de calificar","Estado"];
   const filas = alumnos.map(a => [
     (a.numero == null ? "" : Number(a.numero)), nomDe(a.uid, a.email), a.email, (a.pais || ""),
-    _num(a.avance), _num(a.comp), _num(a.total), txtDias(a.dias),
+    _num(a.avance), _num(a.comp), _num(a.total), txtDias(a.dias), (a.reglamento ? fmtLima(a.reglamento) : "pendiente"),
     _num(a.enviados), _num(a.aprobados), (a.promedio == null ? "" : _num(a.promedio)), _num(a.manual), a.estado.txt
   ]);
   ILFISExcel.bajar({ archivo:`notas_${CURSO}`, hojas:[{ nombre:"Por alumno", cabeceras:cab, filas }] });
