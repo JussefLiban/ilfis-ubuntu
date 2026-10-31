@@ -1113,7 +1113,11 @@ function lecTarea(w, l, c){
   const btnZip = (descargable && archivos.length)
     ? `<button class="btn" style="margin-bottom:12px;" onclick="descargarMaterialSemana(${w.sem}, this)">📦 Descargar Todo el Material de la Semana</button>`
     : "";
-  c.innerHTML = cab(w, l) + avisoVence + `
+  // Indicaciones del profesor para esta tarea (opcional, vienen en el curso): van primero.
+  const instruccion = l.instruccion
+    ? `<div class="aviso" style="border-color:var(--azul);color:var(--texto);">📝 <b>Indicaciones:</b> ${esc(l.instruccion)}</div>`
+    : "";
+  c.innerHTML = cab(w, l) + avisoVence + instruccion + `
     ${btnZip}
     <div style="font-weight:600;margin:2px 0 6px;color:var(--texto2);">📄 Material y evaluación de esta semana</div>
     <div style="margin-bottom:10px;">${lista}</div>
