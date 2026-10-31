@@ -4191,6 +4191,7 @@ const ADMIN_NAMES = {
   "diplomado_hidraulica-basica": "Curso de Hidráulica Básica",
   "diplomado_ipm-motores": "Curso IPM Motores de Bombas PCI",
   "diplomado_proteccion-mercancias": "Diplomado de Protección de Mercancías",
+  "diplomado_montantes-mangueras": "Curso de Diseño y Cálculo de Sistemas de Montantes y Mangueras",
 };
 // "Calcula con Ubuntu" (aplicativos/calculadoras) — NO son Clases Premium; van en su propia área.
 const APP_KEYS = ['calculador'];
@@ -4200,7 +4201,7 @@ const PLATAFORMA_KEY = 'plataforma';
 // Diplomados de la Plataforma Educativa. El "carnet" YA está separado (jul 2026): el diplomado tiene
 // su propia llave 'diplomado_rociadores', distinta de la de Clases Premium ('rociadores'). Así un
 // alumno del diplomado NO aparece en Premium y viceversa. (Backend: cursos.py LLAVE_DIPLOMA.)
-const DIPLOMA_KEYS = ['diplomado_rociadores', 'diplomado_calculos-hidraulicos', 'diplomado_hidraulica-basica', 'diplomado_ipm-motores', 'diplomado_proteccion-mercancias'];
+const DIPLOMA_KEYS = ['diplomado_rociadores', 'diplomado_calculos-hidraulicos', 'diplomado_hidraulica-basica', 'diplomado_ipm-motores', 'diplomado_proteccion-mercancias', 'diplomado_montantes-mangueras'];
 // Llaves que NO son Clases Premium (viven en su propia área y no deben colarse en Premium).
 const NO_PREMIUM = [...APP_KEYS, PLATAFORMA_KEY, ...DIPLOMA_KEYS];
 // Diplomados existentes (para la gestión de docentes por diplomado). `id` = segmento de la URL
@@ -4212,6 +4213,7 @@ const DIPLOMAS = [
   { id: 'hidraulica-basica', nombre: 'Curso de Hidráulica Básica', semanas: 4, certAlias: 'Hidráulica Básica' },
   { id: 'ipm-motores', nombre: 'Curso IPM Motores de Bombas PCI', semanas: 4, certAlias: 'IPM Motores' },
   { id: 'proteccion-mercancias', nombre: 'Diplomado de Protección de Mercancías', semanas: 11, certAlias: 'Protección de Mercancías' },
+  { id: 'montantes-mangueras', nombre: 'Curso de Diseño y Cálculo de Sistemas de Montantes y Mangueras', semanas: 7, certAlias: 'Montantes y Mangueras' },
 ];
 // Diplomado seleccionado en la pestaña Docentes (por defecto el primero).
 function _adminDocDiploma() {
