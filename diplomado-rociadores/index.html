@@ -968,12 +968,12 @@ async function lecReglamento(w, l, c){
   if(lecActiva && lecActiva.leccion.id !== lecId) return;   // cambió de lección mientras cargaba
   if(r.aceptado){
     hechas.add(lecId); renderTemario();
-    c.innerHTML = cab(w, l) + `<div class="aviso" style="border-color:var(--verde);color:var(--texto);">✅ Aceptaste la <b>Normativa y Reglamento</b> del curso el <b>${fmtLima(r.fecha, true)}</b> (hora de Lima).</div>`;
+    c.innerHTML = cab(w, l) + `<div class="aviso" style="border-color:var(--verde);color:var(--texto);">✅ Aceptaste la <b>Normativa y Reglamento</b> del curso${r.version ? ` (versión ${esc(r.version)})` : ""} el <b>${fmtLima(r.fecha, true)}</b> (hora de Lima).</div>`;
     return;
   }
   c.innerHTML = cab(w, l) + `
     <div style="max-width:720px;font-size:.9rem;line-height:1.7;color:var(--texto);">
-      <p style="margin:0 0 12px;">Antes de continuar, lee con atención la <b>Normativa y Reglamento</b> del curso (la encuentras en los documentos de presentación de esta misma Semana 0) y confirma aquí.</p>
+      <p style="margin:0 0 12px;">Antes de continuar, lee con atención la <b>Normativa y Reglamento</b> del curso${r.version_vigente ? ` (versión ${esc(r.version_vigente)}, la verás en el pie de cada página)` : ""} (la encuentras en los documentos de presentación de esta misma Semana 0) y confirma aquí.</p>
       <label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0;cursor:pointer;">
         <input type="checkbox" id="regLeido" style="margin-top:5px;"><span>Leí cuidadosamente y entendí la Normativa y Reglamento del curso.</span></label>
       <label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0;cursor:pointer;">
