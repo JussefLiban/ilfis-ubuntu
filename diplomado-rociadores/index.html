@@ -1079,7 +1079,17 @@ function _respuestaProfe(e){
   return out;
 }
 
+// Entrega del Examen Final: una caja propia (no la de la tarea de la Semana 12).
+function lecExamenFinal(w, l, c){
+  c.innerHTML = cab(w, l) + `
+    <div class="aviso">📝 Aquí entregas tu <b>Examen Final</b> del diplomado. Sube tu archivo (o un ZIP si son varios) y, cuando estés conforme, pulsa <b>Entregar (finalizar)</b>. Mientras no finalices puedes cambiar los archivos.</div>
+    <div id="entregaBox" class="entrega-box"><div class="aviso">Cargando tu entrega…</div></div>`;
+  _entregaSem = l.entrega_sem; _entregaLecId = l.id; _entregaModulo = null;
+  cargarEntrega(l.entrega_sem);
+}
+
 function lecTarea(w, l, c){
+  if(l.examen_final){ return lecExamenFinal(w, l, c); }
   const archivos = (l.archivos || []);
   const descargable = !!(estructura && estructura.tareas_descargables);
   // Aviso de vencimiento igual de visible que en los cuestionarios (antes solo
@@ -1198,7 +1208,7 @@ async function cargarEntrega(sem){
   let ctrl;
   if(e.puede_subir){
     ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}" multiple><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
-      <div class="ent-hint" style="border-left:3px solid var(--acento,#2563eb);background:rgba(37,99,235,.08);padding:8px 10px;border-radius:6px;margin-top:8px;">📝 <b>Nombra cada archivo así:</b> <b>Evaluación N - Tu Nombre</b> &nbsp;(ejemplo: <i>Evaluación 8 - Mario Gutiérrez</i>). Sube un archivo por evaluación con ese nombre; así el profesor identifica de inmediato tu trabajo.</div>
+      <div class="ent-hint" style="border-left:3px solid var(--acento,#2563eb);background:rgba(37,99,235,.08);padding:8px 10px;border-radius:6px;margin-top:8px;">📝 ${sem >= 13 ? '<b>Nombra tu archivo así:</b> <b>Examen Final - Tu Nombre</b> &nbsp;(ejemplo: <i>Examen Final - Mario Gutiérrez</i>). Así el profesor identifica de inmediato tu trabajo.' : '<b>Nombra cada archivo así:</b> <b>Evaluación N - Tu Nombre</b> &nbsp;(ejemplo: <i>Evaluación 8 - Mario Gutiérrez</i>). Sube un archivo por evaluación con ese nombre; así el profesor identifica de inmediato tu trabajo.'}</div>
       <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} ${e.sin_cierre ? '· <b>sin fecha de entrega</b>: súbela cuando quieras' : '· cierre dom ' + fmtLima(e.cierre)}.</div>`;
   } else {
     const _cerrado = !!e.cierre && new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
@@ -1227,7 +1237,7 @@ async function cargarEntrega(sem){
     : "";
   // Mismo orden que en la vista sellada: la respuesta del profesor va ANTES de
   // la caja de escribirle (o del aviso de Telegram).
-  box.innerHTML = `<div class="ent-title">📤 Tu entrega <span style="font-weight:400;color:var(--texto2);">· una sola entrega por todas las tareas</span></div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}${notaProf}${btnBorrarTodo}${btnFinalizar}`;
+  box.innerHTML = `<div class="ent-title">📤 Tu entrega <span style="font-weight:400;color:var(--texto2);">· ${sem >= 13 ? 'examen final' : 'una sola entrega por todas las tareas'}</span></div>${filasArch}${ctrl}<div id="entMsg-${sem}" class="ent-msg"></div>${calif}${notaProf}${btnBorrarTodo}${btnFinalizar}`;
 }
 
 // OBS-2 · Borra de una vez toda la entrega (archivos + mensaje) para poder rehacerla.

@@ -622,7 +622,7 @@ function computeCola(){
     ((E && E.entregas) || []).forEach(en => {
       if((en.archivos || []).length && en.nota == null){
         cola.push({ tipo:"tarea", uid:en.uid, email:en.email, semana:en.semana,
-          actividad: "Tarea de la Semana " + en.semana + " — " + en.archivos.length + " archivo(s)",
+          actividad: (en.semana >= 13 ? "Examen final" : "Tarea de la Semana " + en.semana) + " — " + en.archivos.length + " archivo(s)",
           cuando: (en.archivos[0] || {}).subido, entrega: en });
       }
     });
@@ -924,7 +924,7 @@ let SEM_VISTA = null;
 // El número de semana tal como viene de Firestore. La Semana 0 EXISTE y se
 // califica igual que las demás, así que 0 es un valor válido, no un hueco.
 function _semDe(x){ const n = parseInt(x && x.semana, 10); return (isNaN(n) || n < 0) ? 0 : n; }
-function _rotuloSem(s){ return "Semana " + s; }
+function _rotuloSem(s){ return (parseInt(s, 10) >= 13) ? "Examen final" : "Semana " + s; }
 
 function verSemana(s){ SEM_VISTA = s; renderEntregas(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
