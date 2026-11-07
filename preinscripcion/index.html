@@ -139,6 +139,23 @@ function _toggleOtro(selId, inputId){
 
 async function llenarCursos(){
   const sel = document.getElementById('pCurso');
+  // 1) Lista editada desde la pantalla "Cursos del formulario" (la administran las asesoras).
+  //    Si no hay lista guardada, o algo falla, se sigue con el catálogo de siempre (abajo).
+  try{
+    const rl = await fetch(API + '/api/preinscripcion/cursos', {cache:'no-store'});
+    if(rl.ok){
+      const dl = await rl.json();
+      if(Array.isArray(dl.cursos) && dl.cursos.length){
+        sel.innerHTML = '';
+        const ph = new Option('— Selecciona —', ''); ph.disabled = true; ph.selected = true;
+        sel.appendChild(ph);
+        dl.cursos.slice().sort((a,b) => a.localeCompare(b, 'es'))
+          .forEach(t => sel.appendChild(new Option(t, t)));   // Option(): el texto nunca se interpreta como HTML
+        sel.appendChild(new Option('Otros', 'Otros'));
+        return;
+      }
+    }
+  }catch(e){ /* sin lista propia: catálogo */ }
   try{
     const r = await fetch('../certificado/catalogo.json', {cache:'no-store'});
     const d = await r.json();
