@@ -145,9 +145,17 @@ async function llenarCursos(){
     // Todos los cursos de la página web, SIN los "Módulos" (son partes internas
     // de un solo diplomado de cálculo hidráulico, no cursos independientes).
     const cursos = (d.cursos || []).filter(c => !/^m[oó]dulo\b/i.test((c.nombre||'').trim()));
-    cursos.sort((a,b) => (a.alias||a.nombre).localeCompare(b.alias||b.nombre, 'es'));
+    // Nombre con que se OFRECE al público. El del catálogo sigue siendo el interno (lo
+    // usan certificados y reportes), así que aquí solo se cambia cómo se ve en este
+    // formulario. Es el mismo curso: sus 4 semanas son diagnóstico de motores diésel,
+    // vibraciones y puesta en marcha. Lo que elija el interesado es lo que leerán las asesoras.
+    const ETIQUETAS = {
+      'Curso IPM Motores de Bombas PCI': 'Puesta en Marcha y Mantenimiento de Motores Diésel (Curso IPM Motores de Bombas PCI)'
+    };
+    const et = c => ETIQUETAS[c.alias||c.nombre] || (c.alias||c.nombre);
+    cursos.sort((a,b) => et(a).localeCompare(et(b), 'es'));
     sel.innerHTML = '<option value="" disabled selected>— Selecciona —</option>' +
-      cursos.map(c => `<option value="${(c.alias||c.nombre).replace(/"/g,'&quot;')}">${c.alias||c.nombre}</option>`).join('') +
+      cursos.map(c => `<option value="${et(c).replace(/"/g,'&quot;')}">${et(c)}</option>`).join('') +
       '<option value="Otros">Otros</option>';
   }catch(e){
     sel.innerHTML = '<option value="" disabled selected>No pude cargar el catálogo — escribe a soporte</option>';
