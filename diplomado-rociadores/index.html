@@ -267,7 +267,7 @@ footer{text-align:center;font-size:.7rem;color:#5a6480;padding:18px;}
   <div id="contenido">
     <h2>Bienvenido al aula</h2>
     <div class="meta">Selecciona una lección en el temario para comenzar.</div>
-    <div class="aviso" id="avisoGeneral">Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Los cuestionarios y las tareas cierran al terminar el domingo de su semana (medianoche) y las notas se publican el lunes siguiente a las 12:00.</div>
+    <div class="aviso" id="avisoGeneral">Las semanas se desbloquean automáticamente a las 00:00 (hora de Lima). Cada semana muestra su fecha de cierre: los cuestionarios y las tareas cierran a medianoche de ese día y las notas se publican al día siguiente, a las 12:00.</div>
   </div>
   <div id="lecNav" style="display:none;grid-column:1/-1;text-align:right;margin-top:6px;"></div>
 </div>
@@ -376,6 +376,16 @@ async function api(path, opts={}){
     throw err;
   }
   return data;
+}
+
+// Día de la semana (en Lima) de una fecha ISO. Los textos NO pueden dar por hecho que las
+// semanas abren en lunes y cierran en domingo: hay cohortes que van de miércoles a martes.
+const _DIAS_LARGO = {Sun:"domingo", Mon:"lunes", Tue:"martes", Wed:"miércoles", Thu:"jueves", Fri:"viernes", Sat:"sábado"};
+const _DIAS_CORTO = {Sun:"dom", Mon:"lun", Tue:"mar", Wed:"mié", Thu:"jue", Fri:"vie", Sat:"sáb"};
+function diaLima(iso, corto){
+  if(!iso) return "";
+  const w = new Intl.DateTimeFormat("en-US", { timeZone:"America/Lima", weekday:"short" }).format(new Date(iso));
+  return (corto ? _DIAS_CORTO : _DIAS_LARGO)[w] || "";
 }
 
 function fmtLima(iso, conHora){
@@ -554,7 +564,7 @@ async function cargarAula(){
     estructura = est;
     if(est.sin_vencimientos){
       const ag = $("avisoGeneral");
-      if(ag) ag.innerHTML = "Las semanas se desbloquean automáticamente cada lunes a las 00:00 (hora de Lima). Este diplomado <b>no tiene fechas de vencimiento</b>: haz las tareas y los cuestionarios a tu ritmo, pero te aconsejamos ir avanzando semana a semana. Tus notas las publica el profesor al finalizar el curso.";
+      if(ag) ag.innerHTML = "Las semanas se desbloquean automáticamente a las 00:00 (hora de Lima). Este diplomado <b>no tiene fechas de vencimiento</b>: haz las tareas y los cuestionarios a tu ritmo, pero te aconsejamos ir avanzando semana a semana. Tus notas las publica el profesor al finalizar el curso.";
     }
     // El aula se titula con el curso que cargó (sirve a cualquier diplomado)
     if(est.nombre){
@@ -721,8 +731,8 @@ function renderTemario(){
     const d = document.createElement("div");
     d.className = "sem " + (abiertaW ? "sem-abierta" : "sem-cerrada") + (_semExp.has(w.sem) ? " exp" : "");
     const fechas = abiertaW
-      ? (w.cierre_cuestionarios ? `cierre dom ${fmtLima(w.cierre_cuestionarios)}` : "")
-      : `abre lun ${fmtLima(w.abre)}`;
+      ? (w.cierre_cuestionarios ? `cierre ${diaLima(w.cierre_cuestionarios, true)} ${fmtLima(w.cierre_cuestionarios)}` : "")
+      : `abre ${diaLima(w.abre, true)} ${fmtLima(w.abre)}`;
     d.innerHTML = `<div class="sem-cab" onclick="toggleSemana(${w.sem}, this)">
         <span class="st">${esc(_tit(w.titulo))}</span>
         <span class="fechas">${fechas}</span>
@@ -735,7 +745,7 @@ function renderTemario(){
       const p = document.createElement("div");
       p.className = "lec bloq";
       p.style.cursor = "default";
-      p.innerHTML = `<span>🔒</span><span class="nom" style="color:var(--texto2);">Se abre el lunes ${fmtLima(w.abre)}. El contenido y las evaluaciones aparecerán aquí ese día.</span>`;
+      p.innerHTML = `<span>🔒</span><span class="nom" style="color:var(--texto2);">Se abre el ${diaLima(w.abre)} ${fmtLima(w.abre)}. El contenido y las evaluaciones aparecerán aquí ese día.</span>`;
       zona.appendChild(p);
     } else {
       w.lecciones.forEach(l => {
@@ -1099,7 +1109,7 @@ function lecTarea(w, l, c){
   // En cursos sin fecha de entrega no se muestra vencimiento sobre la tarea
   // (el cierre del cuestionario sí sigue visible en la lección del cuestionario).
   const avisoVence = (!l.modulo && w.cierre_cuestionarios && !(estructura && estructura.entregas_sin_cierre))
-    ? `<div class="aviso">⏱ Vence el domingo ${fmtLima(w.cierre_cuestionarios)} a medianoche (hora de Lima).</div>`
+    ? `<div class="aviso">⏱ Vence el ${diaLima(w.cierre_cuestionarios)} ${fmtLima(w.cierre_cuestionarios)} a medianoche (hora de Lima).</div>`
     : "";
   const lista = archivos.length
     ? archivos.map(n => descargable
@@ -1209,19 +1219,19 @@ async function cargarEntrega(sem){
   if(e.puede_subir){
     ctrl = `<div class="ent-up"><input type="file" id="entFile-${sem}" multiple><button class="btn sm" id="entBtn-${sem}" onclick="subirEntrega(${sem})">Subir entregable</button></div>
       <div class="ent-hint" style="border-left:3px solid var(--acento,#2563eb);background:rgba(37,99,235,.08);padding:8px 10px;border-radius:6px;margin-top:8px;">📝 ${sem >= 13 ? '<b>Nombra tu archivo así:</b> <b>Examen Final - Tu Nombre</b> &nbsp;(ejemplo: <i>Examen Final - Mario Gutiérrez</i>). Así el profesor identifica de inmediato tu trabajo.' : '<b>Nombra cada archivo así:</b> <b>Evaluación N - Tu Nombre</b> &nbsp;(ejemplo: <i>Evaluación 8 - Mario Gutiérrez</i>). Sube un archivo por evaluación con ese nombre; así el profesor identifica de inmediato tu trabajo.'}</div>
-      <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} ${e.sin_cierre ? '· <b>sin fecha de entrega</b>: súbela cuando quieras' : '· cierre dom ' + fmtLima(e.cierre)}.</div>`;
+      <div class="ent-hint">Puedes elegir <b>varios archivos</b> a la vez (o un ZIP). Máx ${e.max_mb} MB c/u · hasta 10 por semana · permitidos: ${(e.extensiones||[]).join(" ")} ${e.sin_cierre ? '· <b>sin fecha de entrega</b>: súbela cuando quieras' : '· cierre ' + diaLima(e.cierre, true) + ' ' + fmtLima(e.cierre)}.</div>`;
   } else {
     const _cerrado = !!e.cierre && new Date(e.cierre) <= new Date((estructura && estructura.ahora) || Date.now());
     const _w = ((estructura && estructura.semanas) || []).find(x => x.sem === sem);
     if(e.abierta === false){
       // La semana todavía no abre: decirlo claro (no hablar del cierre, confunde).
-      ctrl = `<div class="aviso">🔒 Esta semana aún no abre${_w && _w.abre ? ` (abre el lun ${fmtLima(_w.abre)})` : ""}. Desde ese día podrás subir tu entrega.</div>`;
+      ctrl = `<div class="aviso">🔒 Esta semana aún no abre${_w && _w.abre ? ` (abre el ${diaLima(_w.abre, true)} ${fmtLima(_w.abre)})` : ""}. Desde ese día podrás subir tu entrega.</div>`;
     } else {
       ctrl = e.sin_cierre
         ? `<div class="aviso">Por ahora no puedes subir archivos en esta semana.</div>`
         : _cerrado
-        ? `<div class="aviso">⏰ El plazo de entrega cerró (dom ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
-        : `<div class="aviso">⏰ El plazo de entrega cerrará el dom ${fmtLima(e.cierre)}.</div>`;
+        ? `<div class="aviso">⏰ El plazo de entrega cerró (${diaLima(e.cierre, true)} ${fmtLima(e.cierre)}). Ya no puedes subir ni modificar archivos.</div>`
+        : `<div class="aviso">⏰ El plazo de entrega cerrará el ${diaLima(e.cierre, true)} ${fmtLima(e.cierre)}.</div>`;
     }
   }
   const calif = _respuestaProfe(e);
@@ -1633,7 +1643,7 @@ async function lecQuiz(w, l, c){
       : (q.sin_vencimientos
           ? `<div class="aviso">${q.nota_publicada ? 'Tus notas ya están publicadas.' : 'Tu nota se mostrará cuando el profesor publique las notas del curso.'} La verás en <b>📊 Mi boletín</b>.</div>
          <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`
-          : `<div class="aviso">Tu nota se publica el lunes ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
+          : `<div class="aviso">Tu nota se publica el ${diaLima(q.publicacion_notas)} ${fmtLima(q.publicacion_notas, true)} (hora de Lima). La verás en <b>📊 Mi boletín</b>.</div>
          <button class="btn btn-sec" onclick="verNotas()">📊 Ir a Mi boletín</button>`);
     c.innerHTML = cab(w, l) + `
       <div class="aviso okv">✓ Respuestas registradas${enviado}. Se permite un solo intento.</div>`
@@ -1644,7 +1654,7 @@ async function lecQuiz(w, l, c){
 
   if(!q.abierto){
     c.innerHTML = cab(w, l) + `
-      <div class="aviso err">El plazo para responder cerró al terminar el domingo ${fmtLima(q.cierre)} (medianoche, hora de Lima). Este cuestionario queda con nota 0 por no presentarse.</div>
+      <div class="aviso err">El plazo para responder cerró al terminar el ${diaLima(q.cierre)} ${fmtLima(q.cierre)} (medianoche, hora de Lima). Este cuestionario queda con nota 0 por no presentarse.</div>
       <button class="btn btn-sec" onclick="verNotas()">📊 Ver Mis notas</button>`;
     return;
   }
@@ -1655,9 +1665,9 @@ async function lecQuiz(w, l, c){
     : "";
   // Cursos sin vencimientos (q.cierre === null): un solo intento, sin fecha, nota al instante.
   const _aviso = q.diagnostico
-    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento${q.cierre ? '. Cierra el domingo ' + fmtLima(q.cierre) + ' a medianoche (hora de Lima)' : ''}.</div>`
+    ? `<div class="aviso">📋 Cuestionario de diagnóstico · <b>no cuenta para tu nota</b> · un solo intento${q.cierre ? '. Cierra el ' + diaLima(q.cierre) + ' ' + fmtLima(q.cierre) + ' a medianoche (hora de Lima)' : ''}.</div>`
     : (q.cierre
-        ? `<div class="aviso">⏱ Cierra el domingo ${fmtLima(q.cierre)} a medianoche (hora de Lima) · <b>un solo intento</b> · la nota se publica el lunes ${fmtLima(q.publicacion_notas, true)}.</div>`
+        ? `<div class="aviso">⏱ Cierra el ${diaLima(q.cierre)} ${fmtLima(q.cierre)} a medianoche (hora de Lima) · <b>un solo intento</b> · la nota se publica el ${diaLima(q.publicacion_notas)} ${fmtLima(q.publicacion_notas, true)}.</div>`
         : `<div class="aviso">⏱ <b>Un solo intento</b> · sin fecha límite, respóndelo cuando quieras · tu nota se muestra apenas termines.</div>`);
   let html = cab(w, l) + _intro + _aviso + '<div id="quizTimer" class="aviso" style="display:none;font-weight:700;position:sticky;top:0;z-index:5;"></div>';
   (q.preguntas || []).forEach((p, qi) => {
@@ -2035,15 +2045,15 @@ async function verNotas(){
     }
   </style>`;
   c.innerHTML = `${estilo}<h2>📊 Mi boletín</h2>
-    <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · ${r.sin_vencimientos ? 'las notas las publica el profesor al final del curso' : 'las notas se publican el lunes 12:00 de la semana siguiente'}</div>
+    <div class="meta">${esc(r.nombre_curso || "Diplomado")} · Lima (UTC-5) · nota aprobatoria: ${AP}/100 · ${r.sin_vencimientos ? 'las notas las publica el profesor al final del curso' : 'las notas se publican al día siguiente del cierre de cada semana, a las 12:00'}</div>
     <div class="bolenc"><b>${esc(enc.nombre) || "—"}</b><br><span style="color:var(--texto2);">${esc(enc.correo)}${enc.pais ? " · " + esc(enc.pais) : ""}</span></div>
     ${leyenda}
     ${cuerpo}
     ${cierre}
     ${bloqueEncuesta(r)}
     ${plano
-      ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica el lunes 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`
-      : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica el lunes 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`}`;
+      ? `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100 y aporta a tu nota final según su peso (el % mostrado en cada casilla); los pesos de todas las evaluaciones suman 100%. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica al día siguiente del cierre, a las 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`
+      : `<div class="aviso" style="margin-top:14px;">Cada evaluación vale 100. El promedio de cada semana pondera sus evaluaciones según el peso mostrado; cada semana pesa ~5% del total. La nota semanal más baja de las 13 se descarta. “Enviado ✓” = ya la entregaste y ${r.sin_vencimientos ? 'verás la nota cuando el profesor publique las notas del curso' : 'la nota se publica al día siguiente del cierre, a las 12:00'}. Un <b>0</b> dice debajo si fue “calificado” (la revisaron y sacaste cero) o “sin entrega” (${r.sin_vencimientos ? 'aún sin entregar' : 'venció el plazo sin entregar'}).</div>`}`;
 }
 </script>
 </body>
