@@ -1216,12 +1216,12 @@ footer { text-align: center; padding: 20px; font-size: 0.75rem; color: #444; bor
         </p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
           <select id="pre-estado" onchange="adminCargarPreinscripciones()" style="padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;min-width:200px;">
-            <option value="">Todos los estados</option>
+            <option value="pendientes">Pendientes (sin matriculados)</option>
             <option value="nuevo">Nuevo</option>
             <option value="contactado">Contactado</option>
             <option value="matriculado">Matriculado</option>
-            <option value="matriculado (pendiente de primer login)">Matriculado (pendiente de 1er login)</option>
             <option value="descartado">Descartado</option>
+            <option value="">Todos los estados</option>
           </select>
           <input type="text" id="pre-buscar" placeholder="🔍 Buscar por nombre o correo…" oninput="preRenderTabla()" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #2a2a5a;border-radius:8px;background:#0f1729;color:#e6ecf7;font-size:0.85rem;">
           <button class="btn-a" style="padding:8px 16px;font-size:0.85rem;" onclick="adminCargarPreinscripciones()">↻ Actualizar</button>
@@ -4992,9 +4992,9 @@ async function adminCargarPreinscripciones() {
   if (!box) return;
   box.innerHTML = '<div class="admin-loading">Cargando...</div>';
   try {
-    const estado = document.getElementById('pre-estado').value;
-    const qs = estado ? ('?estado=' + encodeURIComponent(estado)) : '';
-    const r = await fetch(BACKEND + '/api/admin/preinscripciones' + qs, { headers: { 'x-admin-key': _getAdminKey() } });
+    // Se trae TODO y el filtro por estado se aplica aquí: así los registros repetidos
+    // de un mismo correo se pueden agrupar sin importar su estado.
+    const r = await fetch(BACKEND + '/api/admin/preinscripciones', { headers: { 'x-admin-key': _getAdminKey() } });
     if (r.status === 401) { _clearAdminKey(); return; }
     if (!r.ok) throw new Error('Error ' + r.status);
     const d = await r.json();
@@ -5023,45 +5023,96 @@ function _prePillEstado(estado) {
   return `<span class="seg-pill" style="${css}">${_adminEsc(txt)}</span>`;
 }
 
+// ¿Sigue pendiente? (ni matriculado ni descartado)
+function _preEsPendiente(estado) {
+  const e = (estado || 'nuevo').toLowerCase();
+  return !e.startsWith('matriculado') && e !== 'descartado';
+}
+
+// Junta en UNA sola fila todas las preinscripciones del mismo correo.
+function _preAgrupar(lista) {
+  const mapa = new Map();
+  lista.forEach(p => {
+    const k = (p.correo || '').trim().toLowerCase() || ('id:' + p.id);
+    if (!mapa.has(k)) mapa.set(k, []);
+    mapa.get(k).push(p);
+  });
+  const grupos = [];
+  mapa.forEach(regs => {
+    regs.sort((a, b) => (b.creado_utc || '').localeCompare(a.creado_utc || ''));
+    const estados = regs.map(r => r.estado || 'nuevo');
+    const pend = estados.filter(_preEsPendiente);
+    let estado;
+    if (pend.length) estado = pend.includes('contactado') ? 'contactado' : pend[0];
+    else if (estados.includes('matriculado')) estado = 'matriculado';
+    else if (estados.some(e => e.startsWith('matriculado'))) estado = estados.find(e => e.startsWith('matriculado'));
+    else estado = estados[0];
+    const cursos = [];
+    regs.forEach(r => {
+      const c = (r.curso_interes_texto || r.curso_interes || '').trim();
+      if (c && !cursos.includes(c)) cursos.push(c);
+    });
+    grupos.push({ rep: regs[0], ids: regs.map(r => r.id), regs, n: regs.length, estado, cursos });
+  });
+  grupos.sort((a, b) => (b.rep.creado_utc || '').localeCompare(a.rep.creado_utc || ''));
+  return grupos;
+}
+
 function preRenderTabla() {
   const box = document.getElementById('admin-pre-content');
   if (!box) return;
   const q = (document.getElementById('pre-buscar').value || '').trim().toLowerCase();
-  let filas = _adminPreLista.filter(p => {
+  const vista = document.getElementById('pre-estado').value;
+  let grupos = _preAgrupar(_adminPreLista).filter(g => {
+    if (vista === 'pendientes') { if (!_preEsPendiente(g.estado)) return false; }
+    else if (vista === 'matriculado') { if (!(g.estado || '').startsWith('matriculado')) return false; }
+    else if (vista) { if (g.estado !== vista) return false; }
+    const p = g.rep;
     if (q && !((p.nombre || '').toLowerCase().includes(q) || (p.correo || '').toLowerCase().includes(q))) return false;
     return true;
   });
-  if (!filas.length) { box.innerHTML = '<div class="admin-loading">— sin resultados —</div>'; return; }
-  const filasHtml = filas.map(p => {
+  if (!grupos.length) { box.innerHTML = '<div class="admin-loading">— sin resultados —</div>'; return; }
+  const filasHtml = grupos.map(g => {
+    const p = g.rep;
     const tel = ((p.telefono_cod || '') + ' ' + (p.telefono || '')).trim();
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
-      <div style="min-width:220px;">
-        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(p.nombre)}</div>
-        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(p.correo)} · ${_adminEsc(tel)} · ${_adminEsc(p.pais)}</div>
-        <div style="color:#8899aa;font-size:0.75rem;">Interés: <b style="color:#cfe0f7;">${_adminEsc(p.curso_interes_texto || p.curso_interes)}</b> · ${_preFecha(p.creado_utc)}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        ${_prePillEstado(p.estado)}
+    const rep = g.n > 1 ? ` <span class="seg-pill" style="background:rgba(224,182,79,.15);color:#e0b64f;">${g.n} preinscripciones</span>` : '';
+    const acciones = _preEsPendiente(g.estado) ? `
         <select onchange="adminCambiarEstadoProspecto('${p.id}', this.value)" style="padding:6px 8px;border:1px solid #2a2a5a;border-radius:6px;background:#0f1729;color:#e6ecf7;font-size:0.76rem;">
           <option value="">Cambiar estado…</option>
           <option value="contactado">Contactado</option>
           <option value="descartado">Descartado</option>
         </select>
-        <button class="btn-dar btn-a" style="padding:6px 12px;font-size:0.78rem;" onclick="adminAbrirModalPreinscripcion('${p.id}')">Convertir en matrícula</button>
+        <button class="btn-dar btn-a" style="padding:6px 12px;font-size:0.78rem;" onclick="adminAbrirModalPreinscripcion('${p.id}')">Convertir en matrícula</button>` : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #2a2a5a;border-radius:8px;margin-bottom:8px;background:#0f1729;flex-wrap:wrap;">
+      <div style="min-width:220px;">
+        <div style="color:#e6ecf7;font-size:0.9rem;font-weight:600;">${_adminEsc(p.nombre)}${rep}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">${_adminEsc(p.correo)} · ${_adminEsc(tel)} · ${_adminEsc(p.pais)}</div>
+        <div style="color:#8899aa;font-size:0.75rem;">Interés: <b style="color:#cfe0f7;">${_adminEsc(g.cursos.join(' · '))}</b> · ${_preFecha(p.creado_utc)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        ${_prePillEstado(g.estado)}${acciones}
       </div>
     </div>`;
   }).join('');
-  box.innerHTML = filasHtml;
+  box.innerHTML = '<div style="font-size:0.78rem;color:#7a8a9a;margin-bottom:8px;">' + grupos.length + ' persona(s)</div>' + filasHtml;
 }
 
 async function adminCambiarEstadoProspecto(id, estado) {
   if (!estado) return;
   try {
-    const r = await fetch(BACKEND + '/api/admin/preinscripciones/' + id + '/estado', {
-      method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado }) });
-    if (r.status === 401) { _clearAdminKey(); return; }
-    if (!r.ok) throw new Error('Error ' + r.status);
+    // Aplica a TODOS los registros pendientes del mismo correo (no a los ya matriculados).
+    const rep = _adminPreLista.find(x => x.id === id);
+    const correo = ((rep && rep.correo) || '').trim().toLowerCase();
+    const ids = _adminPreLista
+      .filter(x => x.id === id || (correo && (x.correo || '').trim().toLowerCase() === correo && _preEsPendiente(x.estado)))
+      .map(x => x.id);
+    for (const i of ids) {
+      const r = await fetch(BACKEND + '/api/admin/preinscripciones/' + i + '/estado', {
+        method: 'POST', headers: { 'x-admin-key': _getAdminKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado }) });
+      if (r.status === 401) { _clearAdminKey(); return; }
+      if (!r.ok) throw new Error('Error ' + r.status);
+    }
     adminCargarPreinscripciones();
   } catch(e) {
     alert('No pude cambiar el estado: ' + e.message);
