@@ -167,7 +167,7 @@ async function llenarCursos(){
     // formulario. Es el mismo curso: sus 4 semanas son diagnóstico de motores diésel,
     // vibraciones y puesta en marcha. Lo que elija el interesado es lo que leerán las asesoras.
     const ETIQUETAS = {
-      'Curso IPM Motores de Bombas PCI': 'Puesta en Marcha y Mantenimiento de Motores Diésel (Curso IPM Motores de Bombas PCI)'
+      'Motores Diésel': 'Puesta en Marcha y Mantenimiento de Motores Diésel'
     };
     const et = c => ETIQUETAS[c.alias||c.nombre] || (c.alias||c.nombre);
     cursos.sort((a,b) => et(a).localeCompare(et(b), 'es'));
